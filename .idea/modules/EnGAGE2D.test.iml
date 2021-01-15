@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module external.system.module.type="sourceSet" type="JAVA_MODULE" version="4">
+  <component name="NewModuleRootManager">
+    <output-test url="file://$MODULE_DIR$/../../build/classes/java/test" />
+    <exclude-output />
+    <content url="file://$MODULE_DIR$/../../src/test">
+      <sourceFolder url="file://$MODULE_DIR$/../../src/test/java" isTestSource="true" />
+      <sourceFolder url="file://$MODULE_DIR$/../../src/test/resources" type="java-test-resource" />
+    </content>
+    <orderEntry type="inheritedJdk" />
+    <orderEntry type="sourceFolder" forTests="false" />
+    <orderEntry type="module" module-name="EnGAGE2D.main" />
+    <orderEntry type="library" name="Gradle: org.lwjgl:lwjgl-assimp:3.2.3" level="project" />
+    <orderEntry type="library" name="Gradle: org.lwjgl:lwjgl-glfw:3.2.3" level="project" />
+    <orderEntry type="library" name="Gradle: org.lwjgl:lwjgl-nfd:3.2.3" level="project" />
+    <orderEntry type="library" name="Gradle: org.lwjgl:lwjgl-openal:3.2.3" level="project" />
+    <orderEntry type="library" name="Gradle: org.lwjgl:lwjgl-opengl:3.2.3" level="project" />
+    <orderEntry type="library" name="Gradle: org.lwjgl:lwjgl-stb:3.2.3" level="project" />
+    <orderEntry type="library" name="Gradle: org.lwjgl:lwjgl:3.2.3" level="project" />
+    <orderEntry type="library" name="Gradle: org.joml:joml:1.10.0" level="project" />
+    <orderEntry type="library" scope="RUNTIME" name="Gradle: org.lwjgl:lwjgl-assimp:natives-windows:3.2.3" level="project" />
+    <orderEntry type="library" scope="RUNTIME" name="Gradle: org.lwjgl:lwjgl-glfw:natives-windows:3.2.3" level="project" />
+    <orderEntry type="library" scope="RUNTIME" name="Gradle: org.lwjgl:lwjgl-nfd:natives-windows:3.2.3" level="project" />
+    <orderEntry type="library" scope="RUNTIME" name="Gradle: org.lwjgl:lwjgl-openal:natives-windows:3.2.3" level="project" />
+    <orderEntry type="library" scope="RUNTIME" name="Gradle: org.lwjgl:lwjgl-opengl:natives-windows:3.2.3" level="project" />
+    <orderEntry type="library" scope="RUNTIME" name="Gradle: org.lwjgl:lwjgl-stb:natives-windows:3.2.3" level="project" />
+    <orderEntry type="library" scope="RUNTIME" name="Gradle: org.lwjgl:lwjgl:natives-windows:3.2.3" level="project" />
+  </component>
+</module>

@@ -1,0 +1,7 @@
+Hello LWJGL3.2.3 build 13!
+	Opengl Info
+%Opengl version: 3.3.0 NVIDIA 456.38
+Vendor: NVIDIA Corporation
+%Renderer: GeForce GTX 960/PCIe/SSE2
++Glsl version: 3.30 NVIDIA via Cg compiler
+Max texture units: 32
