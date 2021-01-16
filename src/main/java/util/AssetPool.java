@@ -8,6 +8,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+/*Tải asset và lưu vào RAM, nếu Asset đó không tồn tại thì load từ ổ cứng.*/
 public class AssetPool {
     private static Map<String, Shader> shaders = new HashMap<String, Shader>();
     private static Map<String, Texture2D> textures = new HashMap<String, Texture2D>();
@@ -29,7 +30,8 @@ public class AssetPool {
         if(textures.containsKey(file.getAbsolutePath())) {
             return AssetPool.textures.get(file.getAbsolutePath());
         } else {
-            Texture2D texture = new Texture2D(resourceName);
+            Texture2D texture = new Texture2D();
+            texture.init(resourceName);
             AssetPool.textures.put(file.getAbsolutePath(), texture);
             return texture;
         }

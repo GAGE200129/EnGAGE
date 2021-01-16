@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<testsuite name="Main" tests="1" skipped="0" failures="0" errors="0" timestamp="2021-01-15T11:13:55" hostname="GAGE" time="28.722">
+<testsuite name="Main" tests="1" skipped="0" failures="0" errors="0" timestamp="2021-01-16T03:55:12" hostname="GAGE" time="2.313">
   <properties/>
-  <testcase name="TestGame" classname="Main" time="28.722"/>
+  <testcase name="TestGame" classname="Main" time="2.313"/>
   <system-out><![CDATA[Hello LWJGL3.2.3 build 13!
 	Opengl Info
 Opengl version: 3.3.0 NVIDIA 456.38

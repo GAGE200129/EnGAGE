@@ -25,7 +25,11 @@ public class Texture2D {
     private int textureID;
     private int width, height;
 
-    public Texture2D(String filePath) {
+//    public Texture2D(String filePath) {
+//
+//    }
+
+    public void init(String filePath) {
         this.filePath = filePath;
 
         //Upload texture to GPU

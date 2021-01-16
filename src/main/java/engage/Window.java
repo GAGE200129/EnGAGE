@@ -157,6 +157,7 @@ public class Window {
         float endTime;
         float dt = -1.0f;
 
+        currentScene.load();
         while(!glfwWindowShouldClose(glfwWindow)) {
             glfwPollEvents();
 
@@ -173,6 +174,7 @@ public class Window {
             dt = endTime - startTime;
             startTime = endTime;
         }
+        currentScene.saveExit();
         Shader.clear();
         Texture2D.clear();
         RenderBatch.clear();

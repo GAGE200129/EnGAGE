@@ -1,19 +1,15 @@
 package engage.scenes;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import components.Sprite;
 import components.SpriteRenderer;
 import components.SpriteSheet;
-import engage.Camera;
-import engage.GameObject;
-import engage.Transform2D;
+import engage.*;
 import imgui.ImGui;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
 import util.AssetPool;
-
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
 
 
 public class LevelEditorScene extends Scene {
@@ -24,7 +20,9 @@ public class LevelEditorScene extends Scene {
     @Override
     public void init() {
         this.camera = new Camera(new Vector2f(0, 0));
-
+        if(levelLoaded) {
+            return;
+        }
 
         loadResources();
 
@@ -32,11 +30,20 @@ public class LevelEditorScene extends Scene {
 
         go = new GameObject("Dummy", new Transform2D(new Vector2f(10, 10), new Vector2f(100, 100)), 2);
         go2 = new GameObject("Dummy2", new Transform2D(new Vector2f(50, 10), new Vector2f(100, 100)), -1);
-        go.addComponent(new SpriteRenderer(new Vector4f(1, 0, 0, 1)));
-        go2.addComponent(new SpriteRenderer(new Sprite(AssetPool.getTexture2D("assets/images/blendImage2.png"))));
+        SpriteRenderer goSprite = new SpriteRenderer();
+        SpriteRenderer go1Sprite = new SpriteRenderer();
+        Sprite go1SpriteImg = new Sprite();
+        go1SpriteImg.setTexture(AssetPool.getTexture2D("assets/images/blendImage2.png"));
+        goSprite.setColor(new Vector4f(1, 0, 0, 1));
+        go1Sprite.setSprite(go1SpriteImg);
+
+
+        go.addComponent(goSprite);
+        go2.addComponent(go1Sprite);
         addGameObjectToScene(go);
         addGameObjectToScene(go2);
         this.activeGO = go;
+
 
     }
 
