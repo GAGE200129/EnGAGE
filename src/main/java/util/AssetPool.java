@@ -16,10 +16,11 @@ public class AssetPool {
 
     public static Shader getShader(String resourceName) {
         File file = new File(resourceName);
-        if(AssetPool.shaders.containsKey(file.getAbsolutePath())) {
+        if (AssetPool.shaders.containsKey(file.getAbsolutePath())) {
             return AssetPool.shaders.get(file.getAbsolutePath());
         } else {
-            Shader shader = new Shader(resourceName);;
+            Shader shader = new Shader(resourceName);
+            ;
             AssetPool.shaders.put(file.getAbsolutePath(), shader);
             return shader;
         }
@@ -27,7 +28,7 @@ public class AssetPool {
 
     public static Texture2D getTexture2D(String resourceName) {
         File file = new File(resourceName);
-        if(textures.containsKey(file.getAbsolutePath())) {
+        if (textures.containsKey(file.getAbsolutePath())) {
             return AssetPool.textures.get(file.getAbsolutePath());
         } else {
             Texture2D texture = new Texture2D();
@@ -40,7 +41,7 @@ public class AssetPool {
     public static void addSpriteSheet(String resourceName, SpriteSheet spriteSheet) {
         File file = new File(resourceName);
 
-        if(!AssetPool.spriteSheets.containsKey(file.getAbsolutePath())) {
+        if (!AssetPool.spriteSheets.containsKey(file.getAbsolutePath())) {
             AssetPool.spriteSheets.put(file.getAbsolutePath(), spriteSheet);
         }
 
@@ -48,7 +49,7 @@ public class AssetPool {
 
     public static SpriteSheet getSpriteSheet(String resourceName) {
         File file = new File(resourceName);
-        if(!AssetPool.spriteSheets.containsKey(file.getAbsolutePath())) {
+        if (!AssetPool.spriteSheets.containsKey(file.getAbsolutePath())) {
             assert false : "ERROR: Tried to access spritesheet '" + resourceName + "' and it has not been added to asset pool";
         }
         return AssetPool.spriteSheets.getOrDefault(file.getAbsolutePath(), null);

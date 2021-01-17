@@ -14,32 +14,18 @@ import java.util.List;
 
 import static org.lwjgl.opengl.GL11.GL_FALSE;
 import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL20.glGetShaderInfoLog;
 
 public class Shader {
 
-    public static List<Integer> programs = new ArrayList<>();
-    public static List<Integer> shaders = new ArrayList<>();
-
-    public static void clear() {
-        for(Integer i : programs) {
-            glDeleteProgram(i);
-        }
-        for(Integer i : shaders) {
-            glDeleteShader(i);
-        }
-    }
-
     private static final FloatBuffer matrix4fBuffer = BufferUtils.createFloatBuffer(16);
     private static final FloatBuffer matrix3fBuffer = BufferUtils.createFloatBuffer(9);
-
+    public static List<Integer> programs = new ArrayList<>();
+    public static List<Integer> shaders = new ArrayList<>();
     private int shaderProgramID;
     private boolean beingUsed;
-
     private String vertexSource;
     private String fragmentSource;
     private String filePath;
-
     public Shader(String filePath) {
         this.filePath = filePath;
         try {
@@ -80,6 +66,15 @@ public class Shader {
 
         this.compileAndLink();
 
+    }
+
+    public static void clear() {
+        for (Integer i : programs) {
+            glDeleteProgram(i);
+        }
+        for (Integer i : shaders) {
+            glDeleteShader(i);
+        }
     }
 
     public void compileAndLink() {
@@ -135,7 +130,7 @@ public class Shader {
     }
 
     public void use() {
-        if(!beingUsed) {
+        if (!beingUsed) {
             beingUsed = true;
             glUseProgram(shaderProgramID);
         }

@@ -1,7 +1,7 @@
 import engage.Window;
 import org.junit.Test;
 
-public class Main{
+public class Main {
 
     @Test
     public void TestGame() {

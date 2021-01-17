@@ -14,16 +14,15 @@ import static org.lwjgl.stb.STBImage.*;
 public class Texture2D {
 
     public static List<Integer> textureIDS = new ArrayList<>();
+    private String filePath;
+    private transient int textureID;
+    private transient int width, height;
 
     public static void clear() {
-        for(Integer i : textureIDS) {
+        for (Integer i : textureIDS) {
             glDeleteTextures(i);
         }
     }
-
-    private String filePath;
-    private int textureID;
-    private int width, height;
 
 //    public Texture2D(String filePath) {
 //

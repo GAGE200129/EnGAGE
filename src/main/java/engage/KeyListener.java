@@ -5,18 +5,17 @@ import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
 
 public class KeyListener {
     private static KeyListener instance;
+    private boolean keyPressed[] = new boolean[400];
+
+    private KeyListener() {
+
+    }
 
     public static KeyListener get() {
         if (KeyListener.instance == null) {
             KeyListener.instance = new KeyListener();
         }
         return KeyListener.instance;
-    }
-
-    private boolean keyPressed[] = new boolean[400];
-
-    private KeyListener() {
-
     }
 
     public static void keyCallback(long window, int key, int scancode, int action, int mods) {

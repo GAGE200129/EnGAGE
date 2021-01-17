@@ -1,6 +1,4 @@
-package engage.scenes;
-
-import engage.Window;
+package scenes;
 
 public class LevelScene extends Scene {
 

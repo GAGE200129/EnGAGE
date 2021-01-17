@@ -1,6 +1,6 @@
 package engage;
 
-import engage.scenes.Scene;
+import scenes.Scene;
 import imgui.*;
 import imgui.callbacks.ImStrConsumer;
 import imgui.callbacks.ImStrSupplier;
@@ -11,15 +11,13 @@ import imgui.enums.ImGuiMouseCursor;
 import imgui.gl3.ImGuiImplGl3;
 
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL11.*;
 
 public class ImGuiLayer {
 
-    private long glfwWindow;
     private final long[] mouseCursors = new long[ImGuiMouseCursor.COUNT];
-
     // LWJGL3 renderer (SHOULD be initialized)
     private final ImGuiImplGl3 imGuiGl3 = new ImGuiImplGl3();
+    private long glfwWindow;
 
     public ImGuiLayer(long glfwWindow) {
         this.glfwWindow = glfwWindow;
@@ -92,6 +90,9 @@ public class ImGuiLayer {
             io.setKeyShift(io.getKeysDown(GLFW_KEY_LEFT_SHIFT) || io.getKeysDown(GLFW_KEY_RIGHT_SHIFT));
             io.setKeyAlt(io.getKeysDown(GLFW_KEY_LEFT_ALT) || io.getKeysDown(GLFW_KEY_RIGHT_ALT));
             io.setKeySuper(io.getKeysDown(GLFW_KEY_LEFT_SUPER) || io.getKeysDown(GLFW_KEY_RIGHT_SUPER));
+            if(!io.getWantCaptureKeyboard()) {
+                KeyListener.keyCallback(w, key, scancode, action, mods);
+            }
         });
 
         glfwSetCharCallback(glfwWindow, (w, c) -> {
@@ -113,6 +114,10 @@ public class ImGuiLayer {
 
             if (!io.getWantCaptureMouse() && mouseDown[1]) {
                 ImGui.setWindowFocus(null);
+            }
+
+            if(!io.getWantCaptureMouse()) {
+                MouseListener.mouseButtonCallback(w, button, action, mods);
             }
         });
 
@@ -159,7 +164,6 @@ public class ImGuiLayer {
         fontAtlas.addFontFromFileTTF("assets/fonts/Roboto-Medium.ttf", 20, fontConfig);
 
 
-
         fontConfig.destroy(); // After all fonts were added we don't need this config more
 
         // ------------------------------------------------------------
@@ -178,7 +182,6 @@ public class ImGuiLayer {
         // Any Dear ImGui code SHOULD go between ImGui.newFrame()/ImGui.render() methods
         ImGui.newFrame();
         scene.sceneImGui();
-        ImGui.showDemoWindow();
         ImGui.render();
 
         endFrame();
@@ -198,7 +201,7 @@ public class ImGuiLayer {
         io.setDisplaySize(winWidth[0], winHeight[0]);
         io.setDisplayFramebufferScale(1f, 1f);
         io.setMousePos((float) mousePosX[0], (float) mousePosY[0]);
-        io.setDeltaTime((float)deltaTime);
+        io.setDeltaTime((float) deltaTime);
 
         // Update the mouse cursor
         final int imguiCursor = ImGui.getMouseCursor();

@@ -2,8 +2,6 @@ package engage;
 
 import org.joml.Vector2f;
 
-import javax.xml.crypto.dsig.Transform;
-
 public class Transform2D {
     public Vector2f position;
     public Vector2f scale;
@@ -11,9 +9,11 @@ public class Transform2D {
     public Transform2D() {
         this.init(new Vector2f(), new Vector2f());
     }
+
     public Transform2D(Vector2f position) {
         this.init(position, new Vector2f());
     }
+
     public Transform2D(Vector2f position, Vector2f scale) {
         this.init(position, scale);
     }
@@ -33,8 +33,8 @@ public class Transform2D {
     }
 
     public boolean equals(Object o) {
-        if(o == null) return false;
-        if(!(o instanceof Transform2D)) return false;
+        if (o == null) return false;
+        if (!(o instanceof Transform2D)) return false;
 
         Transform2D t = (Transform2D) o;
         return t.position.equals(this.position) && t.scale.equals(this.scale);

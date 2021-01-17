@@ -1,7 +1,9 @@
-package engage.scenes;
+package scenes;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import components.Component;
+import components.ComponentDeserializer;
 import engage.*;
 import imgui.ImGui;
 import renderer.Renderer;
@@ -17,10 +19,10 @@ public abstract class Scene {
 
     protected Renderer renderer = new Renderer();
     protected Camera camera;
-    private boolean isRunning = false;
     protected List<GameObject> gameObjects = new ArrayList<GameObject>();
     protected GameObject activeGO = null;
     protected boolean levelLoaded = false;
+    private boolean isRunning = false;
 
     public Scene() {
 
@@ -38,7 +40,7 @@ public abstract class Scene {
     }
 
     public void addGameObjectToScene(GameObject obj) {
-        if(isRunning) {
+        if (isRunning) {
             gameObjects.add(obj);
             obj.start();
             this.renderer.add(obj);
@@ -54,7 +56,7 @@ public abstract class Scene {
     }
 
     public void sceneImGui() {
-        if(activeGO != null) {
+        if (activeGO != null) {
             ImGui.begin("Inspector");
             activeGO.imGui();
             ImGui.end();
@@ -62,6 +64,7 @@ public abstract class Scene {
 
         this.imGui();
     }
+
     public void imGui() {
 
     }
@@ -73,12 +76,12 @@ public abstract class Scene {
                 .registerTypeAdapter(GameObject.class, new GameObjectDeserializer())
                 .create();
 
-        try{
+        try {
             FileWriter fr = new FileWriter("level.txt");
 
             fr.write(gson.toJson(this.gameObjects));
             fr.close();
-        }catch(IOException e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -95,11 +98,25 @@ public abstract class Scene {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        if(!inFile.equals("")) {
+        if (!inFile.equals("")) {
+            int maxGoID = -1;
+            int maxComID = -1;
             GameObject[] objs = gson.fromJson(inFile, GameObject[].class);
-            for(int i = 0; i < objs.length; i++) {
+            for (int i = 0; i < objs.length; i++) {
                 this.addGameObjectToScene(objs[i]);
+
+                for(Component c : objs[i].getAllComponents()) {
+                    if(c.getUid() > maxComID) {
+                        maxComID = c.getUid();
+                    }
+                }
+
+                if(objs[i].getUid() > maxGoID) {
+                    maxGoID = objs[i].getUid();
+                }
             }
+            GameObject.init(maxGoID++);
+            Component.init(maxComID++);
             this.levelLoaded = true;
         }
     }

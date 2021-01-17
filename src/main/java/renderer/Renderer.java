@@ -16,7 +16,7 @@ public class Renderer {
     }
 
     public void render() {
-        for(RenderBatch batch : batches) {
+        for (RenderBatch batch : batches) {
             batch.render();
         }
     }
@@ -24,17 +24,17 @@ public class Renderer {
 
     public void add(GameObject go) {
         SpriteRenderer spr = go.getComponent(SpriteRenderer.class);
-        if(spr != null) {
+        if (spr != null) {
             add(spr);
         }
     }
 
     public void add(SpriteRenderer spr) {
         boolean added = false;
-        for(RenderBatch batch : batches) {
-            if(batch.hasRoom() && batch.getzIndex() == spr.gameObject.getzIndex()) {
+        for (RenderBatch batch : batches) {
+            if (batch.hasRoom() && batch.getzIndex() == spr.gameObject.getzIndex()) {
                 Texture2D tex = spr.getTexture();
-                if(tex != null || batch.hasTextures(tex) || batch.hasTextureRoom()) {
+                if (tex != null || batch.hasTextures(tex) || batch.hasTextureRoom()) {
                     batch.addSprite(spr);
                     added = true;
                     break;
@@ -42,7 +42,7 @@ public class Renderer {
             }
         }
 
-        if(!added) {
+        if (!added) {
             RenderBatch newBatch = new RenderBatch(MAX_BATCH_SIZE, spr.gameObject.getzIndex());
             newBatch.start();
             newBatch.addSprite(spr);

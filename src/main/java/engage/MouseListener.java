@@ -1,23 +1,16 @@
 package engage;
 
+import org.joml.Vector4f;
+
 import static org.lwjgl.glfw.GLFW.GLFW_PRESS;
 import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
 
 public class MouseListener {
     private static MouseListener instance;
-
-    public static MouseListener get() {
-        if (MouseListener.instance == null)
-            MouseListener.instance = new MouseListener();
-
-        return MouseListener.instance;
-    }
-
     private double scrollX, scrollY;
     private double xPos, yPos, lastX, lastY;
-    private boolean buttonPressed[] = new boolean[3];
+    private boolean buttonPressed[] = new boolean[9];
     private boolean dragging;
-
     private MouseListener() {
         this.scrollX = 0.0;
         this.scrollY = 0.0;
@@ -25,6 +18,13 @@ public class MouseListener {
         this.yPos = 0.0;
         this.lastX = 0.0;
         this.lastY = 0.0;
+    }
+
+    public static MouseListener get() {
+        if (MouseListener.instance == null)
+            MouseListener.instance = new MouseListener();
+
+        return MouseListener.instance;
     }
 
     public static void mousePosCallback(long window, double xPos, double yPos) {
@@ -66,6 +66,21 @@ public class MouseListener {
 
     public static float getY() {
         return (float) get().yPos;
+    }
+
+    public static float getOrthoX() {
+        float currentX = (getX() / (float) Window.getWidth()) * 2f - 1f;
+        Vector4f temp = new Vector4f(currentX, 0, 0, 1);
+        temp.mul(Window.getCurrentScene().getCamera().getInverseProjection()).mul(Window.getCurrentScene().getCamera().getInverseView());
+        return temp.x;
+    }
+
+
+    public static float getOrthoY() {
+        float currentY = ((Window.getHeight() - getY() ) / (float) Window.getHeight()) * 2f - 1f;
+        Vector4f temp = new Vector4f(0, currentY, 0, 1);
+        temp.mul(Window.getCurrentScene().getCamera().getInverseProjection()).mul(Window.getCurrentScene().getCamera().getInverseView());
+        return temp.y;
     }
 
     public static float getDx() {

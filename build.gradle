@@ -30,7 +30,6 @@ dependencies {
     runtimeOnly "io.imgui.java:natives-windows:$imguiVersion"
 
 
-
     //LWJGL
     implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
 

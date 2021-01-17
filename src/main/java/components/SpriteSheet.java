@@ -29,6 +29,8 @@ public class SpriteSheet {
             };
 
             Sprite sprite = new Sprite();
+            sprite.setWidth(spriteWidth);
+            sprite.setHeight(spriteHeight);
             sprite.setTexture(texture);
             sprite.setTexCoords(texCoords);
             this.sprites.add(sprite);
@@ -41,8 +43,13 @@ public class SpriteSheet {
         }
     }
 
+    public int size() {
+        return this.sprites.size();
+    }
+
     public Sprite getSprite(int index) {
         return this.sprites.get(index);
     }
+
 
 }
