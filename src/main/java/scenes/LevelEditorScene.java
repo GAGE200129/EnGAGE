@@ -18,14 +18,15 @@ public class LevelEditorScene extends Scene {
 
     private SpriteSheet sprites;
 
-    private MouseControls mouseControls = new MouseControls();
+    GameObject levelEditor = new GameObject("LevelEditor", new Transform2D(new Vector2f()), 0);
 
     @Override
     public void init() {
+        this.levelEditor.addComponent(new MouseControls());
+        this.levelEditor.addComponent(new GridLines());
         this.camera = new Camera(new Vector2f(-250, 0));
         loadResources();
         sprites = AssetPool.getSpriteSheet("assets/images/spritesheets/decorationsAndBlocks.png");
-        DebugDraw.addLine2D(new Vector2f(0, 0), new Vector2f(100, 100), new Vector3f(1, 0, 0), 180);
         if (levelLoaded) {
             return;
         }
@@ -34,17 +35,11 @@ public class LevelEditorScene extends Scene {
     }
 
 
-    float t = 0.0f;
     @Override
     public void update(float dt) {
-
-        float x = ((float)Math.sin(t) * 200.0f) + 600;
-        float y = ((float)Math.cos(t) * 200.0f) + 400;
-        t += 0.05f;
-        DebugDraw.addLine2D(new Vector2f(600, 400), new Vector2f(x, y),  new Vector3f(0, 1, 0), 100);
+        levelEditor.update(dt);
 
         this.renderer.render();
-        this.mouseControls.update(dt);
         for (GameObject go : this.gameObjects) {
             go.update(dt);
         }
@@ -70,10 +65,10 @@ public class LevelEditorScene extends Scene {
             Vector2f[] texCoords = sprite.getTexCoords();
 
             ImGui.pushID(i);
-            if (ImGui.imageButton(id, spriteWidth, spriteHeight, texCoords[0].x, texCoords[0].y, texCoords[2].x, texCoords[2].y)) {
-                GameObject object = Prefabs.generateSpriteObject(sprite, spriteWidth, spriteHeight);
+            if (ImGui.imageButton(id, spriteWidth, spriteHeight, texCoords[2].x, texCoords[0].y, texCoords[0].x, texCoords[2].y)) {
+                GameObject object = Prefabs.generateSpriteObject(sprite, 32, 32);
                 //Attach to mouse cursor
-                mouseControls.pickupObject(object);
+                levelEditor.getComponent(MouseControls.class).pickupObject(object);
             }
             ImGui.popID();
             ImVec2 lastButtonPos = new ImVec2();

@@ -8,7 +8,6 @@ import util.AssetPool;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Vector;
 
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.glEnableVertexAttribArray;
@@ -19,11 +18,8 @@ public class DebugDraw {
     private static int MAX_LINES = 500;
 
     private static List<Line2D> lines = new ArrayList<Line2D>();
-
-    //6 biến float mổi đỉnh
     private static float[] vertexArray = new float[MAX_LINES * 6 * 2];
     private static Shader shader = AssetPool.getShader("assets/shaders/debugLine2D.glsl");
-
     private static int vaoID;
     private static int vboID;
     private static boolean started = false;
@@ -40,8 +36,8 @@ public class DebugDraw {
 
         glEnableVertexAttribArray(0);
         glEnableVertexAttribArray(1);
-        glVertexAttribPointer(0, 3 , GL_FLOAT, false, 6 * Float.BYTES, 0);
-        glVertexAttribPointer(1, 3 , GL_FLOAT, false, 6 * Float.BYTES, 3 * Float.BYTES);
+        glVertexAttribPointer(0, 3, GL_FLOAT, false, 6 * Float.BYTES, 0);
+        glVertexAttribPointer(1, 3, GL_FLOAT, false, 6 * Float.BYTES, 3 * Float.BYTES);
 
         glBindBuffer(GL_ARRAY_BUFFER, 0);
         glBindVertexArray(0);
@@ -55,27 +51,26 @@ public class DebugDraw {
     }
 
     public static void beginFrame() {
-        if(!started) {
+        if (!started) {
             start();
             started = true;
         }
-
-
-        for(int i = 0; i < lines.size(); i++) {
-            if(lines.get(i).beginFrame() < 0) {
+        for (int i = 0; i < lines.size(); i++) {
+            if (lines.get(i).beginFrame() < 0) {
                 lines.remove(i);
                 i--;
             }
         }
     }
+
+    //=========LINES=============//
     public static void addLine2D(Vector2f from, Vector2f to, Vector3f color, int lifeTime) {
-        if(lines.size() >= MAX_LINES) return;
+        if (lines.size() >= MAX_LINES) return;
         lines.add(new Line2D(from, to, color, lifeTime));
     }
     public static void addLine2D(Vector2f from, Vector2f to, Vector3f color) {
         addLine2D(from, to, color, 1);
     }
-
     public static void addLine2D(Vector2f from, Vector2f to) {
         addLine2D(from, to, new Vector3f(0, 1, 0), 1);
     }
@@ -83,11 +78,12 @@ public class DebugDraw {
         addLine2D(line.getFrom(), line.getTo(), line.getColor(), line.getLifeTime());
     }
 
+
     public static void draw() {
-        if(lines.size() <= 0) return;
+        if (lines.size() <= 0) return;
         int index = 0;
-        for(Line2D line : lines) {
-            for(int i = 0; i < 2; i++) {
+        for (Line2D line : lines) {
+            for (int i = 0; i < 2; i++) {
                 Vector2f position = i == 0 ? line.getFrom() : line.getTo();
                 Vector3f color = line.getColor();
 
@@ -111,9 +107,7 @@ public class DebugDraw {
         shader.uploadMat4("uProj", Window.getCurrentScene().getCamera().getProjectionMatrix());
         shader.uploadMat4("uView", Window.getCurrentScene().getCamera().getViewMatrix());
         glBindVertexArray(vaoID);
-
         glDrawArrays(GL_LINES, 0, lines.size() * 2);
-
         glBindVertexArray(0);
         shader.detach();
 

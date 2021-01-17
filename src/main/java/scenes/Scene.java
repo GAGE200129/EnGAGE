@@ -7,6 +7,8 @@ import components.ComponentDeserializer;
 import engage.*;
 import imgui.ImGui;
 import renderer.Renderer;
+import renderer.Texture2D;
+import renderer.Texture2DDeserializer;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -74,6 +76,7 @@ public abstract class Scene {
                 .setPrettyPrinting()
                 .registerTypeAdapter(Component.class, new ComponentDeserializer())
                 .registerTypeAdapter(GameObject.class, new GameObjectDeserializer())
+                .registerTypeAdapter(Texture2D.class, new Texture2DDeserializer())
                 .create();
 
         try {
@@ -91,6 +94,7 @@ public abstract class Scene {
                 .setPrettyPrinting()
                 .registerTypeAdapter(Component.class, new ComponentDeserializer())
                 .registerTypeAdapter(GameObject.class, new GameObjectDeserializer())
+                .registerTypeAdapter(Texture2D.class, new Texture2DDeserializer())
                 .create();
         String inFile = "";
         try {
