@@ -9,6 +9,11 @@ public class Line2D {
     private Vector3f color;
     private int lifeTime;
 
+    public Line2D(Vector2f from, Vector2f to) {
+        this.from = from;
+        this.to = to;
+    }
+
     public Line2D(Vector2f from, Vector2f to, Vector3f color, int lifeTime) {
         this.from = from;
         this.to = to;
@@ -27,6 +32,9 @@ public class Line2D {
     public Vector2f getTo() {
         return to;
     }
+    public Vector2f getStart() { return  from; }
+    public Vector2f getEnd() { return  to; }
+
     public Vector3f getColor() {
         return color;
     }
@@ -34,4 +42,7 @@ public class Line2D {
         return lifeTime;
     }
 
+    public float lengthSquared() {
+        return new Vector2f(to).sub(from).lengthSquared();
+    }
 }

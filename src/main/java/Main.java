@@ -1,10 +1,8 @@
 import engage.Window;
-import org.junit.Test;
 
 public class Main {
 
-    @Test
-    public void TestGame() {
+    public static void main(String[] args)  {
         Window window = Window.get();
         window.run();
     }
