@@ -15,7 +15,7 @@ project "EnGAGE"
 	}
 
 
-	files { "%{prj.location}/src/**.hpp", "%{prj.location}/src/**.cpp" }
+	files { "%{prj.location}/Source/**.hpp", "%{prj.location}/Source/**.cpp" }
 
 	filter "system:Windows"
 		systemversion "latest"
