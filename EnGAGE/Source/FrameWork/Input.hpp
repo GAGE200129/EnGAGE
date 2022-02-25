@@ -1,6 +1,6 @@
 #pragma once
 
-#include <functional>
+
 
 #include "InputCodes.hpp"
 #include "ButtonCodes.hpp"
@@ -30,7 +30,12 @@ namespace FrameworkComponent
 			sCursorPosFn = cursorPosFn;
 		}
 
+		static void disableCursor();
+		static void enableCursor();
+		static void toggleCursor();
+
 	private:
+		static GLFWwindow* sWindow;
 		static bool sKeys[InputCodes::NUM_KEYS];
 		static bool sButtons[ButtonCodes::NUM_BUTTONS];
 		static double sCursorX, sCursorY;

@@ -2,6 +2,6 @@
 **.vcxproj
 **.user
 Binaries
-Libraries
 Objects
+cpp.hint
 .vs

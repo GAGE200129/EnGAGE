@@ -1,17 +1,18 @@
 #pragma once
 
-#include <cstdint>
 
 #include "Message.hpp"
+#include "MessageMacro.hpp"
 
-namespace Systems
+namespace Messaging
 {
 	class KeyPressed : public Message
 	{
 	public:
 		KeyPressed(uint16_t keyCode) : mKeyCode(keyCode) {}
 
-		MessageType getType() override { return MessageType::KEY_PRESSED; }
+		EN_MESSAGE_TYPE(MessageType::KEY_PRESSED)
+		EN_MESSAGE_CATEGORY(MessageCategory::INPUT)
 
 		inline const uint16_t& getKeyCode() const { return mKeyCode; }
 	private:
@@ -23,7 +24,8 @@ namespace Systems
 	public:
 		KeyReleased(uint16_t keyCode) : mKeyCode(keyCode) {}
 
-		MessageType getType() override { return MessageType::KEY_RELEASED; }
+		EN_MESSAGE_TYPE(MessageType::KEY_RELEASED)
+		EN_MESSAGE_CATEGORY(MessageCategory::INPUT)
 
 		inline const uint16_t& getKeyCode() const { return mKeyCode; }
 	private:

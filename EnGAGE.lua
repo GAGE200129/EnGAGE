@@ -5,14 +5,21 @@ project "EnGAGE"
 	targetdir "%{binary_location}"
 	objdir "%{object_location}"
 
+	pchsource "%{prj.location}/Source/pch.cpp"
+	pchheader "pch.hpp"
 
 	includedirs {
-		"Libraries/GLFW/include"
+		"Libraries/GLFW/include",
+		"Libraries/spdlog/include",
+		"%{prj.location}/Source"
 	}
 
 	links {
-		"GLFW"
+		"GLFW",
+		"spdlog"
 	}
+
+	defines {"SPDLOG_COMPILED_LIB"}
 
 
 	files { "%{prj.location}/Source/**.hpp", "%{prj.location}/Source/**.cpp" }
@@ -20,6 +27,8 @@ project "EnGAGE"
 	filter "system:Windows"
 		systemversion "latest"
 		staticruntime "On"
+
+		defines {"EN_PLATFORM_WINDOWS"}
 
 
 	filter "configurations:Debug"
