@@ -1,6 +1,7 @@
 **.sln
 **.vcxproj
 **.user
+**.filters
 Binaries
 Objects
 cpp.hint
