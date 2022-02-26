@@ -3,7 +3,6 @@
 namespace Messaging
 {
 	enum class MessageCategory {
-		INPUT,
-		CONSOLE
+		INPUT
 	};
 }

@@ -11,14 +11,30 @@ namespace FrameworkComponent
 		static void init();
 		
 		template<typename T, typename... Args>
-		inline static void engineInfo(T format, Args&&... args)
+		inline static void info(T format, Args&&... args)
 		{
-			sEngineLogger->info(format, args...);
+#ifdef EN_DEBUG
+			sLogger->info(format, args...);
+#endif
 		}
 
+		template<typename T, typename... Args>
+		inline static void warn(T format, Args&&... args)
+		{
+#ifdef EN_DEBUG
+			sLogger->warn(format, args...);
+#endif
+		}
+
+		template<typename T, typename... Args>
+		inline static void error(T format, Args&&... args)
+		{
+#ifdef EN_DEBUG
+			sLogger->error(format, args...);
+#endif
+		}
 	private:
-		static std::shared_ptr<spdlog::logger> sEngineLogger;
-		static std::shared_ptr<spdlog::logger> sClientLogger;
+		static std::shared_ptr<spdlog::logger> sLogger;
 	};
 
 

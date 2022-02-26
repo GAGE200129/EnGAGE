@@ -1,12 +1,12 @@
 #pragma once
 
-#include "SystemBase.hpp"
+#include "ECS/System.hpp"
 
 struct GLFWwindow;
 namespace Systems
 {
 	class MessageBus;
-	class InputSystem : public SystemBase
+	class InputSystem : public ECS::System
 	{
 	public:
 		InputSystem(MessageBus& messageBus);

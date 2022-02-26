@@ -5,6 +5,8 @@
 #include "Systems/MessageBus.hpp"
 #include "Systems/InputSystem.hpp"
 
+#include "ECS/Coordinator.hpp"
+
 class GameEngine 
 {
 public:
@@ -12,9 +14,11 @@ public:
 	~GameEngine();
 
 private:
+	void initECS();
 	void run();
 private:
 	std::shared_ptr<Game> mGame;
+	ECS::Coordinator mCoordinator;
 	Systems::MessageBus mMessageBus;
 	Systems::InputSystem mInput;
 };

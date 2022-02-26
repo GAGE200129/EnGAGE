@@ -11,9 +11,5 @@ namespace Messaging
 		MOUSE_DISABLE,
 		MOUSE_ENABLE,
 		MOUSE_TOGGLE,
-
-		CONSOLE_INFO,
-		CONSOLE_WARN,
-		CONSOLE_ERROR
 	};
 }

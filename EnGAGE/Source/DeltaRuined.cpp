@@ -5,7 +5,7 @@
 
 void DeltaRuined::init()
 {
-	std::cout << "Running !\n";
+	//mCoordinator->createEntity();
 }
 
 int main() 
