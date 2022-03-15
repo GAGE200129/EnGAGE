@@ -4,6 +4,9 @@
 #define GLFW_INCLUDE_NONE
 #include <GLFW/glfw3.h>
 #include <glad/glad.h>
+#include "imgui.h"
+#include "imgui_impl_opengl3.h"
+#include "imgui_impl_glfw.h"
 
 namespace Core
 {
@@ -49,6 +52,7 @@ namespace Core
 			gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
 			setupCallbacks();
+
 		}
 
 		void destroy()
@@ -63,12 +67,12 @@ namespace Core
 
 		void swapBuffers()
 		{
+			sWindowResized = false;
 			glfwSwapBuffers(sWindow);
 		}
 
 		void pollEvents()
 		{
-			sWindowResized = false;
 			glfwPollEvents();
 		}
 

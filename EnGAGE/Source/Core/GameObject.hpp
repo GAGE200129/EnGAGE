@@ -13,9 +13,11 @@ namespace Core
 	public:
 
 		template<typename T, typename... Args>
-		void addComponent(Args&&... args)
+		static void addComponent(Ref<GameObject> go, Args&&... args)
 		{
-			mComponents.push_back(createRef<T>(args...));
+			auto component = createRef<T>(args...);
+			component->mParent = go;
+			go->mComponents.push_back(component);
 		}
 
 	public:

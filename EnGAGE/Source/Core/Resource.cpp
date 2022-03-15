@@ -23,13 +23,12 @@ static void extractAccessor(const tinygltf::Model& model, const tinygltf::Access
 	unsigned int& outComponentType, unsigned int& outType, unsigned int& outCount);
 static void extractAccessorBuffer(const tinygltf::Model& model, const tinygltf::Accessor& accessor, DynArr<char>& outBuffer);
 
-static UnorderedMap<String, Ref<Core::Model>> gModels;
+static Map<String, Ref<Core::Model>> gModels;
 
 namespace Core
 {
 	namespace Resource
 	{
-
 		Ptr<Model> getModel(const String& filePath)
 		{
 			if (gModels.find(filePath) != gModels.end())

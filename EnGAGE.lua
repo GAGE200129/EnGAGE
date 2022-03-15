@@ -15,13 +15,16 @@ project "EnGAGE"
 		"Libraries/glad/include",
 		"Libraries/tinygltf",
 		"Libraries/glm",
+		"Libraries/imgui",
+		"Libraries/imgui/backends",
 		"%{prj.location}/Source"
 	}
 
 	links {
 		"GLFW",
 		"spdlog",
-		"glad"
+		"glad",
+		"imgui"
 	}
 
 	defines {"SPDLOG_COMPILED_LIB", "_CRT_SECURE_NO_WARNINGS"}

@@ -11,9 +11,12 @@
 #include <unordered_map>
 #include <set>
 #include <fstream>
+#include <map>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <imgui.h>
+
 
 #include "Core/Log.hpp"
 
@@ -33,6 +36,9 @@ using FunctionPtr = std::function<T>;
 
 template<typename K, typename V>
 using UnorderedMap = std::unordered_map<K, V>;
+
+template<typename K, typename V>
+using Map = std::map<K, V>;
 
 template<typename T>
 using DynArr = std::vector<T>;

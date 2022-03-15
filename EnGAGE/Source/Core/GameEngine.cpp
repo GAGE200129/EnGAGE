@@ -9,8 +9,9 @@
 
 #include "Systems/Rendering.hpp"
 
-
-using namespace Core;
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 
 namespace Core
 {
@@ -24,6 +25,9 @@ namespace Core
 			Log::init();
 			Window::init(width, height, title);
 			Input::init(Window::getRawWindow());
+			ImGui::CreateContext();
+			ImGui_ImplGlfw_InitForOpenGL(Window::getRawWindow(), true);
+			ImGui_ImplOpenGL3_Init("#version 330");
 
 			gRendering = createScope<Rendering>();
 
@@ -55,7 +59,20 @@ namespace Core
 
 
 				//Render
+				ImGui_ImplOpenGL3_NewFrame();
+				ImGui_ImplGlfw_NewFrame();
+				ImGui::NewFrame();
+
+				ImGui::Begin("Debug");
+				ImGui::DragFloat3("Cam pos", &gRendering->mCamera.x, 0.05f);
+				ImGui::DragFloat3("Cam rot", &gRendering->mCamera.pitch, 1.05f);
+				ImGui::End();
+
 				gRendering->render();
+
+				ImGui::Render();
+				ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
 				Window::swapBuffers();
 				double endTime = currentTime + secsPerRender;
 				while (Window::getCurrentTime() < endTime) {
@@ -74,6 +91,10 @@ namespace Core
 			{
 				gRendering->addComponent(component);
 			}
+		}
+		Rendering* getRenderer()
+		{
+			return gRendering.get();
 		}
 	}
 }

@@ -11,5 +11,6 @@ object_location = "Objects/%{prj.name}/%{cfg.buildcfg}"
 include "GLFW.lua"
 include "spdlog.lua"
 include "glad.lua"
+include "imgui.lua"
 include "EnGAGE.lua"
 

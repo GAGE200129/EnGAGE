@@ -45,6 +45,16 @@ namespace Core
 		}
 	}
 
+	int Shader::registerUniform(const String& name)
+	{
+		return glGetUniformLocation(mProgramID, name.c_str());
+	}
+
+	void Shader::uploadMat4x4(int loc, const glm::mat4x4& mat)
+	{
+		glUniformMatrix4fv(loc, 1, GL_FALSE, &mat[0][0]);
+	}
+
 	void Shader::bind() const
 	{
 		glUseProgram(mProgramID);
