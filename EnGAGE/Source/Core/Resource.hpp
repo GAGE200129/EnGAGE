@@ -1,0 +1,12 @@
+#pragma once
+
+#include "Model.hpp"
+
+namespace Core
+{
+	namespace Resource
+	{
+		Ptr<Model> getModel(const String& filePath);
+		void cleanup();
+	}
+}

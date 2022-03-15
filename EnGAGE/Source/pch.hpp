@@ -10,3 +10,58 @@
 #include <array>
 #include <unordered_map>
 #include <set>
+#include <fstream>
+
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+
+#include "Core/Log.hpp"
+
+#ifdef EN_DEBUG
+#define EN_ASSERT(condition, ...)\
+		if(!(condition)) {\
+			EN_ERROR("Assertion failed ({}), function: {}, line: {}, file: {}", #condition, __FUNCTION__, __FILE__, __LINE__);\
+			EN_ERROR(__VA_ARGS__);\
+			abort();\
+		}
+#else
+#define EN_ASSERT(condition, ...) condition
+#endif
+
+template<typename T>
+using FunctionPtr = std::function<T>;
+
+template<typename K, typename V>
+using UnorderedMap = std::unordered_map<K, V>;
+
+template<typename T>
+using DynArr = std::vector<T>;
+
+using String = std::string;
+
+template<typename T>
+using Queue = std::queue<T>;
+
+//Alias for weak_ptr
+template<typename T>
+using Ptr = std::weak_ptr<T>;
+
+//Alias for shared_ptr
+template<typename T>
+using Ref = std::shared_ptr<T>;
+
+//Alias for unique_ptr
+template<typename T>
+using Scope = std::unique_ptr<T>;
+
+template<typename T, typename... Args>
+Ref<T> createRef(Args&&... args)
+{
+	return std::make_shared<T>(args...);
+}
+
+template<typename T, typename... Args>
+Scope<T> createScope(Args&&... args)
+{
+	return std::make_unique<T>(args...);
+}

@@ -2,6 +2,7 @@ project "EnGAGE"
 	location "EnGAGE"
 	kind "ConsoleApp"
 	language "C++"
+	cppdialect "C++14"
 	targetdir "%{binary_location}"
 	objdir "%{object_location}"
 
@@ -11,25 +12,22 @@ project "EnGAGE"
 	includedirs {
 		"Libraries/GLFW/include",
 		"Libraries/spdlog/include",
+		"Libraries/glad/include",
+		"Libraries/tinygltf",
+		"Libraries/glm",
 		"%{prj.location}/Source"
 	}
 
 	links {
 		"GLFW",
-		"spdlog"
+		"spdlog",
+		"glad"
 	}
 
-	defines {"SPDLOG_COMPILED_LIB"}
+	defines {"SPDLOG_COMPILED_LIB", "_CRT_SECURE_NO_WARNINGS"}
 
 
 	files { "%{prj.location}/Source/**.hpp", "%{prj.location}/Source/**.cpp" }
-
-	filter "system:Windows"
-		systemversion "latest"
-		staticruntime "On"
-
-		defines {"EN_PLATFORM_WINDOWS"}
-
 
 	filter "configurations:Debug"
 		defines { "EN_DEBUG" }
@@ -38,3 +36,11 @@ project "EnGAGE"
 	filter "configurations:Release"
 		defines { "EN_NDEBUG" }
 		optimize "On"
+
+	filter "system:Windows"
+		systemversion "latest"
+		staticruntime "On"
+
+		defines {"EN_PLATFORM_WINDOWS"}
+
+

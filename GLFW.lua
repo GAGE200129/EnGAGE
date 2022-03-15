@@ -29,12 +29,6 @@ project "GLFW"
 			"%{prj.location}/src/null_joystick.c",
 		}
 
-	filter "configurations:Debug"
-		symbols "On"
-
-	filter "configurations:Release"
-		optimize "On"
-	
 	--Windows
 	filter "system:Windows"
 		systemversion "latest"
