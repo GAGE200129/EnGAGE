@@ -9,6 +9,7 @@ Core::TestShader::TestShader()
 
 	mViewLoc = registerUniform("uView");
 	mProjLoc = registerUniform("uProj");
+	mModelLoc = registerUniform("uModel");
 }
 
 void Core::TestShader::uploadViewMat(const glm::mat4x4& view)
@@ -19,4 +20,9 @@ void Core::TestShader::uploadViewMat(const glm::mat4x4& view)
 void Core::TestShader::uploadProjMat(const glm::mat4x4& proj)
 {
 	uploadMat4x4(mProjLoc, proj);
+}
+
+void Core::TestShader::uploadModelMat(const glm::mat4x4& model)
+{
+	uploadMat4x4(mModelLoc, model);
 }

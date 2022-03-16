@@ -10,8 +10,7 @@ int main()
 	GameEngine::init(1600, 900, "Hello world");
 
 	auto go = createRef<Core::GameObject>();
-	Core::GameObject::addComponent<Core::ModelRenderer>(go, Core::Resource::getModel("Resources/Models/NodeTest.glb"));
-
+	Core::GameObject::addComponent<Core::ModelRenderer>(go, Core::Resource::getModel("Resources/Models/Plane.glb"));
 	GameEngine::addGameObject(go);
 
 

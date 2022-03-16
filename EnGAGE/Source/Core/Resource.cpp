@@ -16,39 +16,39 @@ struct Vertex
 };
 
 
-static Ref<Core::Model> loadModel(const String& filePath);
+static Scope<Core::Model> loadModel(const String& filePath);
+static Core::Texture parseTexture(const tinygltf::Model& model, const tinygltf::Texture& texture);
 static Core::Node parseNode(const tinygltf::Node& node);
 static Core::Mesh parseMesh(const tinygltf::Model& model, const tinygltf::Mesh& mesh);
 static void extractAccessor(const tinygltf::Model& model, const tinygltf::Accessor& accessor, DynArr<char>& outBuffer,
 	unsigned int& outComponentType, unsigned int& outType, unsigned int& outCount);
 static void extractAccessorBuffer(const tinygltf::Model& model, const tinygltf::Accessor& accessor, DynArr<char>& outBuffer);
 
-static Map<String, Ref<Core::Model>> gModels;
+static DynArr<Scope<Core::Model>> gModels;
 
 namespace Core
 {
 	namespace Resource
 	{
-		Ptr<Model> getModel(const String& filePath)
+		const Model* getModel(const String& filePath)
 		{
-			if (gModels.find(filePath) != gModels.end())
+			for (const auto& pModel : gModels)
 			{
-				return gModels.at(filePath);
+				if (pModel->name == filePath)
+				{
+					return pModel.get();
+				}
 			}
-			else
-			{
-				//Load and add a new model to the pool
-				Ref<Model> model = loadModel(filePath);
-				gModels.emplace(filePath, model);
-				return model;
-			}
+
+			//Load and add a new model to the pool
+			gModels.push_back(loadModel(filePath));
+			return gModels.back().get();
 		}
 
 		void cleanup()
 		{
-			for (const auto& pair : gModels)
+			for (const auto& model : gModels)
 			{
-				const auto& model = pair.second;
 				for (const auto& mesh : model->meshes)
 				{
 					for (const auto& primitive : mesh.primitives)
@@ -56,7 +56,14 @@ namespace Core
 						glDeleteVertexArrays(1, &primitive.vao);
 						glDeleteBuffers(1, &primitive.vbo);
 						glDeleteBuffers(1, &primitive.ebo);
+						EN_INFO("Deallocating gpu memory: vao: {}, vbo: {}, ebo: {}", primitive.vao, primitive.vbo, primitive.ebo);
 					}
+				}
+
+				for (const auto& texture : model->textures)
+				{
+					EN_INFO("Deleting texture: {}", texture.textureID);
+					glDeleteTextures(1, &texture.textureID);
 				}
 			}
 			gModels.clear();
@@ -64,13 +71,13 @@ namespace Core
 	}
 }
 
-static Ref<Core::Model> loadModel(const String& filePath)
+static Scope<Core::Model> loadModel(const String& filePath)
 {
 	tinygltf::Model model;
 	tinygltf::TinyGLTF loader;
 	std::string err;
 	std::string warn;
-	Ref<Core::Model> result = createRef<Core::Model>();
+	Scope<Core::Model> result = nullptr;
 
 	bool ret = loader.LoadBinaryFromFile(&model, &err, &warn, filePath);
 
@@ -87,6 +94,9 @@ static Ref<Core::Model> loadModel(const String& filePath)
 		return nullptr;
 	}
 
+	result = createScope<Core::Model>();
+	result->name = filePath;
+
 	for (const auto& gltfMesh : model.meshes)
 	{
 		result->meshes.push_back(parseMesh(model, gltfMesh));
@@ -96,10 +106,54 @@ static Ref<Core::Model> loadModel(const String& filePath)
 	{
 		result->nodes.push_back(parseNode(gltfNode));
 	}
+	
+	for (const auto& gltfTexture : model.textures)
+	{
+		result->textures.push_back(parseTexture(model, gltfTexture));
+	}
+
+	for (const auto& gltfMaterial : model.materials)
+	{
+		Core::Material material;
+
+		material.baseColorIndex = gltfMaterial.pbrMetallicRoughness.baseColorTexture.index;
+
+		result->materials.push_back(material);
+	}
 
 	result->rootNodeIndex = model.scenes[0].nodes[0];
 
 	return result;
+}
+
+Core::Texture parseTexture(const tinygltf::Model& model, const tinygltf::Texture& gltfTexture)
+{
+	Core::Texture texture;
+	const auto& sampler = model.samplers[gltfTexture.sampler];
+	const auto& image = model.images[gltfTexture.source];
+
+	glGenTextures(1, &texture.textureID);
+	EN_INFO("Generating texture: {}", texture.textureID);
+
+
+	glBindTexture(GL_TEXTURE_2D, texture.textureID);
+	if (image.mimeType == "image/jpeg")
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, image.width, image.height, 0, GL_RGB, image.pixel_type, image.image.data());
+	}
+	else if (image.mimeType == "image/png")
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, image.width, image.height, 0, GL_RGBA, image.pixel_type, image.image.data());
+	}
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, sampler.magFilter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, sampler.minFilter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, sampler.wrapS);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, sampler.wrapS);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	return texture;
 }
 
 static Core::Node parseNode(const tinygltf::Node& node)
@@ -186,6 +240,9 @@ static Core::Mesh parseMesh(const tinygltf::Model& model, const tinygltf::Mesh& 
 		glGenBuffers(1, &primitive.vbo);
 		glGenBuffers(1, &primitive.ebo);
 
+		EN_INFO("Allocating gpu memory: vao: {}, vbo: {}, ebo: {}", primitive.vao, primitive.vbo, primitive.ebo);
+		
+
 		glBindVertexArray(primitive.vao);
 		glBindBuffer(GL_ARRAY_BUFFER, primitive.vbo);
 		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
@@ -202,6 +259,8 @@ static Core::Mesh parseMesh(const tinygltf::Model& model, const tinygltf::Mesh& 
 		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indicesBuffer.size(), indicesBuffer.data(), GL_STATIC_DRAW);
 
 		glBindVertexArray(0);
+
+		primitive.materialIndex = gltfPrimitive.material;
 
 		result.primitives.push_back(primitive);
 	}

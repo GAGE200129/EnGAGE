@@ -6,7 +6,8 @@
 
 #include <glad/glad.h>
 
-static void renderModel(const Ref<Core::Model>& model, const Core::Node& node);
+#include "Core/GameObject.hpp"
+
 
 Core::Rendering::Rendering() :
 	mCamera({})
@@ -32,6 +33,7 @@ void Core::Rendering::render()
 	unsigned int windowHeight = Window::getHeight();
 	auto viewMat = buildViewMat(mCamera);
 	auto projMat = glm::perspective(glm::radians(mCamera.fov), (float)windowWidth / (float)windowHeight, mCamera.near, mCamera.far);
+	
 
 	if (Window::resized())
 	{
@@ -39,15 +41,19 @@ void Core::Rendering::render()
 	}
 
 	glClear(GL_COLOR_BUFFER_BIT);
+	glClearColor(0.1f, 0.1f, 0.1f, 1);
 	mShader.bind();
 	mShader.uploadViewMat(viewMat);
 	mShader.uploadProjMat(projMat);
 	for (const auto& component : mComponents)
-	{
-		if (auto ptr = component->mModel.lock())
+	{	
+		if (const Model* ptr = component->pModel)
 		{
+			glm::mat4x4 modelMat = glm::translate(glm::mat4x4(1.0f), component->mParent->mPosition);
+			modelMat *= glm::toMat4(component->mParent->mRotation);
+			modelMat = glm::scale(modelMat, component->mParent->mScale);
 			unsigned int rootNodeIndex = ptr->rootNodeIndex;
-			renderModel(ptr, ptr->nodes[rootNodeIndex]);
+			renderModel(*ptr, ptr->nodes[rootNodeIndex], modelMat);
 		}
 	}
 }
@@ -57,13 +63,26 @@ void Core::Rendering::cleanup()
 	mShader.cleanup();
 }
 
-static void renderModel(const Ref<Core::Model>& model, const Core::Node& node)
+void Core::Rendering::renderModel(const Model& model, const Node& node, glm::mat4x4 accumulatedTransform)
 {
+	//Apply node's local transform to model transform
+	accumulatedTransform = glm::translate(accumulatedTransform, node.position);
+	accumulatedTransform *= glm::toMat4(node.rotation);
+	accumulatedTransform = glm::scale(accumulatedTransform, node.scale);
+
+	//Check if node's mesh present
 	if (node.meshIndex != -1)
 	{
-		const auto& mesh = model->meshes[node.meshIndex];
+		mShader.uploadModelMat(accumulatedTransform);
+		const auto& mesh = model.meshes[node.meshIndex];
 		for (const auto& primitive : mesh.primitives)
 		{
+			const auto& material = model.materials[primitive.materialIndex];
+			const auto& baseColorTexture = model.textures[material.baseColorIndex];
+
+			glActiveTexture(0);
+			glBindTexture(GL_TEXTURE_2D, baseColorTexture.textureID);
+
 			glBindVertexArray(primitive.vao);
 			glDrawElements(GL_TRIANGLES, primitive.vertexCoumt, primitive.eboDataType, nullptr);
 		}
@@ -72,6 +91,6 @@ static void renderModel(const Ref<Core::Model>& model, const Core::Node& node)
 
 	for (const auto& child : node.children)
 	{
-		renderModel(model, model->nodes[child]);
+		renderModel(model, model.nodes[child], accumulatedTransform);
 	}
 }

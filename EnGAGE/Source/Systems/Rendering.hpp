@@ -20,6 +20,8 @@ namespace Core
 		Rendering();
 		void render();
 		void cleanup();
+	private:
+		void renderModel(const Model& pModel, const Node& node, glm::mat4x4 accumulatedTransform);
 	public:
 		Camera mCamera;
 	private:

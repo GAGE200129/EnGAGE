@@ -6,7 +6,7 @@ namespace Core
 {
 	namespace Resource
 	{
-		Ptr<Model> getModel(const String& filePath);
+		const Model* getModel(const String& filePath);
 		void cleanup();
 	}
 }

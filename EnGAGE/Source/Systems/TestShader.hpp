@@ -11,7 +11,8 @@ namespace Core
 
 		void uploadViewMat(const glm::mat4x4& view);
 		void uploadProjMat(const glm::mat4x4& proj);
+		void uploadModelMat(const glm::mat4x4& model);
 	private:
-		int mViewLoc, mProjLoc;
+		int mViewLoc, mProjLoc, mModelLoc;
 	};
 }

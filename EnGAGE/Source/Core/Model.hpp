@@ -6,13 +6,23 @@ namespace Core
 {
 	struct Primitive
 	{
-		unsigned int vao, vbo, ebo, vertexCoumt, eboDataType;
+		unsigned int vao, vbo, ebo, vertexCoumt, eboDataType, materialIndex;
 	};
 
 	struct Mesh
 	{
 		String name;
 		DynArr<Primitive> primitives;
+	};
+
+	struct Texture
+	{
+		unsigned int textureID;
+	};
+
+	struct Material
+	{
+		int baseColorIndex;
 	};
 
 	struct Node
@@ -27,8 +37,11 @@ namespace Core
 
 	struct Model
 	{
+		String name;
 		DynArr<Mesh> meshes;
 		DynArr<Node> nodes;
+		DynArr<Texture> textures;
+		DynArr<Material> materials;
 		unsigned int rootNodeIndex;
 	};
 }

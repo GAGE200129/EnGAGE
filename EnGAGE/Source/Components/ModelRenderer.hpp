@@ -9,9 +9,9 @@ namespace Core
 	class ModelRenderer : public ComponentBase
 	{
 	public:
-		ModelRenderer(Ptr<Model> model) : ComponentBase(ComponentType::MODEL_RENDERER), mModel(model) {}
+		ModelRenderer(const Model* model) : ComponentBase(ComponentType::MODEL_RENDERER), pModel(model) {}
 
 	public:
-		Ptr<Model> mModel;
+		const Model* pModel;
 	};
 }
