@@ -6,7 +6,9 @@ namespace Core
 {
 	namespace Resource
 	{
-		const Model* getModel(const String& filePath);
+		void init();
+		Ptr<Model> getModel(const String& filePath);
+		const DynArr<Ref<Core::Model>>& getModels();
 		void cleanup();
 	}
 }

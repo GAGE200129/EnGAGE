@@ -14,9 +14,6 @@ namespace Core
 		void init(GLFWwindow* rawWindow);
 		void update();
 
-		void setKeyfn(const std::function<void()>& keyFn);
-		void setButtonfn(const std::function<void()>& buttonFn);
-		void setCursorPosFn(const std::function<void()>& cursorPosFn);
 
 		bool isKeyPressed(uint16_t code);
 		bool isKeyPressedOnce(uint16_t code);

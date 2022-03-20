@@ -2,7 +2,7 @@ project "EnGAGE"
 	location "EnGAGE"
 	kind "ConsoleApp"
 	language "C++"
-	cppdialect "C++14"
+	cppdialect "C++17"
 	targetdir "%{binary_location}"
 	objdir "%{object_location}"
 
@@ -15,6 +15,7 @@ project "EnGAGE"
 		"Libraries/glad/include",
 		"Libraries/tinygltf",
 		"Libraries/glm",
+		"Libraries/json/single_include",
 		"Libraries/imgui",
 		"Libraries/imgui/backends",
 		"%{prj.location}/Source"

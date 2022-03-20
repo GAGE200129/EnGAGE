@@ -16,7 +16,7 @@ struct Vertex
 };
 
 
-static Scope<Core::Model> loadModel(const String& filePath);
+static Ref<Core::Model> loadModel(const String& filePath);
 static Core::Texture parseTexture(const tinygltf::Model& model, const tinygltf::Texture& texture);
 static Core::Node parseNode(const tinygltf::Node& node);
 static Core::Mesh parseMesh(const tinygltf::Model& model, const tinygltf::Mesh& mesh);
@@ -24,25 +24,36 @@ static void extractAccessor(const tinygltf::Model& model, const tinygltf::Access
 	unsigned int& outComponentType, unsigned int& outType, unsigned int& outCount);
 static void extractAccessorBuffer(const tinygltf::Model& model, const tinygltf::Accessor& accessor, DynArr<char>& outBuffer);
 
-static DynArr<Scope<Core::Model>> gModels;
+static DynArr<Ref<Core::Model>> gModels;
 
 namespace Core
 {
 	namespace Resource
 	{
-		const Model* getModel(const String& filePath)
+		void init()
+		{
+			std::string path = "Resources\\Models";
+			for (const auto& entry : std::filesystem::directory_iterator(path))
+				getModel(entry.path().string());
+		}
+		Ptr<Model> getModel(const String& filePath)
 		{
 			for (const auto& pModel : gModels)
 			{
 				if (pModel->name == filePath)
 				{
-					return pModel.get();
+					return pModel;
 				}
 			}
 
 			//Load and add a new model to the pool
 			gModels.push_back(loadModel(filePath));
-			return gModels.back().get();
+			return gModels.back();
+		}
+
+		const DynArr<Ref<Core::Model>>& getModels()
+		{
+			return gModels;
 		}
 
 		void cleanup()
@@ -71,13 +82,13 @@ namespace Core
 	}
 }
 
-static Scope<Core::Model> loadModel(const String& filePath)
+static Ref<Core::Model> loadModel(const String& filePath)
 {
 	tinygltf::Model model;
 	tinygltf::TinyGLTF loader;
 	std::string err;
 	std::string warn;
-	Scope<Core::Model> result = nullptr;
+	Ref<Core::Model> result = nullptr;
 
 	bool ret = loader.LoadBinaryFromFile(&model, &err, &warn, filePath);
 
@@ -94,7 +105,7 @@ static Scope<Core::Model> loadModel(const String& filePath)
 		return nullptr;
 	}
 
-	result = createScope<Core::Model>();
+	result = createRef<Core::Model>();
 	result->name = filePath;
 
 	for (const auto& gltfMesh : model.meshes)
@@ -170,24 +181,24 @@ static Core::Node parseNode(const tinygltf::Node& node)
 
 	if (node.translation.size() != 0)
 	{
-		result.position.x = node.translation[0];
-		result.position.y = node.translation[1];
-		result.position.z = node.translation[2];
+		result.position.x = (float) node.translation[0];
+		result.position.y = (float) node.translation[1];
+		result.position.z = (float) node.translation[2];
 	}
 
 	if (node.scale.size() != 0)
 	{
-		result.scale.x = node.scale[0];
-		result.scale.y = node.scale[1];
-		result.scale.z = node.scale[2];
+		result.scale.x =(float) node.scale[0];
+		result.scale.y =(float) node.scale[1];
+		result.scale.z =(float) node.scale[2];
 	}
 
 	if (node.rotation.size() != 0)
 	{
-		result.rotation.w = node.rotation[0];
-		result.rotation.x = node.rotation[1];
-		result.rotation.y = node.rotation[2];
-		result.rotation.z = node.rotation[3];
+		result.rotation.w =(float) node.rotation[0];
+		result.rotation.x =(float) node.rotation[1];
+		result.rotation.y =(float) node.rotation[2];
+		result.rotation.z =(float) node.rotation[3];
 	}
 
 	if (node.matrix.size() != 0)

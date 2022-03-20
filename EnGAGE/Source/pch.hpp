@@ -12,6 +12,8 @@
 #include <set>
 #include <fstream>
 #include <map>
+#include <filesystem>
+#include <bitset>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -44,10 +46,19 @@ using Map = std::map<K, V>;
 template<typename T>
 using DynArr = std::vector<T>;
 
+template<typename T, size_t Count>
+using Arr = std::array<T, Count>;
+
 using String = std::string;
 
 template<typename T>
 using Queue = std::queue<T>;
+
+template<typename T>
+using Set = std::set<T>;
+
+template<size_t Bits>
+using BitSet = std::bitset<Bits>;
 
 //Alias for weak_ptr
 template<typename T>
@@ -71,4 +82,10 @@ template<typename T, typename... Args>
 Scope<T> createScope(Args&&... args)
 {
 	return std::make_unique<T>(args...);
+}
+
+template<typename To, typename From>
+Ref<To> staticCast(const Ref<From>& from)
+{
+	return std::static_pointer_cast<To>(from);
 }

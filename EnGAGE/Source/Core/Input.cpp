@@ -12,9 +12,6 @@ namespace Core
 	bool sPrevButtons[ButtonCodes::NUM_BUTTONS];
 	double sCursorX = 0.0f;
 	double sCursorY = 0.0f;
-	FunctionPtr<void()> sKeyFn = []() {};
-	FunctionPtr<void()> sButtonFn = []() {};
-	FunctionPtr<void()> sCursorPosFn = []() {};
 
 	void Input::init(GLFWwindow* rawWindow)
 	{
@@ -33,14 +30,12 @@ namespace Core
 
 		glfwSetCursorPosCallback(rawWindow, [](GLFWwindow* window, double xpos, double ypos)
 			{
-				sCursorPosFn();
 				sCursorX = xpos;
 				sCursorY = ypos;
 			});
 
 		glfwSetKeyCallback(rawWindow, [](GLFWwindow* window, int key, int scancode, int action, int mods)
 			{
-				sKeyFn();
 				if (action == PRESS)
 				{
 					sKeys[key] = true;
@@ -53,7 +48,6 @@ namespace Core
 
 		glfwSetMouseButtonCallback(rawWindow, [](GLFWwindow* window, int button, int action, int mods)
 			{
-				sButtonFn();
 				if (action == PRESS)
 				{
 					sButtons[button] = true;
@@ -67,25 +61,10 @@ namespace Core
 	}
 	void Input::update()
 	{
-		size_t keyArrSize = sizeof(sKeys);
-		size_t buttonArrSize = sizeof(sButtons);
-		memcpy_s(sPrevKeys, keyArrSize, sKeys, keyArrSize);
-		memcpy_s(sPrevButtons, buttonArrSize, sButtons, buttonArrSize);
-	}
-	void Input::setKeyfn(const std::function<void()>& keyFn)
-	{
-		sKeyFn = keyFn;
+		memcpy(sPrevKeys,  sKeys, sizeof(sKeys));
+		memcpy(sPrevButtons, sButtons, sizeof(sButtons));
 	}
 
-	void Input::setButtonfn(const std::function<void()>& buttonFn)
-	{
-		sButtonFn = buttonFn;
-	}
-
-	void Input::setCursorPosFn(const std::function<void()>& cursorPosFn)
-	{
-		sCursorPosFn = cursorPosFn;
-	}
 
 	bool Input::isKeyPressed(uint16_t code) { return sKeys[code]; }
 	bool Input::isKeyPressedOnce(uint16_t code) { return sKeys[code] && !sPrevKeys[code]; }
