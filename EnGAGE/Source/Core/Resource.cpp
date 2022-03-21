@@ -16,7 +16,7 @@ struct Vertex
 };
 
 
-static Ref<Core::Model> loadModel(const String& filePath);
+static Scope<Core::Model> loadModel(const String& filePath);
 static Core::Texture parseTexture(const tinygltf::Model& model, const tinygltf::Texture& texture);
 static Core::Node parseNode(const tinygltf::Node& node);
 static Core::Mesh parseMesh(const tinygltf::Model& model, const tinygltf::Mesh& mesh);
@@ -24,7 +24,7 @@ static void extractAccessor(const tinygltf::Model& model, const tinygltf::Access
 	unsigned int& outComponentType, unsigned int& outType, unsigned int& outCount);
 static void extractAccessorBuffer(const tinygltf::Model& model, const tinygltf::Accessor& accessor, DynArr<char>& outBuffer);
 
-static DynArr<Ref<Core::Model>> gModels;
+static DynArr<Scope<Core::Model>> gModels;
 
 namespace Core
 {
@@ -36,22 +36,22 @@ namespace Core
 			for (const auto& entry : std::filesystem::directory_iterator(path))
 				getModel(entry.path().string());
 		}
-		Ptr<Model> getModel(const String& filePath)
+		Model* getModel(const String& filePath)
 		{
 			for (const auto& pModel : gModels)
 			{
 				if (pModel->name == filePath)
 				{
-					return pModel;
+					return pModel.get();
 				}
 			}
 
 			//Load and add a new model to the pool
 			gModels.push_back(loadModel(filePath));
-			return gModels.back();
+			return gModels.back().get();
 		}
 
-		const DynArr<Ref<Core::Model>>& getModels()
+		const DynArr<Scope<Core::Model>>& getModels()
 		{
 			return gModels;
 		}
@@ -82,13 +82,13 @@ namespace Core
 	}
 }
 
-static Ref<Core::Model> loadModel(const String& filePath)
+static Scope<Core::Model> loadModel(const String& filePath)
 {
 	tinygltf::Model model;
 	tinygltf::TinyGLTF loader;
 	std::string err;
 	std::string warn;
-	Ref<Core::Model> result = nullptr;
+	Scope<Core::Model> result = nullptr;
 
 	bool ret = loader.LoadBinaryFromFile(&model, &err, &warn, filePath);
 
@@ -105,7 +105,7 @@ static Ref<Core::Model> loadModel(const String& filePath)
 		return nullptr;
 	}
 
-	result = createRef<Core::Model>();
+	result = createScope<Core::Model>();
 	result->name = filePath;
 
 	for (const auto& gltfMesh : model.meshes)

@@ -1,12 +1,13 @@
 #include "pch.hpp"
 #include "GameEngine.hpp"
 
-#include "Memory.hpp"
 #include "Window.hpp"
 #include "Input.hpp"
 #include "Log.hpp"
 #include "Resource.hpp"
 #include "ECS.hpp"
+#include "Editor.hpp"
+#include "Renderer.hpp"
 
 namespace Core
 {
@@ -17,8 +18,11 @@ namespace Core
 			Log::init();
 			Window::init(width, height, title);
 			Input::init(Window::getRawWindow());
+			Editor::init(Window::getRawWindow());
 			Resource::init();
 			ECS::init();
+			
+			Renderer::init();
 		}
 
 		void run()
@@ -46,8 +50,8 @@ namespace Core
 
 
 				//Render
-				
-
+				Renderer::render();
+				Editor::render();
 				Window::swapBuffers();
 				double endTime = currentTime + secsPerRender;
 				while (Window::getCurrentTime() < endTime) {
@@ -55,13 +59,12 @@ namespace Core
 					std::this_thread::sleep_for(1ms);
 				}
 			}
+			Renderer::shutdown();
+			Editor::shutdown();
 			ECS::shutdown();
 			Resource::cleanup();
 			Window::destroy();
-		}
-
-		
-
-		
+		}	
 	}
 }
+

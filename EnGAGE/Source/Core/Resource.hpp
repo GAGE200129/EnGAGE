@@ -7,8 +7,8 @@ namespace Core
 	namespace Resource
 	{
 		void init();
-		Ptr<Model> getModel(const String& filePath);
-		const DynArr<Ref<Core::Model>>& getModels();
+		Model* getModel(const String& filePath);
+		const DynArr<Scope<Core::Model>>& getModels();
 		void cleanup();
 	}
 }
