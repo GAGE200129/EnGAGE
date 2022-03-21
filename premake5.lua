@@ -12,5 +12,6 @@ include "GLFW.lua"
 include "spdlog.lua"
 include "glad.lua"
 include "imgui.lua"
+include "lua.lua"
 include "EnGAGE.lua"
 

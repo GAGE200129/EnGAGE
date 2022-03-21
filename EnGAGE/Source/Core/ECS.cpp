@@ -47,6 +47,9 @@ void Core::ECS::init()
 	SET_BIT(signature, (unsigned int)ComponentType::TRANSFORM);
 	SET_BIT(signature, (unsigned int)ComponentType::MODEL_RENDERER);
 	gSystems[(unsigned int)SystemType::RENDERER].signature = signature;
+	signature = 0;
+	SET_BIT(signature, (unsigned int)ComponentType::SCRIPT);
+	gSystems[(unsigned int)SystemType::SCRIPTING].signature = signature;
 
 }
 
@@ -209,6 +212,8 @@ const char* Core::ECS::getComponentArrayName(ComponentType type)
 		return "Transform";
 	case ComponentType::MODEL_RENDERER:
 		return "ModelRenderer";
+	case ComponentType::SCRIPT:
+		return "Script";
 	default:
 		EN_ASSERT(false, "Unknown component: {}", (unsigned int)type);
 		return "";
@@ -225,6 +230,8 @@ unsigned int Core::ECS::sizeofComponent(ComponentType type)
 		return sizeof(TransformComponent);
 	case ComponentType::MODEL_RENDERER:
 		return sizeof(ModelRendererComponent);
+	case ComponentType::SCRIPT:
+		return sizeof(ScriptComponent);
 	default:
 		EN_ASSERT(false, "Unknown component: {}", (unsigned int)type);
 		return 0;

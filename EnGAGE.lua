@@ -18,6 +18,7 @@ project "EnGAGE"
 		"Libraries/json/single_include",
 		"Libraries/imgui",
 		"Libraries/imgui/backends",
+		"Libraries/lua",
 		"%{prj.location}/Source"
 	}
 
@@ -25,7 +26,8 @@ project "EnGAGE"
 		"GLFW",
 		"spdlog",
 		"glad",
-		"imgui"
+		"imgui",
+		"lua"
 	}
 
 	defines {"SPDLOG_COMPILED_LIB", "_CRT_SECURE_NO_WARNINGS"}
