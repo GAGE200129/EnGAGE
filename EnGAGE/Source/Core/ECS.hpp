@@ -2,6 +2,7 @@
 
 #include "Model.hpp"
 
+struct lua_State;
 namespace Core
 {
 	namespace ECS
@@ -11,11 +12,32 @@ namespace Core
 		static constexpr unsigned int MAX_COMPONENT_ARRAY_BUFFER_SIZE = 1048576u;
 		static constexpr unsigned int MAX_NAME_SIZE = 50u;
 
+		//Entity 
+		struct EntitySignature
+		{
+			unsigned int id;
+			unsigned int signature : MAX_COMPONENTS;
+		};
+
+
+		//Component
+		struct ComponentData
+		{
+			char name[MAX_NAME_SIZE];
+			unsigned int size;
+		};
+
 		struct ComponentHeader
 		{
 			unsigned int entity;
 		};
 
+		struct ComponentArray
+		{
+			unsigned int count;
+			unsigned int size;
+			char* data;
+		};
 		enum class ComponentType : unsigned int
 		{
 			NAME,
@@ -48,11 +70,12 @@ namespace Core
 		struct ScriptComponent
 		{
 			ComponentHeader header;
-			void (*init)();
-			void (*update)(float delta);
+			lua_State* L;
 		};
 
-	
+
+
+		//System
 		enum class SystemType : unsigned int
 		{
 			RENDERER,
@@ -60,40 +83,26 @@ namespace Core
 			COUNT
 		};
 
-		struct EntitySignature
-		{
-			unsigned int id;
-			unsigned int signature : MAX_COMPONENTS;
-		};
-
-		struct ComponentArray
-		{
-			unsigned int count;
-			unsigned int size;
-			char* data;
-		};
-
 		struct System
 		{
 			unsigned int signature : MAX_COMPONENTS; 
-			unsigned int entities[MAX_ENTITIES];
-			unsigned int entityCount;
+			Set<unsigned int> entities;
 		};
 
 		void init();
 		void shutdown();
 		unsigned int createEntity();
 		void removeEntity(unsigned int entity);
-		EntitySignature* getEntitySignatures();
+		const Arr<EntitySignature, MAX_ENTITIES>& getEntitySignatures();
 		unsigned int getEntityCount();
-		void constructComponent(unsigned int entity, ComponentType type, const void* data = nullptr);
+		void addComponent(unsigned int entity, ComponentType type);
 		void removeComponent(unsigned int entity, ComponentType type);
 		void* getComponent(unsigned int entity, ComponentType type);
 
-		System* getSystem(SystemType type);
+		System& getSystem(SystemType type);
 
 		unsigned int getComponentArrayMemorySize(ComponentType type);
-		const char* getComponentArrayName(ComponentType type);
-		unsigned int sizeofComponent(ComponentType type);
+
+		ComponentData getComponentData(ComponentType type);
 	}
 }

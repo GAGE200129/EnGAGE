@@ -8,6 +8,9 @@
 #include "ECS.hpp"
 #include "Editor.hpp"
 #include "Renderer.hpp"
+#include "Lua.hpp"
+
+
 
 namespace Core
 {
@@ -19,10 +22,9 @@ namespace Core
 			Window::init(width, height, title);
 			Input::init(Window::getRawWindow());
 			Editor::init(Window::getRawWindow());
-			Resource::init();
 			ECS::init();
 			
-			Renderer::init();
+			Renderer::init();	
 		}
 
 		void run()
@@ -44,6 +46,9 @@ namespace Core
 					steps -= secsPerUpdate;
 
 					//Update
+					std::thread luaThread(Lua::update, (float)secsPerUpdate);
+					
+					luaThread.join();
 					Input::update();
 					Window::pollEvents();
 				}
@@ -59,10 +64,11 @@ namespace Core
 					std::this_thread::sleep_for(1ms);
 				}
 			}
+			Lua::shutdown();
 			Renderer::shutdown();
 			Editor::shutdown();
 			ECS::shutdown();
-			Resource::cleanup();
+			Resource::shutdown();
 			Window::destroy();
 		}	
 	}

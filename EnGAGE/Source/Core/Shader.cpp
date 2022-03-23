@@ -16,6 +16,7 @@ namespace Core
 
 	void Shader::cleanup()
 	{
+		EN_INFO("Deleting shader: {}", mProgramID);
 		glDeleteProgram(mProgramID);
 	}
 
@@ -43,6 +44,7 @@ namespace Core
 		{
 			glDeleteShader(mShaders[i]);
 		}
+		EN_INFO("Compiling shader: {}", mProgramID);
 	}
 
 	int Shader::registerUniform(const String& name)

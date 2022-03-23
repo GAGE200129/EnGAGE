@@ -2,50 +2,109 @@
 #include "Renderer.hpp"
 
 #include "ECS.hpp"
+#include "Shader.hpp"
+#include "Window.hpp"
+#include "Model.hpp"
 
 #include <glad/glad.h>
 
-static void processNode(Core::Model* model, const Core::Node& node);
+using namespace Core::Renderer;
+using namespace Core;
+
+static void buildProjViewMatrix(const Camera& camera, unsigned int width, unsigned int height, glm::mat4x4& outProjMat, glm::mat4x4& outViewMat);
+static void processNode(const Model& model, const Node& node, glm::mat4x4 accumulatedTransform);
+
+static Camera gCamera;
+static glm::mat4x4 gProj;
+static glm::mat4x4 gView;
+static Shader* gShader;
+static int projLoc, viewLoc, modelLoc;
 
 void Core::Renderer::init()
 {
+	gCamera.x = 0; gCamera.y = 0, gCamera.z = 0;
+	gCamera.pitch = 0; gCamera.yaw = 0, gCamera.roll = 0;
+	gCamera.fov = 60.0f;
+	gCamera.near = 0.5f;
+	gCamera.far = 100.0f;
+
+	gShader = new Core::Shader();
+	gShader->loadVertexShader("Resources/Shaders/test_VS.glsl");
+	gShader->loadFragmentShader("Resources/Shaders/test_FS.glsl");
+	gShader->compile();
+
+	projLoc = gShader->registerUniform("uProj");
+	viewLoc = gShader->registerUniform("uView");
+	modelLoc = gShader->registerUniform("uModel");
 }
 
 void Core::Renderer::shutdown()
 {
+	gShader->cleanup();
+	delete gShader;
 }
 
 void Core::Renderer::render()
 {	
-	ECS::System* system = ECS::getSystem(ECS::SystemType::RENDERER);
+	ECS::System& system = ECS::getSystem(ECS::SystemType::RENDERER);
 	glClear(GL_COLOR_BUFFER_BIT);
-	for (unsigned int i = 0; i < system->entityCount; i++)
-	{
-		unsigned int e = system->entities[i];
+	glViewport(0, 0, Window::getWidth(), Window::getHeight());
+	buildProjViewMatrix(gCamera, Window::getWidth(), Window::getHeight(), gProj, gView);
+	gShader->bind();
+	gShader->uploadMat4x4(projLoc, gProj);
+	gShader->uploadMat4x4(viewLoc, gView);
 
+	for (unsigned int e : system.entities)
+	{
 		ECS::TransformComponent* pTransform = (ECS::TransformComponent*)ECS::getComponent(e, ECS::ComponentType::TRANSFORM);
-		ECS::ModelRendererComponent* pModel = (ECS::ModelRendererComponent*)ECS::getComponent(e, ECS::ComponentType::MODEL_RENDERER);
-		if (pModel->pModel)
+		ECS::ModelRendererComponent* pModelComp = (ECS::ModelRendererComponent*)ECS::getComponent(e, ECS::ComponentType::MODEL_RENDERER);
+		if (pModelComp->pModel)
 		{
-			processNode(pModel->pModel, pModel->pModel->nodes[pModel->pModel->rootNodeIndex]);
+			Model& model = *pModelComp->pModel;
+			glm::mat4x4 modelMat;
+			modelMat = glm::translate(glm::mat4(1.0f), { pTransform->x, pTransform->y, pTransform->z });
+			modelMat *= glm::toMat4(glm::quat{ pTransform->rw, pTransform->rx, pTransform->ry, pTransform->rz });
+			modelMat = glm::scale(modelMat, { pTransform->sx, pTransform->sy, pTransform->sz });
+
+			processNode(model, model.nodes[model.rootNodeIndex], modelMat);
 		}
 	}
 }
 
-static void processNode(Core::Model* model, const Core::Node& node)
+Camera& Core::Renderer::getCamera()
 {
+	return gCamera;
+}
+
+static void buildProjViewMatrix(const Camera& camera, unsigned int width, unsigned int height,  glm::mat4x4& outProjMat, glm::mat4x4& outViewMat)
+{
+	outViewMat = glm::rotate(glm::mat4(1.0f), -glm::radians(camera.pitch), {1, 0, 0});
+	outViewMat = glm::rotate(outViewMat, -glm::radians(camera.yaw), {0, 1, 0});
+	outViewMat = glm::translate(outViewMat, { -camera.x, -camera.y, -camera.z });
+
+	outProjMat = glm::perspective(glm::radians(camera.fov), (float)width / (float)height, camera.near, camera.far);
+}
+
+static void processNode(const Model& model, const Node& node, glm::mat4x4 accumulatedTransform)
+{
+	accumulatedTransform = glm::translate(accumulatedTransform, node.position);
+	accumulatedTransform *= glm::toMat4(node.rotation);
+	accumulatedTransform = glm::scale(accumulatedTransform, node.scale);
+
+
 	if (node.meshIndex != -1)
 	{
-		Core::Mesh& mesh = model->meshes[node.meshIndex];
+		const Core::Mesh& mesh = model.meshes[node.meshIndex];
 
 		for (const auto& primitive : mesh.primitives)
 		{
+			gShader->uploadMat4x4(modelLoc, accumulatedTransform);
 			glBindVertexArray(primitive.vao);
 			glDrawElements(GL_TRIANGLES, primitive.vertexCoumt, primitive.eboDataType, nullptr);
 		}
 	}
 	for (const auto& child : node.children)
 	{
-		processNode(model, model->nodes[child]);
+		processNode(model, model.nodes[child], accumulatedTransform);
 	}
 }

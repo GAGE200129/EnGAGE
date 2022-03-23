@@ -30,12 +30,6 @@ namespace Core
 {
 	namespace Resource
 	{
-		void init()
-		{
-			std::string path = "Resources\\Models";
-			for (const auto& entry : std::filesystem::directory_iterator(path))
-				getModel(entry.path().string());
-		}
 		Model* getModel(const String& filePath)
 		{
 			for (const auto& pModel : gModels)
@@ -51,12 +45,7 @@ namespace Core
 			return gModels.back().get();
 		}
 
-		const DynArr<Scope<Core::Model>>& getModels()
-		{
-			return gModels;
-		}
-
-		void cleanup()
+		void shutdown()
 		{
 			for (const auto& model : gModels)
 			{

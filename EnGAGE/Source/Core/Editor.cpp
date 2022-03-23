@@ -3,6 +3,8 @@
 
 #include "ECS.hpp"
 #include "Resource.hpp"
+#include "Renderer.hpp"
+#include "Lua.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -11,8 +13,9 @@
 static void processGameEngine();
 static void processSceneGraph();
 static void processComponent(Core::ECS::ComponentType type, Core::ECS::ComponentHeader* pHeader);
-static void processInspector(Core::ECS::EntitySignature* pEntity);
-static void processResource();
+static void processInspector(const Core::ECS::EntitySignature* pEntity);
+static void processRenderer();
+static void processResourceBrowser();
 
 void Core::Editor::init(GLFWwindow* pWindow)
 {
@@ -43,7 +46,8 @@ void Core::Editor::render()
 	//ImGui::ShowDemoWindow();
 	processGameEngine();
 	processSceneGraph();
-	processResource();
+	processRenderer();
+	processResourceBrowser();
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -71,20 +75,10 @@ static void processGameEngine()
 			unsigned int currentArrMemSize = ECS::getComponentArrayMemorySize((ECS::ComponentType)i);
 			unsigned int totalArrMemSize = ECS::MAX_COMPONENT_ARRAY_BUFFER_SIZE;
 			sprintf(buf, "%d/%d bytes", currentArrMemSize, totalArrMemSize);
-			ImGui::Text(ECS::getComponentArrayName((ECS::ComponentType)i));
+			ECS::ComponentData data = ECS::getComponentData((ECS::ComponentType)i);
+			ImGui::Text(data.name);
 			ImGui::ProgressBar((float)currentArrMemSize / (float)totalArrMemSize, ImVec2(0.0f, 0.0f), buf);
 			ImGui::Separator();
-		}
-
-		ImGui::TreePop();
-	}
-	if (ImGui::TreeNode("Systems"))
-	{
-		ECS::System* system = ECS::getSystem(ECS::SystemType::RENDERER);
-
-		for (unsigned int i = 0; i < system->entityCount; i++)
-		{
-			ImGui::Text("Entity: %d", system->entities[i]);
 		}
 
 		ImGui::TreePop();
@@ -96,7 +90,7 @@ static void processSceneGraph()
 {
 	using namespace Core;
 
-	static ECS::EntitySignature* selectedEntity = nullptr;
+	static const ECS::EntitySignature* selectedEntity = nullptr;
 
 	ImGui::Begin("SceneGraph");
 
@@ -105,11 +99,11 @@ static void processSceneGraph()
 		for (unsigned int i = 0; i < ECS::getEntityCount(); i++)
 		{
 			char buf[50];
-			ECS::EntitySignature* e = &ECS::getEntitySignatures()[i];
-			sprintf(buf, "Entity %d", e->id);
-			if (ImGui::Selectable(buf, selectedEntity == e))
+			const auto& e = ECS::getEntitySignatures()[i];
+			sprintf(buf, "Entity %d", e.id);
+			if (ImGui::Selectable(buf, selectedEntity == &e))
 			{
-				selectedEntity = e;
+				selectedEntity = &e;
 			}
 		}
 
@@ -166,16 +160,35 @@ static void processComponent(Core::ECS::ComponentType type, Core::ECS::Component
 		}
 		break;
 	}
+	case Core::ECS::ComponentType::SCRIPT:
+	{
+		ScriptComponent* pScript = (ScriptComponent*)pHeader;
+
+		ImGui::Text("Script: %p", pScript->L);
+
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("RESOURCE_SCRIPT"))
+			{
+				Core::Lua::loadFile(pScript->L, String((char*)payload->Data));
+			}
+			ImGui::EndDragDropTarget();
+		}
+		break;
+	}
+
 	default:
 		break;
 	};
 
 }
 
-void processInspector(Core::ECS::EntitySignature* pEntity)
+void processInspector(const Core::ECS::EntitySignature* pEntity)
 {
 	using namespace Core::ECS;
 	using namespace Core;
+
+
 	ImGui::Begin("Inspector");
 	//Process component
 	if (pEntity) {
@@ -184,12 +197,11 @@ void processInspector(Core::ECS::EntitySignature* pEntity)
 			ECS::ComponentHeader* pHeader = (ECS::ComponentHeader*)ECS::getComponent(pEntity->id, (ECS::ComponentType)i);
 			if (pHeader)
 			{
-				ImGui::Text("ComponentName: %s, Parent: %d", ECS::getComponentArrayName((ECS::ComponentType)i), pHeader->entity);
 				processComponent((ECS::ComponentType)i, pHeader);
 
 				ImGui::PushID(i);
 				if (ImGui::Button("Remove"))
-				{
+				{	
 					ECS::removeComponent(pEntity->id, (ECS::ComponentType)i);
 				}
 				ImGui::PopID();
@@ -204,9 +216,10 @@ void processInspector(Core::ECS::EntitySignature* pEntity)
 		{
 			for (unsigned int i = 0; i < (unsigned int)ECS::ComponentType::COUNT; i++)
 			{
-				if (ImGui::Selectable(ECS::getComponentArrayName((ECS::ComponentType)i)))
+				ECS::ComponentData data = ECS::getComponentData((ECS::ComponentType)i);
+				if (ImGui::Selectable(data.name))
 				{
-					ECS::constructComponent(pEntity->id, (ECS::ComponentType)i);
+					ECS::addComponent(pEntity->id, (ECS::ComponentType)i);
 				}
 			}
 			ImGui::EndPopup();
@@ -215,23 +228,57 @@ void processInspector(Core::ECS::EntitySignature* pEntity)
 	ImGui::End();
 }
 
-void processResource()
+static void processRenderer()
 {
-	ImGui::Begin("Resource");
-	if (ImGui::TreeNode("Models"))
+	ImGui::Begin("Renderer");
+	if (ImGui::TreeNode("Camera"))
 	{
-		for (const auto& model : Core::Resource::getModels())
+		ImGui::DragFloat3("position", &Core::Renderer::getCamera().x, 0.1f);
+		ImGui::DragFloat3("rotation", &Core::Renderer::getCamera().pitch, 0.1f);
+		ImGui::TreePop();
+	}
+	ImGui::End();
+}
+
+static void processResourceBrowser()
+{
+	static const char* modelPath = "Resources\\Models";
+	static const char* scriptPath = "Resources\\Scripts";
+	ImGui::Begin("ResourceBrowser");
+
+	if(ImGui::TreeNode("Models"))
+	{
+		for (const auto& entry : std::filesystem::recursive_directory_iterator(modelPath))
 		{
-			ImGui::Selectable(model->name.c_str());
-			if(ImGui::BeginDragDropSource())
+			auto& pathName = entry.path().string();
+			ImGui::Selectable(pathName.c_str());
+			if (ImGui::BeginDragDropSource())
 			{
-				ImGui::Text(model->name.c_str());
-				ImGui::SetDragDropPayload("RESOURCE_MODEL", model->name.c_str(), model->name.size() + 1);
+				ImGui::Text(pathName.c_str());
+				ImGui::SetDragDropPayload("RESOURCE_MODEL", pathName.c_str(), pathName.size() + 1);
 				ImGui::EndDragDropSource();
 			}
 		}
 
 		ImGui::TreePop();
 	}
+
+	if (ImGui::TreeNode("Scripts"))
+	{
+		for (const auto& entry : std::filesystem::recursive_directory_iterator(scriptPath))
+		{
+			auto& pathName = entry.path().string();
+			ImGui::Selectable(pathName.c_str());
+			if (ImGui::BeginDragDropSource())
+			{
+				ImGui::Text(pathName.c_str());
+				ImGui::SetDragDropPayload("RESOURCE_SCRIPT", pathName.c_str(), pathName.size() + 1);
+				ImGui::EndDragDropSource();
+			}
+		}
+
+		ImGui::TreePop();
+	}
+
 	ImGui::End();
 }
