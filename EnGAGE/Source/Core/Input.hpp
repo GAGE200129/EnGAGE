@@ -24,9 +24,12 @@ namespace Core
 
 		double getCursorX();
 		double getCursorY();
+		double getCursorDX();
+		double getCursorDY();
 
 		void disableCursor();
 		void enableCursor();
 		void toggleCursor();
+		bool cursorLocked();
 	};
 }

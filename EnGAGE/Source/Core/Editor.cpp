@@ -136,6 +136,14 @@ static void processComponent(Core::ECS::ComponentType type, Core::ECS::Component
 		ImGui::InputText("Name", pName->name, MAX_NAME_SIZE);
 		break;
 	}
+	case ComponentType::RIGID_BODY:
+	{
+		RigidBodyComponent* pRigidBody = (RigidBodyComponent*)pHeader;
+		ImGui::DragFloat3("Velocity", &pRigidBody->velocity.x, 0.1f);
+		ImGui::DragFloat3("Force", &pRigidBody->force.x, 0.1f);
+		ImGui::DragFloat("Mass", &pRigidBody->mass, 0.1f);
+		break;
+	}
 	case ComponentType::TRANSFORM:
 	{
 		TransformComponent* pTransform = (TransformComponent*)pHeader;

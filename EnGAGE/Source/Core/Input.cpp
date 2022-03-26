@@ -3,6 +3,8 @@
 
 #include <GLFW/glfw3.h>
 
+#include <imgui.h>
+
 namespace Core
 {
 	GLFWwindow* sWindow = nullptr;
@@ -12,6 +14,8 @@ namespace Core
 	bool sPrevButtons[ButtonCodes::NUM_BUTTONS];
 	double sCursorX = 0.0f;
 	double sCursorY = 0.0f;
+	double sPrevCursorX = 0.0f;
+	double sPrevCursorY = 0.0f;
 
 	void Input::init(GLFWwindow* rawWindow)
 	{
@@ -61,6 +65,8 @@ namespace Core
 	}
 	void Input::update()
 	{
+		sPrevCursorX = sCursorX;
+		sPrevCursorY = sCursorY;
 		memcpy(sPrevKeys,  sKeys, sizeof(sKeys));
 		memcpy(sPrevButtons, sButtons, sizeof(sButtons));
 	}
@@ -75,6 +81,16 @@ namespace Core
 
 	double Input::getCursorX() { return sCursorX; }
 	double Input::getCursorY() { return sCursorY; }
+
+	double Input::getCursorDX()
+	{
+		return sCursorX - sPrevCursorX;
+	}
+
+	double Input::getCursorDY()
+	{
+		return sCursorY - sPrevCursorY;
+	}
 
 	void Input::disableCursor()
 	{
@@ -97,5 +113,16 @@ namespace Core
 		else if (status == GLFW_CURSOR_NORMAL) {
 			disableCursor();
 		}
+	}
+	bool Input::cursorLocked()
+	{
+		int status = glfwGetInputMode(sWindow, GLFW_CURSOR);
+		if (status == GLFW_CURSOR_DISABLED) {
+			return true;
+		}
+		else if (status == GLFW_CURSOR_NORMAL) {
+			return false;
+		}
+		return false;
 	}
 }

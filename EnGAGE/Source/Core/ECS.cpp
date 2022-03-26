@@ -25,7 +25,6 @@ static void constructComponent(unsigned int entity, ComponentType type, const vo
 
 void Core::ECS::init()
 {
-
 	//Init components
 	for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
 	{
@@ -33,8 +32,8 @@ void Core::ECS::init()
 		ComponentArray arr;
 		arr.size = data.size;
 		arr.count = 0;
-		arr.data = new char[MAX_COMPONENT_ARRAY_BUFFER_SIZE];
-		gComponentArrays.insert({ (ComponentType)i, arr });
+		arr.data = createScope<char[]>(MAX_COMPONENT_ARRAY_BUFFER_SIZE);
+		gComponentArrays.insert({ (ComponentType)i, std::move(arr) });
 	}
 
 	//Renderer system
@@ -47,16 +46,11 @@ void Core::ECS::init()
 	SET_BIT(signature, (unsigned int)ComponentType::SCRIPT);
 	gSystems[SystemType::SCRIPTING].signature = signature;
 
-}
+	signature = 0;
+	SET_BIT(signature, (unsigned int)ComponentType::RIGID_BODY);
+	SET_BIT(signature, (unsigned int)ComponentType::TRANSFORM);
+	gSystems[SystemType::PHYSICS].signature = signature;
 
-void Core::ECS::shutdown()
-{
-	
-
-	for (const auto& pair : gComponentArrays)
-	{
-		delete[] pair.second.data;
-	}
 }
 
 unsigned int Core::ECS::createEntity()
@@ -119,12 +113,12 @@ unsigned int Core::ECS::getEntityCount()
 void Core::ECS::addComponent(unsigned int entity, ComponentType type)
 {
 	ComponentData data = getComponentData(type);
-	void* extraData = calloc(1, data.size);
+	Scope<char[]> extraData = createScope<char[]>(data.size);
 	switch (type)
 	{
 	case ComponentType::TRANSFORM:
 	{
-		TransformComponent* transformComponent = (TransformComponent*)extraData;
+		TransformComponent* transformComponent = (TransformComponent*)extraData.get();
 		transformComponent->x = 0;
 		transformComponent->y = 0;
 		transformComponent->z = 0;
@@ -140,14 +134,24 @@ void Core::ECS::addComponent(unsigned int entity, ComponentType type)
 
 	case ComponentType::SCRIPT:
 	{
-		ScriptComponent* component = (ScriptComponent*)extraData;
+		ScriptComponent* component = (ScriptComponent*)extraData.get();
 		component->L = Core::Lua::newScript(entity);
+		break;
+	}
+	case ComponentType::RIGID_BODY:
+	{
+		RigidBodyComponent* component = (RigidBodyComponent*)extraData.get();
+		component->mass = 1.0f;
+		component->force = { 0, 0, 0 };
+		component->velocity = { 0, 0, 0 };
+		component->colliderType = ColliderType::NONE;
+		memset(component->colliderData, 0, MAX_COLLIDER_BUFFER_SIZE);
+
 		break;
 	}
 	}
 
-	constructComponent(entity, type, extraData);
-	free(extraData);
+	constructComponent(entity, type, extraData.get());
 }
 
 void Core::ECS::removeComponent(unsigned int entity, ComponentType type)
@@ -184,7 +188,7 @@ void* Core::ECS::getComponent(unsigned int entity, ComponentType type)
 
 	for (unsigned int i = 0; i < pComponentArray->count; i++)
 	{
-		char* offset = pComponentArray->data + pComponentArray->size * i;
+		char* offset = pComponentArray->data.get() + pComponentArray->size * i;
 		header = (ComponentHeader*)offset;
 		if (header->entity == entitySignature.id)
 		{
@@ -228,6 +232,10 @@ ComponentData Core::ECS::getComponentData(ComponentType type)
 		result.size = sizeof(ScriptComponent);
 		strcpy(result.name, "SCRIPT");
 		break;
+	case ComponentType::RIGID_BODY:
+		result.size = sizeof(RigidBodyComponent);
+		strcpy(result.name, "RIGID_BODY");
+		break;
 	default:
 		EN_ASSERT(false, "Unknown component: {}", (unsigned int)type);
 	}
@@ -259,7 +267,7 @@ void removeComponentInternal(ComponentArray& componentArray, EntitySignature& en
 	char* end;
 	for (unsigned int i = 0; i < componentArray.count; i++)
 	{
-		offset = componentArray.data + componentArray.size * i;
+		offset = componentArray.data.get() + componentArray.size * i;
 		header = (ComponentHeader*)offset;
 		if (header->entity == entity.id) //Entity id matched, remove current i component
 		{
@@ -271,7 +279,7 @@ void removeComponentInternal(ComponentArray& componentArray, EntitySignature& en
 			}
 			else //Else copy end of arr to removed slot
 			{
-				end = componentArray.data + componentArray.size * (componentArray.count - 1);
+				end = componentArray.data.get() + componentArray.size * (componentArray.count - 1);
 				memcpy(offset, end, componentArray.size);
 				componentArray.count--;
 				break;
@@ -311,7 +319,7 @@ static void constructComponent(unsigned int entity, ComponentType type, const vo
 	//Search array to check if this entity already has that component type
 	for (unsigned int i = 0; i < pComponentArray->count; i++)
 	{
-		char* offset = pComponentArray->data + pComponentArray->size * i;
+		char* offset = pComponentArray->data.get() + pComponentArray->size * i;
 		header = (ComponentHeader*)offset;
 		if (header->entity == entity)
 		{
@@ -322,10 +330,11 @@ static void constructComponent(unsigned int entity, ComponentType type, const vo
 	ComponentData componentData = getComponentData(type);
 	EN_ASSERT((pComponentArray->count * pComponentArray->size + componentData.size) < MAX_COMPONENT_ARRAY_BUFFER_SIZE, "Component array is full");
 	//Copy data to end of array
-	char* lastMemLoc = pComponentArray->data + pComponentArray->count * pComponentArray->size;
+	char* lastMemLoc = pComponentArray->data.get() + pComponentArray->count * pComponentArray->size;
 	memcpy(lastMemLoc, extraData, pComponentArray->size);
 	header = (ComponentHeader*)(lastMemLoc); //extract header
 	header->entity = entity; // now this component has this entity as parent
+	header->type = type;
 	pComponentArray->count++;
 
 	//Update entity's signature

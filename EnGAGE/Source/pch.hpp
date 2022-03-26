@@ -14,6 +14,7 @@
 #include <map>
 #include <filesystem>
 #include <bitset>
+#include <random>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -33,6 +34,8 @@
 #else
 #define EN_ASSERT(condition, ...) condition
 #endif
+
+using Thread = std::thread;
 
 template<typename T>
 using FunctionPtr = std::function<T>;

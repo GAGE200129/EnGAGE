@@ -9,7 +9,7 @@
 #include "Editor.hpp"
 #include "Renderer.hpp"
 #include "Lua.hpp"
-
+#include "Physics.hpp"
 
 
 namespace Core
@@ -24,7 +24,8 @@ namespace Core
 			Editor::init(Window::getRawWindow());
 			ECS::init();
 			
-			Renderer::init();	
+			Renderer::init();
+			Physics::init();
 		}
 
 		void run()
@@ -41,22 +42,27 @@ namespace Core
 
 				steps += delta;
 
+				Lua::input();
+				Input::update();
+				Window::pollEvents();
+
 				while (steps > secsPerUpdate)
 				{
 					steps -= secsPerUpdate;
 
 					//Update
-					std::thread luaThread(Lua::update, (float)secsPerUpdate);
+					Thread luaThread(Lua::update, float(secsPerUpdate));
+					Thread physicsThread(Physics::update, float(secsPerUpdate));
 					
 					luaThread.join();
-					Input::update();
-					Window::pollEvents();
+					physicsThread.join();
 				}
 
 
 				//Render
 				Renderer::render();
-				Editor::render();
+				if(!Input::cursorLocked())
+					Editor::render();
 				Window::swapBuffers();
 				double endTime = currentTime + secsPerRender;
 				while (Window::getCurrentTime() < endTime) {
@@ -67,7 +73,6 @@ namespace Core
 			Lua::shutdown();
 			Renderer::shutdown();
 			Editor::shutdown();
-			ECS::shutdown();
 			Resource::shutdown();
 			Window::destroy();
 		}	

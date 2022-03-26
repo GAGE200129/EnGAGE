@@ -5,6 +5,7 @@ namespace Core
 {
 	namespace Lua
 	{
+		void input();
 		void update(float delta);
 		void shutdown();
 		lua_State* newScript(unsigned int entity);

@@ -11,6 +11,7 @@ namespace Core
 		static constexpr unsigned int MAX_COMPONENTS = 32; //32 bits field
 		static constexpr unsigned int MAX_COMPONENT_ARRAY_BUFFER_SIZE = 1048576u;
 		static constexpr unsigned int MAX_NAME_SIZE = 50u;
+		static constexpr unsigned int MAX_COLLIDER_BUFFER_SIZE = 128u;
 
 		//Entity 
 		struct EntitySignature
@@ -19,8 +20,37 @@ namespace Core
 			unsigned int signature : MAX_COMPONENTS;
 		};
 
+		//Physics component collider
+		enum class ColliderType : unsigned int
+		{
+			NONE,
+			SPHERE, // Float(radius)
+			PLANE, // Vec3(Normal), Float(distance)
+			COUNT
+		};
+
+		struct SphereCollider
+		{
+			float radius;
+		};
+
+		struct PlaneCollider
+		{
+			float x, y, z; // Normal
+			float distance;
+		};
 
 		//Component
+		enum class ComponentType : unsigned int
+		{
+			NAME,
+			TRANSFORM,
+			MODEL_RENDERER,
+			SCRIPT,
+			RIGID_BODY,
+			COUNT
+		};
+
 		struct ComponentData
 		{
 			char name[MAX_NAME_SIZE];
@@ -29,6 +59,7 @@ namespace Core
 
 		struct ComponentHeader
 		{
+			ComponentType type;
 			unsigned int entity;
 		};
 
@@ -36,16 +67,9 @@ namespace Core
 		{
 			unsigned int count;
 			unsigned int size;
-			char* data;
+			Scope<char[]> data;
 		};
-		enum class ComponentType : unsigned int
-		{
-			NAME,
-			TRANSFORM,
-			MODEL_RENDERER,
-			SCRIPT,
-			COUNT
-		};
+		
 
 		struct NameComponent
 		{
@@ -73,13 +97,23 @@ namespace Core
 			lua_State* L;
 		};
 
-
+		struct RigidBodyComponent
+		{
+			ComponentHeader header;
+			glm::vec3 velocity;
+			glm::vec3 force;
+			float mass;
+			ColliderType colliderType;
+			char colliderData[MAX_COLLIDER_BUFFER_SIZE];
+		};
+		
 
 		//System
 		enum class SystemType : unsigned int
 		{
 			RENDERER,
 			SCRIPTING,
+			PHYSICS,
 			COUNT
 		};
 
@@ -90,7 +124,6 @@ namespace Core
 		};
 
 		void init();
-		void shutdown();
 		unsigned int createEntity();
 		void removeEntity(unsigned int entity);
 		const Arr<EntitySignature, MAX_ENTITIES>& getEntitySignatures();

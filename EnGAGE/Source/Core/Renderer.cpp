@@ -22,11 +22,6 @@ static int projLoc, viewLoc, modelLoc;
 
 void Core::Renderer::init()
 {
-	gCamera.x = 0; gCamera.y = 0, gCamera.z = 0;
-	gCamera.pitch = 0; gCamera.yaw = 0, gCamera.roll = 0;
-	gCamera.fov = 60.0f;
-	gCamera.near = 0.5f;
-	gCamera.far = 100.0f;
 
 	gShader = new Core::Shader();
 	gShader->loadVertexShader("Resources/Shaders/test_VS.glsl");
@@ -47,7 +42,8 @@ void Core::Renderer::shutdown()
 void Core::Renderer::render()
 {	
 	ECS::System& system = ECS::getSystem(ECS::SystemType::RENDERER);
-	glClear(GL_COLOR_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, Window::getWidth(), Window::getHeight());
 	buildProjViewMatrix(gCamera, Window::getWidth(), Window::getHeight(), gProj, gView);
 	gShader->bind();

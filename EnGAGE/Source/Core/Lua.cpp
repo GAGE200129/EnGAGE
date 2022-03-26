@@ -3,6 +3,7 @@
 
 #include "ECS.hpp"
 #include "LuaHostFunctions.hpp"
+#include "InputCodes.hpp"
 
 extern "C"
 {
@@ -17,7 +18,18 @@ static void setIntegerGlobal(lua_State* L, const String& name, unsigned int num)
 //Lua scripts
 static DynArr<lua_State*> gLuaVMs;
 
-
+void Core::Lua::input()
+{
+	for (lua_State* L : gLuaVMs)
+	{
+		lua_getglobal(L, "input");
+		if (lua_isfunction(L, -1))
+		{
+			checkLua(L, lua_pcall(L, 0, 0, 0));
+		}
+		lua_settop(L, 0);
+	}
+}
 
 void Core::Lua::update(float delta)
 {
@@ -49,14 +61,35 @@ lua_State* Core::Lua::newScript(unsigned int entity)
 	setIntegerGlobal(L, "entity", entity);
 
 	//Register all host functions
-	lua_register(L, "_getComponent", lua_getComponent);
-	lua_register(L, "_updateComponent", lua_updateComponent);
+	lua_register(L, "_keyPressed", LuaHostFunctions::keyPressed);
+	lua_register(L, "_keyPressedOnce", LuaHostFunctions::keyPressedOnce);
+	lua_register(L, "_buttonPressed", LuaHostFunctions::buttonPressed);
+	lua_register(L, "_getCursorPosDelta", LuaHostFunctions::getCursorPosDelta);
+	lua_register(L, "_toggleCursor", LuaHostFunctions::toggleCursor);
+	lua_register(L, "_isCursorLocked", LuaHostFunctions::isCursorLocked);
+	lua_register(L, "_getComponent", LuaHostFunctions::getComponent);
+	lua_register(L, "_setPosition", LuaHostFunctions::setPosition);
+	lua_register(L, "_setRotation", LuaHostFunctions::setRotation);
+	lua_register(L, "_setScale", LuaHostFunctions::setScale);
+	lua_register(L, "_translate", LuaHostFunctions::translate);
+	lua_register(L, "_rotate", LuaHostFunctions::rotate);
+	lua_register(L, "_scale", LuaHostFunctions::scale);
+	lua_register(L, "_updateCamera", LuaHostFunctions::updateCamera);
 	
 	//Add globals
 	for (unsigned int i = 0; i < (unsigned int)ECS::ComponentType::COUNT; i++)
 	{
 		ECS::ComponentData data = ECS::getComponentData((ECS::ComponentType)i);
 		setIntegerGlobal(L, data.name, i);
+	}
+
+	for (unsigned int i = 0; i < InputCodes::NUM_KEYS; i++)
+	{
+		const char* name = InputCodes::toString(i);
+		if (name != "")
+		{
+			setIntegerGlobal(L, name, i);
+		}
 	}
 
 

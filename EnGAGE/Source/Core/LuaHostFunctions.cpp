@@ -2,6 +2,9 @@
 #include "LuaHostFunctions.hpp"
 
 #include "ECS.hpp"
+#include "InputCodes.hpp"
+#include "Input.hpp"
+#include "Renderer.hpp"
 
 extern "C"
 {
@@ -10,145 +13,165 @@ extern "C"
 #include <lualib.h>
 }
 
-
-int lua_getComponent(lua_State* L)
+namespace LuaHostFunctions
 {
-    using namespace Core::ECS;
-    EN_ASSERT(lua_gettop(L) == 2, "Invalid argument");
-
-    unsigned int entityID = lua_tointeger(L, 1);
-    ComponentType componentType = (ComponentType)lua_tointeger(L, 2);
-
-    void* component = getComponent(entityID, componentType);
-
-    if (component == nullptr)
+    int keyPressed(lua_State* L)
     {
-        lua_pushnil(L);
+        EN_ASSERT(lua_gettop(L) == 1, "Invalid argument");
+        uint16_t keyCode = (uint16_t)lua_tointeger(L, 1);
+        lua_pushboolean(L, Core::Input::isKeyPressed(keyCode));
+        return 1;
+    }
+    int keyPressedOnce(lua_State* L)
+    {
+        EN_ASSERT(lua_gettop(L) == 1, "Invalid argument");
+        uint16_t keyCode = (uint16_t)lua_tointeger(L, 1);
+        lua_pushboolean(L, Core::Input::isKeyPressedOnce(keyCode));
+        return 1;
+    }
+    int buttonPressed(lua_State* L)
+    {
+        EN_ASSERT(lua_gettop(L) == 1, "Invalid argument");
+        uint16_t keyCode = (uint16_t)lua_tointeger(L, 1);
+        lua_pushboolean(L, Core::Input::isButtonPressed(keyCode));
+        return 1;
+    }
+    int getCursorPosDelta(lua_State* L)
+    {
+        lua_pushnumber(L, Core::Input::getCursorDX());
+        lua_pushnumber(L, Core::Input::getCursorDY());
+        return 2;
+    }
+    int toggleCursor(lua_State* L)
+    {
+        Core::Input::toggleCursor();
+        return 0;
+    }
+    int isCursorLocked(lua_State* L)
+    {
+        lua_pushboolean(L, Core::Input::cursorLocked());
+        return 1;
+    }
+    int getComponent(lua_State* L)
+    {
+        using namespace Core::ECS;
+        EN_ASSERT(lua_gettop(L) == 2, "Invalid argument");
+
+        unsigned int entityID = (unsigned int)lua_tointeger(L, 1);
+        ComponentType componentType = (ComponentType)lua_tointeger(L, 2);
+
+        void* component = getComponent(entityID, componentType);
+
+        if (component == nullptr)
+        {
+            lua_pushnil(L);
+            return 1;
+        }
+
+        lua_pushlightuserdata(L, component);
         return 1;
     }
 
-    switch (componentType)
+    int setPosition(lua_State* L)
     {
-    case Core::ECS::ComponentType::NAME:
-    {
-        NameComponent* nameComp = (NameComponent*)component;
-        lua_pushstring(L, nameComp->name);
-        return 1;
-    }
-    case Core::ECS::ComponentType::TRANSFORM:
-    {
-        TransformComponent* transform = (TransformComponent*)component;
-        lua_newtable(L);
-        lua_pushstring(L, "x");
-        lua_pushnumber(L, transform->x);
-        lua_settable(L, -3);
-        lua_pushstring(L, "y");
-        lua_pushnumber(L, transform->y);
-        lua_settable(L, -3);
-        lua_pushstring(L, "z");
-        lua_pushnumber(L, transform->z);
-        lua_settable(L, -3);
+        using namespace Core::ECS;
+        EN_ASSERT(lua_gettop(L) == 4, "Invalid argument");
 
-        lua_pushstring(L, "rw");
-        lua_pushnumber(L, transform->rw);
-        lua_settable(L, -3);
-        lua_pushstring(L, "rx");
-        lua_pushnumber(L, transform->rx);
-        lua_settable(L, -3);
-        lua_pushstring(L, "ry");
-        lua_pushnumber(L, transform->ry);
-        lua_settable(L, -3);
-        lua_pushstring(L, "rz");
-        lua_pushnumber(L, transform->rz);
-        lua_settable(L, -3);
-
-        lua_pushstring(L, "sx");
-        lua_pushnumber(L, transform->sx);
-        lua_settable(L, -3);
-        lua_pushstring(L, "sy");
-        lua_pushnumber(L, transform->sy);
-        lua_settable(L, -3);
-        lua_pushstring(L, "sz");
-        lua_pushnumber(L, transform->sz);
-        lua_settable(L, -3);
-        return 1;
-    }
-    }
-
-    lua_pushnil(L);
-    return 1;
-}
-
-int lua_updateComponent(lua_State* L)
-{
-    using namespace Core::ECS;
-    EN_ASSERT(lua_gettop(L) == 3, "Invalid argument");
-
-    unsigned int entityID = lua_tointeger(L, 1);
-    ComponentType componentType = (ComponentType)lua_tointeger(L, 2);
-
-    void* component = getComponent(entityID, componentType);
-    if (component == nullptr)
-    {
+        ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
+        EN_ASSERT(header->type == ComponentType::TRANSFORM, "Invalid component type");
+        TransformComponent* transform = (TransformComponent*)header;
+        transform->x = (float)lua_tonumber(L, 2);
+        transform->y = (float)lua_tonumber(L, 3);
+        transform->z = (float)lua_tonumber(L, 4);
         return 0;
     }
 
-    switch (componentType)
+    int setRotation(lua_State* L)
     {
-    case Core::ECS::ComponentType::NAME:
-    {
-        NameComponent* nameComp = (NameComponent*)component;
-        const char* name = lua_tostring(L, 3);
-        strcpy(nameComp->name, name);
-        break;
-    }
-    case Core::ECS::ComponentType::TRANSFORM:
-    {
-        TransformComponent* transform = (TransformComponent*)component;
+        using namespace Core::ECS;
+        EN_ASSERT(lua_gettop(L) == 5, "Invalid argument");
 
-        lua_getfield(L, -1, "x");
-        transform->x = lua_tonumber(L, -1);
-        lua_pop(L, 1);
-
-        lua_getfield(L, -1, "y");
-        transform->y = lua_tonumber(L, -1);
-        lua_pop(L, 1);
-
-        lua_getfield(L, -1, "z");
-        transform->z = lua_tonumber(L, -1);
-        lua_pop(L, 1);
-
-        lua_getfield(L, -1, "rw");
-        transform->rw = lua_tonumber(L, -1);
-        lua_pop(L, 1);
-
-        lua_getfield(L, -1, "rx");
-        transform->rx = lua_tonumber(L, -1);
-        lua_pop(L, 1);
-
-        lua_getfield(L, -1, "ry");
-        transform->ry = lua_tonumber(L, -1);
-        lua_pop(L, 1);
-
-        lua_getfield(L, -1, "rz");
-        transform->rz = lua_tonumber(L, -1);
-        lua_pop(L, 1);
-
-        lua_getfield(L, -1, "sx");
-        transform->sx = lua_tonumber(L, -1);
-        lua_pop(L, 1);
-
-        lua_getfield(L, -1, "sy");
-        transform->sy = lua_tonumber(L, -1);
-        lua_pop(L, 1);
-
-        lua_getfield(L, -1, "sz");
-        transform->sz = lua_tonumber(L, -1);
-        lua_pop(L, 1);
-        break;
-    }
+        ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
+        EN_ASSERT(header->type == ComponentType::TRANSFORM, "Invalid component type");
+        TransformComponent* transform = (TransformComponent*)header;
+        transform->rw = (float)lua_tonumber(L, 2);
+        transform->rx = (float)lua_tonumber(L, 3);
+        transform->ry = (float)lua_tonumber(L, 4);
+        transform->rz = (float)lua_tonumber(L, 5);
+        return 0;
     }
 
-    return 0;
+    int setScale(lua_State* L)
+    {
+        using namespace Core::ECS;
+        EN_ASSERT(lua_gettop(L) == 4, "Invalid argument");
+
+        ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
+        EN_ASSERT(header->type == ComponentType::TRANSFORM, "Invalid component type");
+        TransformComponent* transform = (TransformComponent*)header;
+        transform->sx = (float)lua_tonumber(L, 2);
+        transform->sy = (float)lua_tonumber(L, 3);
+        transform->sz = (float)lua_tonumber(L, 4);
+        return 0;
+    }
+
+    int translate(lua_State* L)
+    {
+        using namespace Core::ECS;
+        EN_ASSERT(lua_gettop(L) == 4, "Invalid argument");
+
+        ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
+        EN_ASSERT(header->type == ComponentType::TRANSFORM, "Invalid component type");
+        TransformComponent* transform = (TransformComponent*)header;
+        transform->x += (float)lua_tonumber(L, 2);
+        transform->y += (float)lua_tonumber(L, 3);
+        transform->z += (float)lua_tonumber(L, 4);
+        return 0;
+    }
+
+    int rotate(lua_State* L)
+    {
+        using namespace Core::ECS;
+        EN_ASSERT(lua_gettop(L) == 5, "Invalid argument");
+
+        ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
+        EN_ASSERT(header->type == ComponentType::TRANSFORM, "Invalid component type");
+        TransformComponent* transform = (TransformComponent*)header;
+        transform->rw += (float)lua_tonumber(L, 2);
+        transform->rx += (float)lua_tonumber(L, 3);
+        transform->ry += (float)lua_tonumber(L, 4);
+        transform->rz += (float)lua_tonumber(L, 5);
+        return 0;
+    }
+
+    int scale(lua_State* L)
+    {
+        using namespace Core::ECS;
+        EN_ASSERT(lua_gettop(L) == 4, "Invalid argument");
+
+        ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
+        EN_ASSERT(header->type == ComponentType::TRANSFORM, "Invalid component type");
+        TransformComponent* transform = (TransformComponent*)header;
+        transform->sx += (float)lua_tonumber(L, 2);
+        transform->sy += (float)lua_tonumber(L, 3);
+        transform->sz += (float)lua_tonumber(L, 4);
+        return 0;
+    }
+    int updateCamera(lua_State* L)
+    {
+        EN_ASSERT(lua_gettop(L) == 9, "Invalid argument");
+        auto& camera = Core::Renderer::getCamera();
+        camera.x = (float)lua_tonumber(L, 1);
+        camera.y = (float)lua_tonumber(L, 2);
+        camera.z = (float)lua_tonumber(L, 3);
+        camera.pitch =  (float)lua_tonumber(L, 4);
+        camera.yaw =    (float)lua_tonumber(L, 5);
+        camera.roll =   (float)lua_tonumber(L, 6);
+        camera.fov =    (float)lua_tonumber(L, 7);
+        camera.near =   (float)lua_tonumber(L, 8);
+        camera.far =    (float)lua_tonumber(L, 9);
+
+        return 0;
+    }
 }
 
