@@ -11,6 +11,7 @@ using namespace Core::ECS;
 static unsigned int gEntityCounter = 0;
 static unsigned int gLivingEntities = 0;
 static Arr<EntitySignature, MAX_ENTITIES> gEntitiesSignatures = {0};
+static Set<unsigned int> gEntitiesMarkedForRemoval;
 
 //Component
 static Map<ComponentType, ComponentArray> gComponentArrays;
@@ -21,7 +22,7 @@ static Map<SystemType, System>  gSystems;
 static EntitySignature& searchEntity(unsigned int id);
 static void removeComponentInternal(ComponentArray& componentArray, EntitySignature& entity);
 static void updateSystems(EntitySignature& entity);
-static void constructComponent(unsigned int entity, ComponentType type, const void* extraData);
+static void* constructComponent(unsigned int entity, ComponentType type, const void* extraData);
 
 void Core::ECS::init()
 {
@@ -51,6 +52,15 @@ void Core::ECS::init()
 	SET_BIT(signature, (unsigned int)ComponentType::TRANSFORM);
 	gSystems[SystemType::PHYSICS].signature = signature;
 
+}
+
+void Core::ECS::updateRemovedEntities()
+{
+	for (const auto& entity : gEntitiesMarkedForRemoval)
+	{
+		removeEntity(entity);
+	}
+	gEntitiesMarkedForRemoval.clear();
 }
 
 unsigned int Core::ECS::createEntity()
@@ -100,6 +110,11 @@ void Core::ECS::removeEntity(unsigned int entity)
 	}
 }
 
+void Core::ECS::markForRemove(unsigned int entity)
+{
+	gEntitiesMarkedForRemoval.insert(entity);
+}
+
 const Arr<EntitySignature, MAX_ENTITIES>& Core::ECS::getEntitySignatures()
 {
 	return gEntitiesSignatures;
@@ -110,7 +125,7 @@ unsigned int Core::ECS::getEntityCount()
 	return gLivingEntities;
 }
 
-void Core::ECS::addComponent(unsigned int entity, ComponentType type)
+void* Core::ECS::addComponent(unsigned int entity, ComponentType type)
 {
 	ComponentData data = getComponentData(type);
 	Scope<char[]> extraData = createScope<char[]>(data.size);
@@ -151,7 +166,7 @@ void Core::ECS::addComponent(unsigned int entity, ComponentType type)
 	}
 	}
 
-	constructComponent(entity, type, extraData.get());
+	return constructComponent(entity, type, extraData.get());
 }
 
 void Core::ECS::removeComponent(unsigned int entity, ComponentType type)
@@ -302,7 +317,7 @@ void updateSystems(EntitySignature& entity)
 	}
 }
 
-static void constructComponent(unsigned int entity, ComponentType type, const void* extraData)
+static void* constructComponent(unsigned int entity, ComponentType type, const void* extraData)
 {
 	using namespace Core::ECS;
 	auto& entitySignature = searchEntity(entity);
@@ -321,7 +336,7 @@ static void constructComponent(unsigned int entity, ComponentType type, const vo
 		if (header->entity == entity)
 		{
 			EN_WARN("Each entity can only have 1 component");
-			return;
+			return nullptr;
 		}
 	}
 	ComponentData componentData = getComponentData(type);
@@ -342,6 +357,8 @@ static void constructComponent(unsigned int entity, ComponentType type, const vo
 
 	//Signal each systems
 	updateSystems(entitySignature);
+
+	return pComponentArray->data.get() + (pComponentArray->count - 1) * pComponentArray->size;
 }
 
 

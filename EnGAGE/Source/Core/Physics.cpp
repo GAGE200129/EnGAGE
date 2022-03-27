@@ -156,7 +156,7 @@ static void collisionSolve(DynArr<CollisionPoints>& points)
 	constexpr float percent = 0.8f;
 	constexpr float slop = 0.01f;
 
-	constexpr float aBounciness = 0.6, bBounciness = 0.6;
+	constexpr float aBounciness = 0.2, bBounciness = 0.2;
 	constexpr float aStaticFriction = 1, bStaticFriction = 1;
 	constexpr float aDynamicFriction = 1, bDynamicFriction = 1;
 

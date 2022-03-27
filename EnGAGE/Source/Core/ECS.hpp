@@ -125,11 +125,13 @@ namespace Core
 		};
 
 		void init();
+		void updateRemovedEntities();
 		unsigned int createEntity();
 		void removeEntity(unsigned int entity);
+		void markForRemove(unsigned int entity);
 		const Arr<EntitySignature, MAX_ENTITIES>& getEntitySignatures();
 		unsigned int getEntityCount();
-		void addComponent(unsigned int entity, ComponentType type);
+		void* addComponent(unsigned int entity, ComponentType type);
 		void removeComponent(unsigned int entity, ComponentType type);
 		void* getComponent(unsigned int entity, ComponentType type);
 

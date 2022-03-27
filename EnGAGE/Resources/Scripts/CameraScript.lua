@@ -20,6 +20,10 @@ function input()
 	direction.y = 0
 	direction.z = 0
 
+	if _keyPressedOnce(KEY_F) then
+
+	end
+
 	if _keyPressedOnce(KEY_ESCAPE) then
 		_toggleCursor()
 	end

@@ -30,8 +30,8 @@ namespace Core
 
 		void run()
 		{
-			double secsPerUpdate = 1.0 / 60.0;
-			double secsPerRender = 1.0 / 60.0;
+			double secsPerUpdate = 1.0 / 45.0;
+			double secsPerRender = 1.0 / 120.0;
 			double prevTime = Window::getCurrentTime();
 			double steps = 0.0;
 			while (!Window::closeRequested()) {
@@ -57,6 +57,7 @@ namespace Core
 					luaThread.join();
 					physicsThread.join();
 				}
+				ECS::updateRemovedEntities();
 
 
 				//Render

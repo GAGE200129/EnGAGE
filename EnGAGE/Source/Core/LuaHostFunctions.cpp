@@ -5,6 +5,8 @@
 #include "InputCodes.hpp"
 #include "Input.hpp"
 #include "Renderer.hpp"
+#include "Resource.hpp"
+#include "Lua.hpp"
 
 extern "C"
 {
@@ -15,6 +17,52 @@ extern "C"
 
 namespace LuaHostFunctions
 {
+    int createEntity(lua_State* L)
+    {
+        lua_pushinteger(L, Core::ECS::createEntity());
+        return 1;
+    }
+
+
+    int markForRemove(lua_State* L)
+    {
+        EN_ASSERT(lua_gettop(L) == 1, "Invalid argument");
+        unsigned int entity = lua_tointeger(L, 1);
+        Core::ECS::markForRemove(entity);
+        return 0;
+    }
+
+    int addComponent(lua_State* L)
+    {
+        EN_ASSERT(lua_gettop(L) == 2, "Invalid argument");
+
+        unsigned int entityID = (unsigned int)lua_tointeger(L, 1);
+        Core::ECS::ComponentType componentType = (Core::ECS::ComponentType)lua_tointeger(L, 2);
+          
+        lua_pushlightuserdata(L, Core::ECS::addComponent(entityID, componentType));
+        return 1;
+    }
+
+    int getComponent(lua_State* L)
+    {
+        using namespace Core::ECS;
+        EN_ASSERT(lua_gettop(L) == 2, "Invalid argument");
+
+        unsigned int entityID = (unsigned int)lua_tointeger(L, 1);
+        ComponentType componentType = (ComponentType)lua_tointeger(L, 2);
+
+        void* component = getComponent(entityID, componentType);
+
+        if (component == nullptr)
+        {
+            lua_pushnil(L);
+            return 1;
+        }
+
+        lua_pushlightuserdata(L, component);
+        return 1;
+    }
+
     int keyPressed(lua_State* L)
     {
         EN_ASSERT(lua_gettop(L) == 1, "Invalid argument");
@@ -52,25 +100,8 @@ namespace LuaHostFunctions
         lua_pushboolean(L, Core::Input::cursorLocked());
         return 1;
     }
-    int getComponent(lua_State* L)
-    {
-        using namespace Core::ECS;
-        EN_ASSERT(lua_gettop(L) == 2, "Invalid argument");
-
-        unsigned int entityID = (unsigned int)lua_tointeger(L, 1);
-        ComponentType componentType = (ComponentType)lua_tointeger(L, 2);
-
-        void* component = getComponent(entityID, componentType);
-
-        if (component == nullptr)
-        {
-            lua_pushnil(L);
-            return 1;
-        }
-
-        lua_pushlightuserdata(L, component);
-        return 1;
-    }
+    
+  
 
     int setPosition(lua_State* L)
     {
@@ -155,6 +186,73 @@ namespace LuaHostFunctions
         transform->sx += (float)lua_tonumber(L, 2);
         transform->sy += (float)lua_tonumber(L, 3);
         transform->sz += (float)lua_tonumber(L, 4);
+        return 0;
+    }
+    int setModel(lua_State* L)
+    {
+        EN_ASSERT(lua_gettop(L) == 2, "Invalid argument");
+        Core::ECS::ComponentHeader* header = (Core::ECS::ComponentHeader*)lua_touserdata(L, 1);
+        EN_ASSERT(header->type == Core::ECS::ComponentType::MODEL_RENDERER, "Invalid component type");
+
+        const char* modelName = lua_tostring(L, 2);
+        EN_ASSERT(modelName != nullptr, "modelName is null");
+
+        Core::ECS::ModelRendererComponent* pModelRenderer = (Core::ECS::ModelRendererComponent*)header;
+        pModelRenderer->pModel = Core::Resource::getModel(modelName);
+        return 0;
+    }
+    int setRigidBody(lua_State* L)
+    {
+        EN_ASSERT(lua_gettop(L) == 8, "Invalid argument");
+        Core::ECS::ComponentHeader* header = (Core::ECS::ComponentHeader*)lua_touserdata(L, 1);
+        EN_ASSERT(header->type == Core::ECS::ComponentType::RIGID_BODY, "Invalid component type");
+
+        Core::ECS::RigidBodyComponent* pRigidBody = (Core::ECS::RigidBodyComponent*)header;
+        pRigidBody->velocity.x = (float)lua_tonumber(L, 2);
+        pRigidBody->velocity.y = (float)lua_tonumber(L, 3);
+        pRigidBody->velocity.z = (float)lua_tonumber(L, 4);
+
+        pRigidBody->force.x = (float)lua_tonumber(L, 5);
+        pRigidBody->force.y = (float)lua_tonumber(L, 6);
+        pRigidBody->force.z = (float)lua_tonumber(L, 7);
+
+        pRigidBody->mass = (float)lua_tonumber(L, 8);
+
+        return 0;
+    }
+    int getVelocity(lua_State* L)
+    {
+        EN_ASSERT(lua_gettop(L) == 1, "Invalid argument");
+        Core::ECS::ComponentHeader* header = (Core::ECS::ComponentHeader*)lua_touserdata(L, 1);
+        EN_ASSERT(header->type == Core::ECS::ComponentType::RIGID_BODY, "Invalid component type");
+        Core::ECS::RigidBodyComponent* pRigidBody = (Core::ECS::RigidBodyComponent*)header;
+        lua_pushnumber(L, pRigidBody->velocity.x);
+        lua_pushnumber(L, pRigidBody->velocity.y);
+        lua_pushnumber(L, pRigidBody->velocity.z);
+
+        return 3;
+    }
+    int setCollisionShapeSphere(lua_State* L)
+    {
+        EN_ASSERT(lua_gettop(L) == 2, "Invalid argument");
+        Core::ECS::ComponentHeader* header = (Core::ECS::ComponentHeader*)lua_touserdata(L, 1);
+        EN_ASSERT(header->type == Core::ECS::ComponentType::RIGID_BODY, "Invalid component type");
+        Core::ECS::RigidBodyComponent* pRigidBody = (Core::ECS::RigidBodyComponent*)header;
+        pRigidBody->colliderType = Core::ECS::ColliderType::SPHERE;
+        ((Core::ECS::SphereCollider*)pRigidBody->colliderData)->radius = (float)lua_tonumber(L, 2);
+
+        return 0;
+    }
+    int setScript(lua_State* L)
+    {
+        EN_ASSERT(lua_gettop(L) == 2, "Invalid argument");
+        Core::ECS::ComponentHeader* header = (Core::ECS::ComponentHeader*)lua_touserdata(L, 1);
+        EN_ASSERT(header->type == Core::ECS::ComponentType::SCRIPT, "Invalid component type");
+
+        const char* scriptPath = lua_tostring(L, 2);
+        EN_ASSERT(scriptPath != nullptr, "scriptPath is null");
+
+        Core::Lua::loadFile(((Core::ECS::ScriptComponent*)header)->L, scriptPath);
         return 0;
     }
     int updateCamera(lua_State* L)

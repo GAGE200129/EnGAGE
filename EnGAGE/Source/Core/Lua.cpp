@@ -20,8 +20,9 @@ static DynArr<lua_State*> gLuaVMs;
 
 void Core::Lua::input()
 {
-	for (lua_State* L : gLuaVMs)
+	for (unsigned int i = 0; i < gLuaVMs.size(); i++)
 	{
+		lua_State* L = gLuaVMs[i];
 		lua_getglobal(L, "input");
 		if (lua_isfunction(L, -1))
 		{
@@ -58,16 +59,20 @@ lua_State* Core::Lua::newScript(unsigned int entity)
 	lua_State* L = luaL_newstate();
 	luaL_openlibs(L);
 	//Push entity id constants
-	setIntegerGlobal(L, "entity", entity);
+	setIntegerGlobal(L, "_entity", entity);
 
 	//Register all host functions
+	lua_register(L, "_createEntity", LuaHostFunctions::createEntity);
+	lua_register(L, "_markForRemove", LuaHostFunctions::markForRemove);
+	lua_register(L, "_getComponent", LuaHostFunctions::getComponent);
+	lua_register(L, "_addComponent", LuaHostFunctions::addComponent);
+
 	lua_register(L, "_keyPressed", LuaHostFunctions::keyPressed);
 	lua_register(L, "_keyPressedOnce", LuaHostFunctions::keyPressedOnce);
 	lua_register(L, "_buttonPressed", LuaHostFunctions::buttonPressed);
 	lua_register(L, "_getCursorPosDelta", LuaHostFunctions::getCursorPosDelta);
 	lua_register(L, "_toggleCursor", LuaHostFunctions::toggleCursor);
 	lua_register(L, "_isCursorLocked", LuaHostFunctions::isCursorLocked);
-	lua_register(L, "_getComponent", LuaHostFunctions::getComponent);
 	lua_register(L, "_setPosition", LuaHostFunctions::setPosition);
 	lua_register(L, "_setRotation", LuaHostFunctions::setRotation);
 	lua_register(L, "_setScale", LuaHostFunctions::setScale);
@@ -75,6 +80,11 @@ lua_State* Core::Lua::newScript(unsigned int entity)
 	lua_register(L, "_rotate", LuaHostFunctions::rotate);
 	lua_register(L, "_scale", LuaHostFunctions::scale);
 	lua_register(L, "_updateCamera", LuaHostFunctions::updateCamera);
+	lua_register(L, "_setModel", LuaHostFunctions::setModel);
+	lua_register(L, "_setRigidBody", LuaHostFunctions::setRigidBody);
+	lua_register(L, "_setCollisionShapeSphere", LuaHostFunctions::setCollisionShapeSphere);
+	lua_register(L, "_getVelocity", LuaHostFunctions::getVelocity);
+	lua_register(L, "_setScript", LuaHostFunctions::setScript);
 	
 	//Add globals
 	for (unsigned int i = 0; i < (unsigned int)ECS::ComponentType::COUNT; i++)
