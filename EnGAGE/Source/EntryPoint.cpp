@@ -37,7 +37,7 @@ int main()
 	std::uniform_real_distribution<float> dist(-5, 5);
 	std::uniform_real_distribution<float> dist2(10, 30);
 
-	for (int i = 0; i < 20; i++)
+	for (int i = 0; i < 120; i++)
 	{
 		unsigned int modelTest = ECS::createEntity();
 		ECS::addComponent(modelTest, ECS::ComponentType::TRANSFORM);

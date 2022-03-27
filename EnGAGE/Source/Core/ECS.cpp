@@ -181,20 +181,13 @@ void Core::ECS::removeComponent(unsigned int entity, ComponentType type)
 
 void* Core::ECS::getComponent(unsigned int entity, ComponentType type)
 {
-	auto& entitySignature = searchEntity(entity);
-
-	ComponentArray* pComponentArray = &gComponentArrays[type];
-	ComponentHeader* header;
-
-	for (unsigned int i = 0; i < pComponentArray->count; i++)
+	ComponentArray& componentArray = gComponentArrays[type];
+	
+	if (componentArray.entityToIndex.find(entity) != componentArray.entityToIndex.end())
 	{
-		char* offset = pComponentArray->data.get() + pComponentArray->size * i;
-		header = (ComponentHeader*)offset;
-		if (header->entity == entitySignature.id)
-		{
-			return offset;
-		}
+		return componentArray.data.get() + componentArray.size * componentArray.entityToIndex.at(entity);
 	}
+
 
 	return nullptr;
 
@@ -275,6 +268,7 @@ void removeComponentInternal(ComponentArray& componentArray, EntitySignature& en
 			if (i == (componentArray.count - 1))
 			{
 				componentArray.count--;
+				componentArray.entityToIndex.erase(entity.id);
 				break;
 			}
 			else //Else copy end of arr to removed slot
@@ -282,6 +276,9 @@ void removeComponentInternal(ComponentArray& componentArray, EntitySignature& en
 				end = componentArray.data.get() + componentArray.size * (componentArray.count - 1);
 				memcpy(offset, end, componentArray.size);
 				componentArray.count--;
+
+				unsigned int entityOfRemovedIndex = ((ComponentHeader*)end)->entity;
+				componentArray.entityToIndex[entityOfRemovedIndex] = i;
 				break;
 			}
 		}
@@ -336,6 +333,9 @@ static void constructComponent(unsigned int entity, ComponentType type, const vo
 	header->entity = entity; // now this component has this entity as parent
 	header->type = type;
 	pComponentArray->count++;
+	pComponentArray->entityToIndex.insert({entity, pComponentArray->count - 1});
+
+	
 
 	//Update entity's signature
 	SET_BIT(entitySignature.signature, (unsigned int)type);

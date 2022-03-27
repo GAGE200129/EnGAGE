@@ -68,6 +68,7 @@ namespace Core
 			unsigned int count;
 			unsigned int size;
 			Scope<char[]> data;
+			Map<unsigned int, unsigned int> entityToIndex;
 		};
 		
 

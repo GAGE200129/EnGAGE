@@ -15,7 +15,7 @@ struct CollisionPoints
 	float distance;
 };
 
-static glm::vec3 gGravity = {0, -9.8f, 0};
+static glm::vec3 gGravity = { 0, -9.8f, 0 };
 //static float gTerminalSpeed = ;
 
 static void solveSpherePlaneCollision(DynArr<CollisionPoints>& points, Core::ECS::RigidBodyComponent* sphereRB, Core::ECS::TransformComponent* sphereT,
@@ -25,7 +25,7 @@ static void solveSphereSphereCollision(DynArr<CollisionPoints>& points, Core::EC
 static void solveCollision(DynArr<CollisionPoints>& points, Core::ECS::RigidBodyComponent* aRB, Core::ECS::TransformComponent* aT,
 	Core::ECS::RigidBodyComponent* bRB, Core::ECS::TransformComponent* bT);
 
-static void positionSolve(DynArr<CollisionPoints>& points);
+static void collisionSolve(DynArr<CollisionPoints>& points);
 
 void Core::Physics::init()
 {
@@ -56,8 +56,7 @@ void Core::Physics::update(float delta)
 		}
 	}
 
-	positionSolve(collisionPoints);
-
+	collisionSolve(collisionPoints);
 
 	//Dynamics
 	for (const auto& entity : system.entities)
@@ -81,17 +80,17 @@ void solveSpherePlaneCollision(
 	Core::ECS::RigidBodyComponent* sphereRB,
 	Core::ECS::TransformComponent* sphereT,
 	Core::ECS::RigidBodyComponent* planeRB,
-	Core::ECS::TransformComponent* planeT )
+	Core::ECS::TransformComponent* planeT)
 {
-	Core::ECS::SphereCollider* sphereCollider = (Core::ECS::SphereCollider* )sphereRB->colliderData;
-	Core::ECS::PlaneCollider* planeCollider = (Core::ECS::PlaneCollider * )planeRB->colliderData;
+	Core::ECS::SphereCollider* sphereCollider = (Core::ECS::SphereCollider*)sphereRB->colliderData;
+	Core::ECS::PlaneCollider* planeCollider = (Core::ECS::PlaneCollider*)planeRB->colliderData;
 	float dot = sphereT->x * planeCollider->x + sphereT->y * planeCollider->y + sphereT->z * planeCollider->z;
 	float distance = dot - planeCollider->distance - sphereCollider->radius;
 	if (distance < 0.0f) {
 		glm::vec3 normal = { planeCollider->x, planeCollider->y, planeCollider->z };
-		glm::vec3 spherePos = {sphereT->x, sphereT->y, sphereT->z};
+		glm::vec3 spherePos = { sphereT->x, sphereT->y, sphereT->z };
 		points.push_back(
-			CollisionPoints{ 
+			CollisionPoints{
 				sphereRB, sphereT,
 				planeRB, planeT ,
 
@@ -144,31 +143,89 @@ static void solveCollision(
 	{
 		//A is Plane, B is Sphere
 		solveSpherePlaneCollision(points, bRB, bT, aRB, aT);
-	} else if (aRB->colliderType == ColliderType::SPHERE && bRB->colliderType == ColliderType::SPHERE)
+	}
+	else if (aRB->colliderType == ColliderType::SPHERE && bRB->colliderType == ColliderType::SPHERE)
 	{
 		//A is sphere, B is sphere
 		solveSphereSphereCollision(points, aRB, aT, bRB, bT);
 	}
 }
 
-void positionSolve(DynArr<CollisionPoints>& points)
+static void collisionSolve(DynArr<CollisionPoints>& points)
 {
-	for (const auto& point : points)
+	constexpr float percent = 0.8f;
+	constexpr float slop = 0.01f;
+
+	constexpr float aBounciness = 0.6, bBounciness = 0.6;
+	constexpr float aStaticFriction = 1, bStaticFriction = 1;
+	constexpr float aDynamicFriction = 1, bDynamicFriction = 1;
+
+
+	auto positionSolve = [&](CollisionPoints& point)
 	{
+		float aInvMass = point.a->mass != 0.0f ? 1.0f / point.a->mass : 0.0f;
+		float bInvMass = point.b->mass != 0.0f ? 1.0f / point.b->mass : 0.0f;
+		glm::vec3 correction = point.normal * point.distance * glm::max(point.distance - slop, 0.0f) / (aInvMass + bInvMass);
+
 		if (point.a->mass != 0.0f)
 		{
-			point.a->velocity = glm::reflect(point.a->velocity, point.normal) * 0.7f;
-			point.aT->x += point.normal.x * point.distance;
-			point.aT->y += point.normal.y * point.distance;
-			point.aT->z += point.normal.z * point.distance;
-		} 
+			point.aT->x += correction.x;
+			point.aT->y += correction.y;
+			point.aT->z += correction.z;
+		}
 
 		if (point.b->mass != 0.0f)
 		{
-			point.b->velocity = glm::reflect(point.b->velocity, point.normal) * 0.7f;
-			point.bT->x -= point.normal.x * point.distance;
-			point.bT->y -= point.normal.y * point.distance;
-			point.bT->z -= point.normal.z * point.distance;
+			point.bT->x -= correction.x;
+			point.bT->y -= correction.y;
+			point.bT->z -= correction.z;
 		}
+	};
+
+	auto impulseSolve = [&](CollisionPoints& point)
+	{
+		glm::vec3 relativeVel = point.a->velocity - point.b->velocity;
+		float normalSpeed = glm::dot(relativeVel, point.normal);
+
+		float aInvMass = point.a->mass != 0.0f ? 1.0f / point.a->mass : 0.0f;
+		float bInvMass = point.b->mass != 0.0f ? 1.0f / point.b->mass : 0.0f;
+
+		if (normalSpeed >= 0)
+			return;
+		float e = aBounciness * bBounciness;
+		float j = -(1.0f + e) * normalSpeed / (aInvMass + bInvMass);
+		glm::vec3 impulse = j * point.normal;
+
+
+		glm::vec3 tangent = relativeVel - normalSpeed * point.normal;
+
+		if (glm::length2(tangent) != 0.0f)
+		{
+			tangent = glm::normalize(tangent);
+		}
+
+		float fVel = glm::dot(relativeVel, tangent);
+		float f = -fVel / (aInvMass + bInvMass);
+		float mu = glm::length(glm::vec2(aStaticFriction, bStaticFriction));
+
+		glm::vec3 friction;
+		if (glm::abs(f) < j * mu)
+		{
+			friction = f * tangent;
+		}
+		else
+		{
+			mu = glm::length(glm::vec2(aDynamicFriction, bDynamicFriction));
+			friction = -j * tangent * mu;
+		}
+
+		point.a->velocity += (impulse + friction) * aInvMass;
+		point.b->velocity -= (impulse - friction) * bInvMass;
+	};
+
+	for (auto& point : points)
+	{
+		positionSolve(point);
+		impulseSolve(point);
 	}
 }
