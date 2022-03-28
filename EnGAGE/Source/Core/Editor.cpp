@@ -4,7 +4,7 @@
 #include "ECS.hpp"
 #include "Resource.hpp"
 #include "Renderer.hpp"
-#include "Lua.hpp"
+#include "Script.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -178,7 +178,7 @@ static void processComponent(Core::ECS::ComponentType type, Core::ECS::Component
 		{
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("RESOURCE_SCRIPT"))
 			{
-				Core::Lua::loadFile(pScript->L, String((char*)payload->Data));
+				Core::Script::loadFile(pScript->L, String((char*)payload->Data));
 			}
 			ImGui::EndDragDropTarget();
 		}

@@ -56,8 +56,6 @@ void Core::Physics::update(float delta)
 		}
 	}
 
-	collisionSolve(collisionPoints);
-
 	//Dynamics
 	for (const auto& entity : system.entities)
 	{
@@ -72,6 +70,7 @@ void Core::Physics::update(float delta)
 		transform->z += rigidBody->velocity.z * delta;
 		rigidBody->force = { 0, 0, 0 };
 	}
+	collisionSolve(collisionPoints);
 	collisionPoints.clear();
 }
 
@@ -156,9 +155,9 @@ static void collisionSolve(DynArr<CollisionPoints>& points)
 	constexpr float percent = 0.8f;
 	constexpr float slop = 0.01f;
 
-	constexpr float aBounciness = 0.2, bBounciness = 0.2;
-	constexpr float aStaticFriction = 1, bStaticFriction = 1;
-	constexpr float aDynamicFriction = 1, bDynamicFriction = 1;
+	constexpr float aBounciness = 0.2f, bBounciness = 0.2f;
+	constexpr float aStaticFriction = 0.96f, bStaticFriction = 0.96f;
+	constexpr float aDynamicFriction = 0.96f, bDynamicFriction = 0.96f;
 
 
 	auto positionSolve = [&](CollisionPoints& point)

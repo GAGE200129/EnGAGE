@@ -3,7 +3,7 @@
 struct lua_State;
 namespace Core
 {
-	namespace Lua
+	namespace Script
 	{
 		void input();
 		void update(float delta);

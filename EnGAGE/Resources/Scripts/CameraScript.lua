@@ -1,20 +1,20 @@
 
-x = 0.0
-y = 0.0
-z = 0.0
-pitch = 0.0
-yaw = 0.0
-roll = 0.0
-fov = 60.0
-near = 1.0
-far = 1000.0
+local x = 0.0
+local y = 0.0
+local z = 0.0
+local pitch = 0.0
+local yaw = 0.0
+local roll = 0.0
+local fov = 60.0
+local near = 1.0
+local far = 1000.0
 
-flycam_speed = 5.0
-mouse_sensitivity = 0.3
+local flycam_speed = 5.0
+local mouse_sensitivity = 0.3
 
-direction = { x = 0, y = 0, z = 0 }
+local direction = { x = 0, y = 0, z = 0 }
 
-function input()
+function input(entity)
 	
 	direction.x = 0
 	direction.y = 0
@@ -77,7 +77,7 @@ function input()
 	end
 end
 
-function update(delta)
+function update(delta, entity)
 
 	x = x + direction.x * delta * flycam_speed; 
 	y = y + direction.y * delta * flycam_speed; 

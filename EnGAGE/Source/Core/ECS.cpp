@@ -1,16 +1,16 @@
 #include "pch.hpp"
 #include "ECS.hpp"
 
-#include "Lua.hpp"
+#include "Script.hpp"
 
 #define SET_BIT(x, loc) x |= 1 << loc
 #define UNSET_BIT(x, loc) x &= ~(1 << loc)
 
 using namespace Core::ECS;
 //Entity
-static unsigned int gEntityCounter = 0;
-static unsigned int gLivingEntities = 0;
-static Arr<EntitySignature, MAX_ENTITIES> gEntitiesSignatures = {0};
+static unsigned int gEntityCounter;
+static unsigned int gLivingEntities;
+static Arr<EntitySignature, MAX_ENTITIES> gEntitiesSignatures;
 static Set<unsigned int> gEntitiesMarkedForRemoval;
 
 //Component
@@ -26,6 +26,13 @@ static void* constructComponent(unsigned int entity, ComponentType type, const v
 
 void Core::ECS::init()
 {
+	gEntityCounter = 0;
+	gLivingEntities = 0;
+	gEntitiesSignatures = { 0 };
+	gEntitiesMarkedForRemoval.clear();
+	gComponentArrays.clear();
+	gSystems.clear();
+
 	//Init components
 	for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
 	{
@@ -150,7 +157,7 @@ void* Core::ECS::addComponent(unsigned int entity, ComponentType type)
 	case ComponentType::SCRIPT:
 	{
 		ScriptComponent* component = (ScriptComponent*)extraData.get();
-		component->L = Core::Lua::newScript(entity);
+		component->L = Core::Script::newScript(entity);
 		break;
 	}
 	case ComponentType::RIGID_BODY:
@@ -179,7 +186,7 @@ void Core::ECS::removeComponent(unsigned int entity, ComponentType type)
 	{
 		ScriptComponent* component = (ScriptComponent*)ECS::getComponent(entity, ComponentType::SCRIPT);
 		if(component)
-			Lua::removeScript(component->L);
+			Script::removeScript(component->L);
 		break;
 	}
 	}

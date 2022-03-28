@@ -6,7 +6,7 @@
 #include "Input.hpp"
 #include "Renderer.hpp"
 #include "Resource.hpp"
-#include "Lua.hpp"
+#include "Script.hpp"
 
 extern "C"
 {
@@ -17,6 +17,70 @@ extern "C"
 
 namespace LuaHostFunctions
 {
+    //ECS
+    int createEntity(lua_State* L);
+    int markForRemove(lua_State* L);
+    int addComponent(lua_State* L);
+    int getComponent(lua_State* L);
+
+
+    //Input
+    int keyPressed(lua_State* L);
+    int keyPressedOnce(lua_State* L);
+    int buttonPressed(lua_State* L);
+    int getCursorPosDelta(lua_State* L);
+    int toggleCursor(lua_State* L);
+    int isCursorLocked(lua_State* L);
+
+    //Transform
+    int setPosition(lua_State* L);
+    int setRotation(lua_State* L);
+    int setScale(lua_State* L);
+    int translate(lua_State* L);
+    int rotate(lua_State* L);
+    int scale(lua_State* L);
+
+    //Modelrenderer
+    int setModel(lua_State* L);
+
+    //Ridgidbody
+    int setRigidBody(lua_State* L);
+    int getVelocity(lua_State* L);
+    int setCollisionShapeSphere(lua_State* L);
+    int setCollisionShapePlane(lua_State* L);
+
+    //Script
+    int setScript(lua_State* L);
+
+    //Render
+    int updateCamera(lua_State* L);
+
+    void registerAllFunctions(lua_State* L)
+    {
+        lua_register(L, "_createEntity", createEntity);
+        lua_register(L, "_markForRemove", markForRemove);
+        lua_register(L, "_getComponent", getComponent);
+        lua_register(L, "_addComponent", addComponent);
+        lua_register(L, "_keyPressed", keyPressed);
+        lua_register(L, "_keyPressedOnce", keyPressedOnce);
+        lua_register(L, "_buttonPressed", buttonPressed);
+        lua_register(L, "_getCursorPosDelta", getCursorPosDelta);
+        lua_register(L, "_toggleCursor", toggleCursor);
+        lua_register(L, "_isCursorLocked", isCursorLocked);
+        lua_register(L, "_setPosition", setPosition);
+        lua_register(L, "_setRotation", setRotation);
+        lua_register(L, "_setScale", setScale);
+        lua_register(L, "_translate", translate);
+        lua_register(L, "_rotate", rotate);
+        lua_register(L, "_scale", scale);
+        lua_register(L, "_updateCamera", updateCamera);
+        lua_register(L, "_setModel", setModel);
+        lua_register(L, "_setRigidBody", setRigidBody);
+        lua_register(L, "_setCollisionShapeSphere", setCollisionShapeSphere);
+        lua_register(L, "_setCollisionShapePlane", setCollisionShapePlane);
+        lua_register(L, "_getVelocity", getVelocity);
+        lua_register(L, "_setScript", setScript);
+    }
     int createEntity(lua_State* L)
     {
         lua_pushinteger(L, Core::ECS::createEntity());
@@ -243,6 +307,20 @@ namespace LuaHostFunctions
 
         return 0;
     }
+    int setCollisionShapePlane(lua_State* L)
+    {
+        EN_ASSERT(lua_gettop(L) == 5, "Invalid argument");
+        Core::ECS::ComponentHeader* header = (Core::ECS::ComponentHeader*)lua_touserdata(L, 1);
+        EN_ASSERT(header->type == Core::ECS::ComponentType::RIGID_BODY, "Invalid component type");
+        Core::ECS::RigidBodyComponent* pRigidBody = (Core::ECS::RigidBodyComponent*)header;
+        pRigidBody->colliderType = Core::ECS::ColliderType::PLANE;
+        ((Core::ECS::PlaneCollider*)pRigidBody->colliderData)->x = (float)lua_tonumber(L, 2);
+        ((Core::ECS::PlaneCollider*)pRigidBody->colliderData)->y = (float)lua_tonumber(L, 3);
+        ((Core::ECS::PlaneCollider*)pRigidBody->colliderData)->z = (float)lua_tonumber(L, 4);
+        ((Core::ECS::PlaneCollider*)pRigidBody->colliderData)->distance = (float)lua_tonumber(L, 5);
+
+        return 0;
+    }
     int setScript(lua_State* L)
     {
         EN_ASSERT(lua_gettop(L) == 2, "Invalid argument");
@@ -252,7 +330,7 @@ namespace LuaHostFunctions
         const char* scriptPath = lua_tostring(L, 2);
         EN_ASSERT(scriptPath != nullptr, "scriptPath is null");
 
-        Core::Lua::loadFile(((Core::ECS::ScriptComponent*)header)->L, scriptPath);
+        Core::Script::loadFile(((Core::ECS::ScriptComponent*)header)->L, scriptPath);
         return 0;
     }
     int updateCamera(lua_State* L)

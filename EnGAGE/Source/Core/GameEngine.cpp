@@ -8,7 +8,7 @@
 #include "ECS.hpp"
 #include "Editor.hpp"
 #include "Renderer.hpp"
-#include "Lua.hpp"
+#include "Script.hpp"
 #include "Physics.hpp"
 
 
@@ -26,6 +26,7 @@ namespace Core
 			
 			Renderer::init();
 			Physics::init();
+			
 		}
 
 		void run()
@@ -42,7 +43,7 @@ namespace Core
 
 				steps += delta;
 
-				Lua::input();
+				Script::input();
 				Input::update();
 				Window::pollEvents();
 
@@ -51,7 +52,7 @@ namespace Core
 					steps -= secsPerUpdate;
 
 					//Update
-					Thread luaThread(Lua::update, float(secsPerUpdate));
+					Thread luaThread(Script::update, float(secsPerUpdate));
 					Thread physicsThread(Physics::update, float(secsPerUpdate));
 					
 					luaThread.join();
@@ -71,12 +72,19 @@ namespace Core
 					std::this_thread::sleep_for(1ms);
 				}
 			}
-			Lua::shutdown();
-			Renderer::shutdown();
+			clearResources();
 			Editor::shutdown();
-			Resource::shutdown();
+			Renderer::shutdown();
+			Physics::shutdown();
 			Window::destroy();
-		}	
+		}
+		void clearResources()
+		{
+			Script::shutdown();
+			Resource::shutdown();
+			ECS::init();
+		}
+
 	}
 }
 
