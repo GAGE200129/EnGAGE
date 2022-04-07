@@ -28,10 +28,6 @@ void Core::ECS::init()
 {
 	gEntityCounter = 0;
 	gLivingEntities = 0;
-	gEntitiesSignatures = { 0 };
-	gEntitiesMarkedForRemoval.clear();
-	gComponentArrays.clear();
-	gSystems.clear();
 
 	//Init components
 	for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
@@ -50,6 +46,7 @@ void Core::ECS::init()
 	SET_BIT(signature, (unsigned int)ComponentType::MODEL_RENDERER);
 	gSystems[SystemType::RENDERER].signature = signature;
 
+
 	signature = 0;
 	SET_BIT(signature, (unsigned int)ComponentType::SCRIPT);
 	gSystems[SystemType::SCRIPTING].signature = signature;
@@ -59,6 +56,12 @@ void Core::ECS::init()
 	SET_BIT(signature, (unsigned int)ComponentType::TRANSFORM);
 	gSystems[SystemType::PHYSICS].signature = signature;
 
+}
+
+void Core::ECS::shutdown()
+{
+	gEntityCounter = 0;
+	gLivingEntities = 0;
 }
 
 void Core::ECS::updateRemovedEntities()
@@ -153,11 +156,19 @@ void* Core::ECS::addComponent(unsigned int entity, ComponentType type)
 		transformComponent->sz = 1;
 		break;
 	}
+	case ComponentType::MODEL_RENDERER:
+	{
+		ModelRendererComponent* component = (ModelRendererComponent*)extraData.get();
+		component->pModel = nullptr;
+		memset(component->modelPath, 0, MAX_NAME_SIZE);
+		break;
+	}
 
 	case ComponentType::SCRIPT:
 	{
 		ScriptComponent* component = (ScriptComponent*)extraData.get();
 		component->L = Core::Script::newScript(entity);
+		memset(component->scriptPath, 0, MAX_NAME_SIZE);
 		break;
 	}
 	case ComponentType::RIGID_BODY:

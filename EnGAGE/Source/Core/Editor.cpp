@@ -250,15 +250,18 @@ static void processRenderer()
 
 static void processResourceBrowser()
 {
-	static const char* modelPath = "Resources\\Models";
-	static const char* scriptPath = "Resources\\Scripts";
+	static const char* modelPath = "Resources/Models";
+	static const char* scriptPath = "Resources/Scripts";
 	ImGui::Begin("ResourceBrowser");
 
 	if(ImGui::TreeNode("Models"))
 	{
-		for (const auto& entry : std::filesystem::recursive_directory_iterator(modelPath))
+		for (auto& entry : std::filesystem::recursive_directory_iterator(modelPath))
 		{
-			auto& pathName = entry.path().string();
+			std::filesystem::path path = entry.path();
+			String pathName = path.make_preferred().string();
+			std::replace(pathName.begin(), pathName.end(), '\\', '/');
+
 			ImGui::Selectable(pathName.c_str());
 			if (ImGui::BeginDragDropSource())
 			{

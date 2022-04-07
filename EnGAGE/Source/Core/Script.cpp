@@ -60,6 +60,8 @@ void Core::Script::shutdown()
 	{
 		lua_close(L);
 	}
+
+	gScripts.clear();
 }
 
 lua_State* Core::Script::newScript(unsigned int entity)
@@ -68,7 +70,7 @@ lua_State* Core::Script::newScript(unsigned int entity)
 	luaL_openlibs(L);
 
 	//Register all host functions
-	LuaHostFunctions::registerAllFunctions(L);
+	LuaHostFunctions::registerAllScriptFunctions(L);
 	
 	//Add globals
 	for (unsigned int i = 0; i < (unsigned int)ECS::ComponentType::COUNT; i++)

@@ -10,7 +10,7 @@
 #include "Renderer.hpp"
 #include "Script.hpp"
 #include "Physics.hpp"
-
+#include "Scene.hpp"
 
 namespace Core
 {
@@ -22,17 +22,20 @@ namespace Core
 			Window::init(width, height, title);
 			Input::init(Window::getRawWindow());
 			Editor::init(Window::getRawWindow());
+
 			ECS::init();
 			
 			Renderer::init();
 			Physics::init();
-			
 		}
 
 		void run()
 		{
-			double secsPerUpdate = 1.0 / 45.0;
-			double secsPerRender = 1.0 / 120.0;
+			constexpr unsigned int FPS = 120; 
+			constexpr unsigned int TPS = 60; //Tick per seconds
+
+			const double secsPerUpdate = 1.0 / (double)FPS;
+			const double secsPerRender = 1.0 / (double)TPS;
 			double prevTime = Window::getCurrentTime();
 			double steps = 0.0;
 			while (!Window::closeRequested()) {
@@ -58,19 +61,16 @@ namespace Core
 					luaThread.join();
 					physicsThread.join();
 				}
-				ECS::updateRemovedEntities();
-
+				
 
 				//Render
 				Renderer::render();
 				if(!Input::cursorLocked())
 					Editor::render();
 				Window::swapBuffers();
-				double endTime = currentTime + secsPerRender;
-				while (Window::getCurrentTime() < endTime) {
-					using namespace std::chrono_literals;
-					std::this_thread::sleep_for(1ms);
-				}
+
+				ECS::updateRemovedEntities();
+				Scene::checkForSceneSwitch();
 			}
 			clearResources();
 			Editor::shutdown();
@@ -80,9 +80,9 @@ namespace Core
 		}
 		void clearResources()
 		{
+			ECS::shutdown();
 			Script::shutdown();
 			Resource::shutdown();
-			ECS::init();
 		}
 
 	}

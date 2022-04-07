@@ -11,7 +11,7 @@ int main()
 	using namespace Core;
 	GameEngine::init(1600, 900, "Hello world");
 
-	Scene::loadScene("Resources/Scenes/TestScene.lua");
+	Scene::loadScene("Resources/Scenes/Dump.lua");
 
 	GameEngine::run();
 }

@@ -15,6 +15,8 @@
 #include <filesystem>
 #include <bitset>
 #include <random>
+#include <sstream>
+#include <regex>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>

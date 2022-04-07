@@ -7,6 +7,7 @@
 #include "Renderer.hpp"
 #include "Resource.hpp"
 #include "Script.hpp"
+#include "Scene.hpp"
 
 extern "C"
 {
@@ -45,7 +46,6 @@ namespace LuaHostFunctions
 
     //Ridgidbody
     int setRigidBody(lua_State* L);
-    int getVelocity(lua_State* L);
     int setCollisionShapeSphere(lua_State* L);
     int setCollisionShapePlane(lua_State* L);
 
@@ -55,12 +55,18 @@ namespace LuaHostFunctions
     //Render
     int updateCamera(lua_State* L);
 
+    //Scene
+    int loadScene(lua_State* L);
+    int saveScene(lua_State* L);
+
     void registerAllFunctions(lua_State* L)
     {
-        lua_register(L, "_createEntity", createEntity);
+      
+    }
+    void registerAllScriptFunctions(lua_State* L)
+    {
         lua_register(L, "_markForRemove", markForRemove);
         lua_register(L, "_getComponent", getComponent);
-        lua_register(L, "_addComponent", addComponent);
         lua_register(L, "_keyPressed", keyPressed);
         lua_register(L, "_keyPressedOnce", keyPressedOnce);
         lua_register(L, "_buttonPressed", buttonPressed);
@@ -74,11 +80,20 @@ namespace LuaHostFunctions
         lua_register(L, "_rotate", rotate);
         lua_register(L, "_scale", scale);
         lua_register(L, "_updateCamera", updateCamera);
+    }
+    void registerAllSceneFunctions(lua_State* L)
+    {
+        lua_register(L, "_createEntity", createEntity);
+        lua_register(L, "_markForRemove", markForRemove);
+        lua_register(L, "_addComponent", addComponent);
+        lua_register(L, "_getComponent", getComponent);
         lua_register(L, "_setModel", setModel);
         lua_register(L, "_setRigidBody", setRigidBody);
+        lua_register(L, "_setPosition", setPosition);
+        lua_register(L, "_setRotation", setRotation);
+        lua_register(L, "_setScale", setScale);
         lua_register(L, "_setCollisionShapeSphere", setCollisionShapeSphere);
         lua_register(L, "_setCollisionShapePlane", setCollisionShapePlane);
-        lua_register(L, "_getVelocity", getVelocity);
         lua_register(L, "_setScript", setScript);
     }
     int createEntity(lua_State* L)
@@ -263,6 +278,7 @@ namespace LuaHostFunctions
 
         Core::ECS::ModelRendererComponent* pModelRenderer = (Core::ECS::ModelRendererComponent*)header;
         pModelRenderer->pModel = Core::Resource::getModel(modelName);
+        strcpy(pModelRenderer->modelPath, modelName);
         return 0;
     }
     int setRigidBody(lua_State* L)
@@ -330,7 +346,9 @@ namespace LuaHostFunctions
         const char* scriptPath = lua_tostring(L, 2);
         EN_ASSERT(scriptPath != nullptr, "scriptPath is null");
 
-        Core::Script::loadFile(((Core::ECS::ScriptComponent*)header)->L, scriptPath);
+        Core::ECS::ScriptComponent* sciptComponent = (Core::ECS::ScriptComponent*)header;
+        Core::Script::loadFile(sciptComponent->L, scriptPath);
+        strcpy(sciptComponent->scriptPath, scriptPath);
         return 0;
     }
     int updateCamera(lua_State* L)
@@ -346,6 +364,26 @@ namespace LuaHostFunctions
         camera.fov =    (float)lua_tonumber(L, 7);
         camera.near =   (float)lua_tonumber(L, 8);
         camera.far =    (float)lua_tonumber(L, 9);
+
+        return 0;
+    }
+    int loadScene(lua_State* L)
+    {
+        EN_ASSERT(lua_gettop(L) == 1, "Invalid argument");
+        const char* scenePath = lua_tostring(L, 1);
+        EN_ASSERT(scenePath != nullptr, "scenePath is null");
+
+        Core::Scene::loadScene(String(scenePath));
+
+        return 0;
+    }
+    int saveScene(lua_State* L)
+    {
+        EN_ASSERT(lua_gettop(L) == 1, "Invalid argument");
+        const char* scenePath = lua_tostring(L, 1);
+        EN_ASSERT(scenePath != nullptr, "scenePath is null");
+
+        Core::Scene::saveScene(String(scenePath));
 
         return 0;
     }

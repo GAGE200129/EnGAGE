@@ -108,20 +108,24 @@ void solveSphereSphereCollision(DynArr<CollisionPoints>& points, Core::ECS::Rigi
 	glm::vec3 sphereAPos = { sphereAT->x, sphereAT->y, sphereAT->z };
 	glm::vec3 sphereBPos = { sphereBT->x, sphereBT->y, sphereBT->z };
 	glm::vec3 normal = sphereAPos - sphereBPos;
-	float distance = glm::length(normal);
-	normal /= distance;
 
-	if (distance < (sphereACollider->radius + sphereBCollider->radius))
+	if (glm::length2(normal) != 0.0f)
 	{
-		points.push_back(
-			CollisionPoints{
-				sphereARB, sphereAT,
-				sphereBRB, sphereBT ,
+		float distance = glm::length(normal);
+		normal /= distance;
 
-				normal,
-				(sphereACollider->radius + sphereBCollider->radius) - distance
-			}
-		);
+		if (distance < (sphereACollider->radius + sphereBCollider->radius))
+		{
+			points.push_back(
+				CollisionPoints{
+					sphereARB, sphereAT,
+					sphereBRB, sphereBT ,
+
+					normal,
+					(sphereACollider->radius + sphereBCollider->radius) - distance
+				}
+			);
+		}
 	}
 }
 
@@ -155,7 +159,7 @@ static void collisionSolve(DynArr<CollisionPoints>& points)
 	constexpr float percent = 0.8f;
 	constexpr float slop = 0.01f;
 
-	constexpr float aBounciness = 0.2f, bBounciness = 0.2f;
+	constexpr float aBounciness = 0.9f, bBounciness = 0.9f;
 	constexpr float aStaticFriction = 0.96f, bStaticFriction = 0.96f;
 	constexpr float aDynamicFriction = 0.96f, bDynamicFriction = 0.96f;
 

@@ -10,7 +10,7 @@ namespace Core
 		static constexpr unsigned int MAX_ENTITIES = 3000;
 		static constexpr unsigned int MAX_COMPONENTS = 32; //32 bits field
 		static constexpr unsigned int MAX_COMPONENT_ARRAY_BUFFER_SIZE = 1048576u;
-		static constexpr unsigned int MAX_NAME_SIZE = 50u;
+		static constexpr unsigned int MAX_NAME_SIZE = 70u;
 		static constexpr unsigned int MAX_COLLIDER_BUFFER_SIZE = 128u;
 
 		//Entity 
@@ -89,12 +89,14 @@ namespace Core
 		struct ModelRendererComponent
 		{
 			ComponentHeader header;
+			char modelPath[MAX_NAME_SIZE];
 			Model* pModel;
 		};
 
 		struct ScriptComponent
 		{
 			ComponentHeader header;
+			char scriptPath[MAX_NAME_SIZE];
 			lua_State* L;
 		};
 
@@ -107,12 +109,12 @@ namespace Core
 			ColliderType colliderType;
 			char colliderData[MAX_COLLIDER_BUFFER_SIZE];
 		};
-		
 
 		//System
 		enum class SystemType : unsigned int
 		{
 			RENDERER,
+			DIRECTIONAL_RENDERER,
 			SCRIPTING,
 			PHYSICS,
 			COUNT
@@ -125,6 +127,7 @@ namespace Core
 		};
 
 		void init();
+		void shutdown();
 		void updateRemovedEntities();
 		unsigned int createEntity();
 		void removeEntity(unsigned int entity);
@@ -140,5 +143,18 @@ namespace Core
 		unsigned int getComponentArrayMemorySize(ComponentType type);
 
 		ComponentData getComponentData(ComponentType type);
+
+		//Templated area
+		template<ComponentType type, typename T>
+		T* addComponent(unsigned int entity)
+		{
+			return reinterpret_cast<T*>(addComponent(entity, type));
+		}
+
+		template<ComponentType type, typename T>
+		T* getComponentComponent(unsigned int entity)
+		{
+			return reinterpret_cast<T*>(getComponent(entity, type));
+		}
 	}
 }
