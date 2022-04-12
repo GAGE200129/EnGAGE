@@ -62,6 +62,17 @@ void Core::ECS::shutdown()
 {
 	gEntityCounter = 0;
 	gLivingEntities = 0;
+
+	for (auto& [type, system] : gSystems)
+	{
+		system.entities.clear();
+	}
+
+	for (auto& [type, componentArr] : gComponentArrays)
+	{
+		componentArr.count = 0;
+		componentArr.entityToIndex.clear();
+	}
 }
 
 void Core::ECS::updateRemovedEntities()

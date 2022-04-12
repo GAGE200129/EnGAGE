@@ -9,6 +9,7 @@ project "imgui"
 		"%{prj.location}/*.cpp",
 		"%{prj.location}/backends/imgui_impl_glfw.cpp",
 		"%{prj.location}/backends/imgui_impl_opengl3.cpp",
+		"%{prj.location}/misc/cpp/imgui_stdlib.cpp",
 	}
 	includedirs { 
 		"%{prj.location}",

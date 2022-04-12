@@ -118,7 +118,8 @@ namespace LuaHostFunctions
         unsigned int entityID = (unsigned int)lua_tointeger(L, 1);
         Core::ECS::ComponentType componentType = (Core::ECS::ComponentType)lua_tointeger(L, 2);
           
-        lua_pushlightuserdata(L, Core::ECS::addComponent(entityID, componentType));
+        void* data = Core::ECS::addComponent(entityID, componentType);
+        lua_pushlightuserdata(L, data);
         return 1;
     }
 

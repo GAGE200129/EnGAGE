@@ -5,10 +5,13 @@
 #include "Resource.hpp"
 #include "Renderer.hpp"
 #include "Script.hpp"
+#include "GameEngine.hpp"
+#include "Scene.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
+#include <misc/cpp/imgui_stdlib.h>
 
 static void processGameEngine();
 static void processSceneGraph();
@@ -16,6 +19,7 @@ static void processComponent(Core::ECS::ComponentType type, Core::ECS::Component
 static void processInspector(const Core::ECS::EntitySignature* pEntity);
 static void processRenderer();
 static void processResourceBrowser();
+static void processMenuBar();
 
 void Core::Editor::init(GLFWwindow* pWindow)
 {
@@ -48,6 +52,7 @@ void Core::Editor::render()
 	processSceneGraph();
 	processRenderer();
 	processResourceBrowser();
+	processMenuBar();
 
 	ImGui::Render();
 	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
@@ -163,6 +168,7 @@ static void processComponent(Core::ECS::ComponentType type, Core::ECS::Component
 			if (const ImGuiPayload * payload = ImGui::AcceptDragDropPayload("RESOURCE_MODEL"))
 			{
 				pModel->pModel = Core::Resource::getModel((const char*)payload->Data);
+				strcpy(pModel->modelPath, (const char*)payload->Data);
 			}
 			ImGui::EndDragDropTarget();
 		}
@@ -278,7 +284,10 @@ static void processResourceBrowser()
 	{
 		for (const auto& entry : std::filesystem::recursive_directory_iterator(scriptPath))
 		{
-			auto& pathName = entry.path().string();
+			std::filesystem::path path = entry.path();
+			String pathName = path.make_preferred().string();
+			std::replace(pathName.begin(), pathName.end(), '\\', '/');
+
 			ImGui::Selectable(pathName.c_str());
 			if (ImGui::BeginDragDropSource())
 			{
@@ -292,4 +301,59 @@ static void processResourceBrowser()
 	}
 
 	ImGui::End();
+}
+
+static void processMenuBar()
+{
+	static const char* scenePath = "Resources/Scenes";
+	bool openLoadPopup = false;
+	bool openSavePopup = false;
+	ImGui::BeginMainMenuBar();
+	if (ImGui::BeginMenu("File"))
+	{
+		if (ImGui::MenuItem("New"))
+			Core::GameEngine::clearResources();
+
+		if (ImGui::MenuItem("Load"))
+			openLoadPopup = true;
+		
+		
+
+		if (ImGui::MenuItem("Save"))
+			openSavePopup = true;
+		
+
+		ImGui::EndMenu();
+	}
+	ImGui::EndMainMenuBar();
+
+	if(openSavePopup)
+		ImGui::OpenPopup("SaveScenePopup");
+	if (ImGui::BeginPopup("SaveScenePopup"))
+	{
+		ImGui::InputText("Path", &Core::Scene::getLoadedSceneName());
+		if (ImGui::Button("Save"))
+		{
+			Core::Scene::saveScene(Core::Scene::getLoadedSceneName());
+		}
+		ImGui::EndPopup();
+	}
+
+	if (openLoadPopup)
+		ImGui::OpenPopup("LoadScenePopup");
+	if (ImGui::BeginPopup("LoadScenePopup"))
+	{
+		for (const auto& entry : std::filesystem::recursive_directory_iterator(scenePath))
+		{
+			std::filesystem::path path = entry.path();
+			String pathName = path.make_preferred().string();
+			std::replace(pathName.begin(), pathName.end(), '\\', '/');
+			if (ImGui::Selectable(pathName.c_str()))
+			{
+				Core::Scene::loadScene(pathName);
+			}
+		}
+		ImGui::EndPopup();
+	}
+	ImGui::ShowDemoWindow();
 }

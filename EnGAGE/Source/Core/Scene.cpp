@@ -75,6 +75,11 @@ void Core::Scene::checkForSceneSwitch()
 	}
 }
 
+String& Core::Scene::getLoadedSceneName()
+{
+	return gScenePath;
+}
+
 
 static bool checkLua(lua_State* L, int r)
 {

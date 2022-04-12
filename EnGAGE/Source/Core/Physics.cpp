@@ -156,16 +156,13 @@ static void solveCollision(
 
 static void collisionSolve(DynArr<CollisionPoints>& points)
 {
-	constexpr float percent = 0.8f;
-	constexpr float slop = 0.01f;
-
-	constexpr float aBounciness = 0.9f, bBounciness = 0.9f;
-	constexpr float aStaticFriction = 0.96f, bStaticFriction = 0.96f;
-	constexpr float aDynamicFriction = 0.96f, bDynamicFriction = 0.96f;
+	
 
 
 	auto positionSolve = [&](CollisionPoints& point)
 	{
+		constexpr float percent = 0.8f;
+		constexpr float slop = 0.01f;
 		float aInvMass = point.a->mass != 0.0f ? 1.0f / point.a->mass : 0.0f;
 		float bInvMass = point.b->mass != 0.0f ? 1.0f / point.b->mass : 0.0f;
 		glm::vec3 correction = point.normal * point.distance * glm::max(point.distance - slop, 0.0f) / (aInvMass + bInvMass);
@@ -185,8 +182,13 @@ static void collisionSolve(DynArr<CollisionPoints>& points)
 		}
 	};
 
-	auto impulseSolve = [&](CollisionPoints& point)
+	auto impulseSolve = [](CollisionPoints& point)
 	{
+		
+
+		constexpr float aBounciness = 0.9f, bBounciness = 0.9f;
+		constexpr float aStaticFriction = 0.96f, bStaticFriction = 0.96f;
+		constexpr float aDynamicFriction = 0.96f, bDynamicFriction = 0.96f;
 		glm::vec3 relativeVel = point.a->velocity - point.b->velocity;
 		float normalSpeed = glm::dot(relativeVel, point.normal);
 

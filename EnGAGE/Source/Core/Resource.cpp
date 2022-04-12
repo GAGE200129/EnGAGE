@@ -32,16 +32,23 @@ namespace Core
 	{
 		Model* getModel(const String& filePath)
 		{
+			bool found = false;
 			for (const auto& pModel : gModels)
 			{
 				if (pModel->name == filePath)
 				{
+					found = true;
 					return pModel.get();
 				}
 			}
 
-			//Load and add a new model to the pool
-			gModels.push_back(loadModel(filePath));
+			if (!found)
+			{
+				//Load and add a new model to the pool
+				auto model = loadModel(filePath);
+				if(model != nullptr)
+					gModels.push_back(std::move(model));
+			}		
 			return gModels.back().get();
 		}
 

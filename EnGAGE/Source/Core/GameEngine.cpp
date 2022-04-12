@@ -46,6 +46,7 @@ namespace Core
 
 				steps += delta;
 
+				
 				Script::input();
 				Input::update();
 				Window::pollEvents();
@@ -61,8 +62,12 @@ namespace Core
 					luaThread.join();
 					physicsThread.join();
 				}
-				
 
+				if (Input::isKeyPressedOnce(InputCodes::KEY_C))
+				{
+					Scene::loadScene("Resources/Scenes/Dump.lua");
+				}
+			
 				//Render
 				Renderer::render();
 				if(!Input::cursorLocked())

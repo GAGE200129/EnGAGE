@@ -9,5 +9,6 @@ namespace Core
 		void loadScene(const String& filePath);
 		void saveScene(const String& filePath);
 		void checkForSceneSwitch();
+		String& getLoadedSceneName();
 	}
 }
