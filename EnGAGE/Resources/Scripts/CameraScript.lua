@@ -14,13 +14,13 @@ local mouse_sensitivity = 0.3
 
 local direction = { x = 0, y = 0, z = 0 }
 
+
 function input(entity)
 	
 	direction.x = 0
 	direction.y = 0
 	direction.z = 0
-
-	
+		
 	if _keyPressedOnce(KEY_ESCAPE) then
 		_toggleCursor()
 	end

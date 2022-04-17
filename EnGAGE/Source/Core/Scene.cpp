@@ -4,6 +4,7 @@
 #include "LuaHostFunctions.hpp"
 #include "ECS.hpp"
 #include "GameEngine.hpp"
+#include "Physics.hpp"
 
 extern "C"
 {
@@ -140,19 +141,17 @@ void writeComponent(std::ofstream& out, const String& entity, Core::ECS::Compone
 
 void writeCollisionShape(std::ofstream& out, const String& componentName, Core::ECS::RigidBodyComponent* component)
 {
-	switch (component->colliderType)
+	switch ((Core::Physics::ColliderType)component->colliderType)
 	{
-	case Core::ECS::ColliderType::NONE:
-
-	case Core::ECS::ColliderType::SPHERE: // Float(radius)
+	case Core::Physics::ColliderType::SPHERE: // Float(radius)
 	{
-		Core::ECS::SphereCollider* collider = (Core::ECS::SphereCollider*)component->colliderData;
+		Core::Physics::SphereCollider* collider = (Core::Physics::SphereCollider*)component->colliderData;
 		out << "_setCollisionShapeSphere(" << componentName << ", " << collider->radius << ")\n";
 		break;
 	}
-	case Core::ECS::ColliderType::PLANE: // Vec3(Normal), Float(distance)
+	case Core::Physics::ColliderType::PLANE: // Vec3(Normal), Float(distance)
 	{
-		Core::ECS::PlaneCollider* collider = (Core::ECS::PlaneCollider*)component->colliderData;
+		Core::Physics::PlaneCollider* collider = (Core::Physics::PlaneCollider*)component->colliderData;
 		out << "_setCollisionShapePlane(" << componentName << ", " << collider->x << ", " << collider->y << ", " << collider->z << ", " << collider->distance << ")\n";
 		break;
 	}

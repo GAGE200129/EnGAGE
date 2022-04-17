@@ -7,6 +7,8 @@
 #include "Script.hpp"
 #include "GameEngine.hpp"
 #include "Scene.hpp"
+#include "Input.hpp"
+#include "Physics.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -15,11 +17,13 @@
 
 static void processGameEngine();
 static void processSceneGraph();
+static void processCollisionShape(const Core::Physics::ColliderType type, Core::ECS::RigidBodyComponent* pRigidBody);
 static void processComponent(Core::ECS::ComponentType type, Core::ECS::ComponentHeader* pHeader);
 static void processInspector(const Core::ECS::EntitySignature* pEntity);
 static void processRenderer();
 static void processResourceBrowser();
 static void processMenuBar();
+static void processConsole();
 
 void Core::Editor::init(GLFWwindow* pWindow)
 {
@@ -42,27 +46,36 @@ void Core::Editor::shutdown()
 
 void Core::Editor::render()
 {
-	ImGui_ImplOpenGL3_NewFrame();
-	ImGui_ImplGlfw_NewFrame();
-	ImGui::NewFrame();
-	ImGui::DockSpaceOverViewport(0, ImGuiDockNodeFlags_PassthruCentralNode);
+#ifdef EN_DEBUG
+	static bool enabled = false;
 
-	//ImGui::ShowDemoWindow();
-	processGameEngine();
-	processSceneGraph();
-	processRenderer();
-	processResourceBrowser();
-	processMenuBar();
+	if (Input::isKeyPressedOnce(InputCodes::KEY_F5))
+		enabled = !enabled;
 
-	ImGui::Render();
-	ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	if (enabled)
+	{
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+		ImGui::DockSpaceOverViewport(0, ImGuiDockNodeFlags_PassthruCentralNode);
+
+		processGameEngine();
+		processSceneGraph();
+		processRenderer();
+		processResourceBrowser();
+		processMenuBar();
+		processConsole();
+
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+	}
+#endif
 }
 
 static void processGameEngine()
 {
 	using namespace Core;
 	ImGui::Begin("GameEngine");
-
 	if (ImGui::TreeNode("Memory")) {
 		{// Entities
 			char buf[50];
@@ -130,9 +143,43 @@ static void processSceneGraph()
 	processInspector(selectedEntity);
 }
 
+void processCollisionShape(const Core::Physics::ColliderType type, Core::ECS::RigidBodyComponent* pRigidBody)
+{
+	using namespace Core::Physics;
+	ImGui::Separator();
+	switch (type)
+	{
+	case ColliderType::SPHERE:
+	{
+		ImGui::Text("Sphere collider");
+		SphereCollider* pSphere = (SphereCollider*)pRigidBody->colliderData;
+		ImGui::DragFloat("Radius", &pSphere->radius);
+		break;
+	}
+	case ColliderType::PLANE:
+	{
+		ImGui::Text("Plane collider");
+		PlaneCollider* pPlane = (PlaneCollider*)pRigidBody->colliderData;
+
+		float lengthSquared = pPlane->x * pPlane->x + pPlane->y * pPlane->y + pPlane->z * pPlane->z;
+		if (ImGui::DragFloat3("Normal", &pPlane->x) && lengthSquared != 0.0f)
+		{
+			float length = glm::sqrt(lengthSquared);
+			pPlane->x /= length;
+			pPlane->y /= length;
+			pPlane->z /= length;
+		}
+
+		ImGui::DragFloat("Distance", &pPlane->distance);
+		break;
+	}
+	}
+}
+
 static void processComponent(Core::ECS::ComponentType type, Core::ECS::ComponentHeader* pHeader)
 {
 	using namespace Core::ECS;
+	using namespace Core::Physics;
 	switch (type)
 	{
 	case ComponentType::NAME:
@@ -147,6 +194,7 @@ static void processComponent(Core::ECS::ComponentType type, Core::ECS::Component
 		ImGui::DragFloat3("Velocity", &pRigidBody->velocity.x, 0.1f);
 		ImGui::DragFloat3("Force", &pRigidBody->force.x, 0.1f);
 		ImGui::DragFloat("Mass", &pRigidBody->mass, 0.1f);
+		processCollisionShape((ColliderType)pRigidBody->colliderType, pRigidBody);
 		break;
 	}
 	case ComponentType::TRANSFORM:
@@ -190,9 +238,6 @@ static void processComponent(Core::ECS::ComponentType type, Core::ECS::Component
 		}
 		break;
 	}
-
-	default:
-		break;
 	};
 
 }
@@ -355,5 +400,46 @@ static void processMenuBar()
 		}
 		ImGui::EndPopup();
 	}
-	ImGui::ShowDemoWindow();
+}
+
+void processConsole()
+{
+	ImGui::Begin("Console");
+
+		//Console output
+		const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
+		ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), false, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
+			const auto& stringLines = Core::Log::getStringLines();
+
+			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
+
+			for (const auto& line : stringLines) {
+				ImVec4 color;
+				bool has_color = false;
+
+				if (has_color = (line.find("[info]") != std::string::npos))
+				{
+					color = ImVec4(0, 1, 0, 1);
+				} 
+				else if(has_color = (line.find("[warn]") != std::string::npos))
+				{
+					color = ImVec4(1, 1, 0, 1);
+				}
+
+				else if (has_color = (line.find("[error]") != std::string::npos))
+				{
+					color = ImVec4(1, 0, 0, 1);
+				}
+
+				if (has_color)
+					ImGui::PushStyleColor(ImGuiCol_Text, color);
+				ImGui::TextUnformatted(line.c_str());
+				if (has_color)
+					ImGui::PopStyleColor();
+			}
+
+			ImGui::PopStyleVar();
+		ImGui::EndChild();
+
+	ImGui::End();
 }

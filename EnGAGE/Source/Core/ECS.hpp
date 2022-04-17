@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Model.hpp"
 
 struct lua_State;
 namespace Core
 {
+	struct Model;
 	namespace ECS
 	{
 		static constexpr unsigned int MAX_ENTITIES = 3000;
@@ -20,26 +20,6 @@ namespace Core
 			unsigned int signature : MAX_COMPONENTS;
 		};
 
-		//Physics component collider
-		enum class ColliderType : unsigned int
-		{
-			NONE,
-			SPHERE, // Float(radius)
-			PLANE, // Vec3(Normal), Float(distance)
-			COUNT
-		};
-
-		struct SphereCollider
-		{
-			float radius;
-		};
-
-		struct PlaneCollider
-		{
-			float x, y, z; // Normal
-			float distance;
-		};
-
 		//Component
 		enum class ComponentType : unsigned int
 		{
@@ -49,12 +29,6 @@ namespace Core
 			SCRIPT,
 			RIGID_BODY,
 			COUNT
-		};
-
-		struct ComponentData
-		{
-			char name[MAX_NAME_SIZE];
-			unsigned int size;
 		};
 
 		struct ComponentHeader
@@ -106,9 +80,17 @@ namespace Core
 			glm::vec3 velocity;
 			glm::vec3 force;
 			float mass;
-			ColliderType colliderType;
+			unsigned int colliderType;
 			char colliderData[MAX_COLLIDER_BUFFER_SIZE];
 		};
+
+		struct ComponentData
+		{
+			const char* name;
+			unsigned int size;
+		};
+
+		
 
 		//System
 		enum class SystemType : unsigned int
@@ -141,20 +123,7 @@ namespace Core
 		System& getSystem(SystemType type);
 
 		unsigned int getComponentArrayMemorySize(ComponentType type);
-
 		ComponentData getComponentData(ComponentType type);
-
-		//Templated area
-		template<ComponentType type, typename T>
-		T* addComponent(unsigned int entity)
-		{
-			return reinterpret_cast<T*>(addComponent(entity, type));
-		}
-
-		template<ComponentType type, typename T>
-		T* getComponentComponent(unsigned int entity)
-		{
-			return reinterpret_cast<T*>(getComponent(entity, type));
-		}
+		
 	}
 }

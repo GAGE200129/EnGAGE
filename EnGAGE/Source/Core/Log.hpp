@@ -10,6 +10,7 @@ namespace Core
 		extern std::shared_ptr<spdlog::logger> sLogger;
 
 		void init();
+		const std::vector<std::string>& getStringLines();
 		
 		template<typename T, typename... Args>
 		inline static void info(T format, Args&&... args)

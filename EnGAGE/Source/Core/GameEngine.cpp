@@ -62,16 +62,10 @@ namespace Core
 					luaThread.join();
 					physicsThread.join();
 				}
-
-				if (Input::isKeyPressedOnce(InputCodes::KEY_C))
-				{
-					Scene::loadScene("Resources/Scenes/Dump.lua");
-				}
 			
 				//Render
 				Renderer::render();
-				if(!Input::cursorLocked())
-					Editor::render();
+				Editor::render();
 				Window::swapBuffers();
 
 				ECS::updateRemovedEntities();
