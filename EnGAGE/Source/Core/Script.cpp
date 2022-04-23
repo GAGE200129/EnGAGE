@@ -4,6 +4,7 @@
 #include "ECS.hpp"
 #include "LuaHostFunctions.hpp"
 #include "InputCodes.hpp"
+#include "Physics.hpp"
 
 extern "C"
 {
@@ -13,23 +14,26 @@ extern "C"
 }
 
 static bool checkLua(lua_State* L, int r);
-static void setIntegerGlobal(lua_State* L, const String& name, unsigned int num);
 
 //Lua scripts
 static DynArr<lua_State*> gScripts;
 
-void Core::Script::input()
+
+void Core::Script::onMessage(const Messaging::Message* pMessage)
 {
 	ECS::System& system = ECS::getSystem(ECS::SystemType::SCRIPTING);
 	for (unsigned int entity : system.entities)
 	{
 		ECS::ScriptComponent* pScriptComponent = (ECS::ScriptComponent*)ECS::getComponent(entity, ECS::ComponentType::SCRIPT);
 		lua_State* L = pScriptComponent->L;
-		lua_getglobal(L, "input");
+		lua_getglobal(L, "onMessage");
 		if (lua_isfunction(L, -1))
 		{
 			lua_pushinteger(L, entity);
-			checkLua(L, lua_pcall(L, 1, 0, 0));
+			lua_pushinteger(L, (lua_Integer)pMessage->type);
+			lua_pushlstring(L, pMessage->message, Messaging::BUFFER_SIZE);
+
+			checkLua(L, lua_pcall(L, 3, 0, 0));
 		}
 		lua_settop(L, 0);
 	}
@@ -64,7 +68,7 @@ void Core::Script::shutdown()
 	gScripts.clear();
 }
 
-lua_State* Core::Script::newScript(unsigned int entity)
+lua_State* Core::Script::newScript()
 {
 	lua_State* L = luaL_newstate();
 	luaL_openlibs(L);
@@ -75,8 +79,23 @@ lua_State* Core::Script::newScript(unsigned int entity)
 	//Add globals
 	for (unsigned int i = 0; i < (unsigned int)ECS::ComponentType::COUNT; i++)
 	{
-		ECS::ComponentData data = ECS::getComponentData((ECS::ComponentType)i);
-		setIntegerGlobal(L, data.name, i);
+		const ECS::ComponentData& data = ECS::getComponentData((ECS::ComponentType)i);
+		lua_pushinteger(L, i);
+		lua_setglobal(L, data.name);
+	}
+
+	for (unsigned int i = 0; i < (unsigned int)Physics::ColliderType::COUNT; i++)
+	{
+		const Physics::ColliderData& data = Physics::getColliderData((Physics::ColliderType)i);
+		lua_pushinteger(L, i);
+		lua_setglobal(L, data.name);
+	}
+
+	for (unsigned int i = 0; i < (unsigned int)Messaging::MessageType::COUNT; i++)
+	{
+		const char* name = Messaging::getMessageName((Messaging::MessageType)i);
+		lua_pushinteger(L, i);
+		lua_setglobal(L, name);
 	}
 
 	for (unsigned int i = 0; i < InputCodes::NUM_KEYS; i++)
@@ -84,7 +103,8 @@ lua_State* Core::Script::newScript(unsigned int entity)
 		const char* name = InputCodes::toString(i);
 		if (strlen(name) != 0)
 		{
-			setIntegerGlobal(L, name, i);
+			lua_pushinteger(L, i);
+			lua_setglobal(L, name);
 		}
 	}
 
@@ -122,9 +142,4 @@ static bool checkLua(lua_State* L, int r)
 	return true;
 }
 
-static void setIntegerGlobal(lua_State* L, const String& name, unsigned int num)
-{
-	lua_pushinteger(L, num);
-	lua_setglobal(L, name.c_str());
-}
 

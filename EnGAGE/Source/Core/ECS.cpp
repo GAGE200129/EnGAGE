@@ -8,34 +8,6 @@
 
 namespace Core::ECS
 {
-	template<ComponentType> ComponentData ComponentDataEnum = { "INVALID", 0 };
-	template<> ComponentData ComponentDataEnum<ComponentType::NAME> = { "NAME", sizeof(NameComponent) };
-	template<> ComponentData ComponentDataEnum<ComponentType::TRANSFORM> = { "TRANSFORM", sizeof(TransformComponent) };
-	template<> ComponentData ComponentDataEnum<ComponentType::MODEL_RENDERER> = { "MODEL_RENDERER", sizeof(ModelRendererComponent) };
-	template<> ComponentData ComponentDataEnum<ComponentType::SCRIPT> = { "SCRIPT", sizeof(ScriptComponent) };
-	template<> ComponentData ComponentDataEnum<ComponentType::RIGID_BODY> = { "RIGID_BODY", sizeof(RigidBodyComponent) };
-
-	ComponentData getComponentData(ComponentType type)
-	{
-
-		switch (type)
-		{
-		case ComponentType::NAME:
-			return ComponentDataEnum<ComponentType::NAME>;
-		case ComponentType::TRANSFORM:
-			return ComponentDataEnum<ComponentType::TRANSFORM>;
-		case ComponentType::MODEL_RENDERER:
-			return ComponentDataEnum<ComponentType::MODEL_RENDERER>;
-		case ComponentType::SCRIPT:
-			return ComponentDataEnum<ComponentType::SCRIPT>;
-		case ComponentType::RIGID_BODY:
-			return ComponentDataEnum<ComponentType::RIGID_BODY>;
-		}
-		EN_ASSERT(false, "Unknown component: {}", (unsigned int)type);
-		return  ComponentDataEnum<ComponentType::COUNT>;
-	}
-
-
 	//Entity
 	static unsigned int gEntityCounter;
 	static unsigned int gLivingEntities;
@@ -180,50 +152,7 @@ namespace Core::ECS
 	{
 		ComponentData data = getComponentData(type);
 		Scope<char[]> extraData = createScope<char[]>(data.size);
-		switch (type)
-		{
-		case ComponentType::TRANSFORM:
-		{
-			TransformComponent* transformComponent = (TransformComponent*)extraData.get();
-			transformComponent->x = 0;
-			transformComponent->y = 0;
-			transformComponent->z = 0;
-			transformComponent->rw = 1;
-			transformComponent->rx = 0;
-			transformComponent->ry = 0;
-			transformComponent->rz = 0;
-			transformComponent->sx = 1;
-			transformComponent->sy = 1;
-			transformComponent->sz = 1;
-			break;
-		}
-		case ComponentType::MODEL_RENDERER:
-		{
-			ModelRendererComponent* component = (ModelRendererComponent*)extraData.get();
-			component->pModel = nullptr;
-			memset(component->modelPath, 0, MAX_NAME_SIZE);
-			break;
-		}
-
-		case ComponentType::SCRIPT:
-		{
-			ScriptComponent* component = (ScriptComponent*)extraData.get();
-			component->L = Core::Script::newScript(entity);
-			memset(component->scriptPath, 0, MAX_NAME_SIZE);
-			break;
-		}
-		case ComponentType::RIGID_BODY:
-		{
-			RigidBodyComponent* component = (RigidBodyComponent*)extraData.get();
-			component->mass = 1.0f;
-			component->force = { 0, 0, 0 };
-			component->velocity = { 0, 0, 0 };
-			component->colliderType = 0;
-			memset(component->colliderData, 0, MAX_COLLIDER_BUFFER_SIZE);
-
-			break;
-		}
-		}
+		initComponent((ComponentHeader*)extraData.get(), type);
 
 		return constructComponent(entity, type, extraData.get());
 	}
@@ -231,17 +160,8 @@ namespace Core::ECS
 	void removeComponent(unsigned int entity, ComponentType type)
 	{
 		auto& entitySignature = searchEntity(entity);
-
-		switch (type)
-		{
-		case ComponentType::SCRIPT:
-		{
-			ScriptComponent* component = (ScriptComponent*)ECS::getComponent(entity, ComponentType::SCRIPT);
-			if (component)
-				Script::removeScript(component->L);
-			break;
-		}
-		}
+	
+		destroyComponent((ComponentHeader*)ECS::getComponent(entity, type), type);
 
 		//Update component arrays
 		removeComponentInternal(gComponentArrays[type], entitySignature);

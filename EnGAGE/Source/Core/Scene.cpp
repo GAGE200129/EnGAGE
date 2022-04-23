@@ -66,6 +66,13 @@ void Core::Scene::checkForSceneSwitch()
 			lua_pushinteger(L, i);
 			lua_setglobal(L, data.name);
 		}
+
+		for (unsigned int i = 0; i < (unsigned int)Physics::ColliderType::COUNT; i++)
+		{
+			const Physics::ColliderData& data = Physics::getColliderData((Physics::ColliderType)i);
+			lua_pushinteger(L, i);
+			lua_setglobal(L, data.name);
+		}
 		LuaHostFunctions::registerAllSceneFunctions(L);
 
 		checkLua(L, luaL_dofile(L, gScenePath.c_str()));
@@ -141,18 +148,23 @@ void writeComponent(std::ofstream& out, const String& entity, Core::ECS::Compone
 
 void writeCollisionShape(std::ofstream& out, const String& componentName, Core::ECS::RigidBodyComponent* component)
 {
-	switch ((Core::Physics::ColliderType)component->colliderType)
+	using namespace Core::Physics;
+	out << "_setCollisionShape(";
+
+	auto type = (ColliderType)component->colliderType;
+	const ColliderData& data = getColliderData(type);
+	switch (type)
 	{
-	case Core::Physics::ColliderType::SPHERE: // Float(radius)
+	case ColliderType::SPHERE: // Float(radius)
 	{
-		Core::Physics::SphereCollider* collider = (Core::Physics::SphereCollider*)component->colliderData;
-		out << "_setCollisionShapeSphere(" << componentName << ", " << collider->radius << ")\n";
+		SphereCollider* collider = (SphereCollider*)component->colliderData;
+		out  << componentName << ", " << data.name << ", " << collider->radius << ")\n";
 		break;
 	}
-	case Core::Physics::ColliderType::PLANE: // Vec3(Normal), Float(distance)
+	case ColliderType::PLANE: // Vec3(Normal), Float(distance)
 	{
-		Core::Physics::PlaneCollider* collider = (Core::Physics::PlaneCollider*)component->colliderData;
-		out << "_setCollisionShapePlane(" << componentName << ", " << collider->x << ", " << collider->y << ", " << collider->z << ", " << collider->distance << ")\n";
+		PlaneCollider* collider = (PlaneCollider*)component->colliderData;
+		out  << componentName << ", " << data.name << ", " << collider->x << ", " << collider->y << ", " << collider->z << ", " << collider->distance << ")\n";
 		break;
 	}
 	}

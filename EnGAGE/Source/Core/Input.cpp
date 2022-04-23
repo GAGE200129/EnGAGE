@@ -1,11 +1,13 @@
 #include "pch.hpp"
 #include "Input.hpp"
 
+#include "Messaging.hpp"
+
 #include <GLFW/glfw3.h>
 
 #include <imgui.h>
 
-namespace Core
+namespace Core::Input
 {
 	GLFWwindow* sWindow = nullptr;
 	bool sKeys[InputCodes::NUM_KEYS];
@@ -17,7 +19,7 @@ namespace Core
 	double sPrevCursorX = 0.0f;
 	double sPrevCursorY = 0.0f;
 
-	void Input::init(GLFWwindow* rawWindow)
+	void init(GLFWwindow* rawWindow)
 	{
 		sWindow = rawWindow;
 		//Clear sKeys arr
@@ -36,16 +38,31 @@ namespace Core
 			{
 				sCursorX = xpos;
 				sCursorY = ypos;
+				float data[] = { (float)xpos, (float)ypos, (float)(sCursorX - sPrevCursorX), (float)(sCursorY - sPrevCursorY) };
+
+				sPrevCursorX = sCursorX;
+				sPrevCursorY = sCursorY;
+
+				Messaging::Message message = { Messaging::MessageType::CURSOR_MOVED };
+				memcpy(message.message, data, sizeof(data));
+				Messaging::recieveMessage(&message);
 			});
 
 		glfwSetKeyCallback(rawWindow, [](GLFWwindow* window, int key, int scancode, int action, int mods)
 			{
 				if (action == PRESS)
 				{
+					Messaging::Message message = { Messaging::MessageType::KEY_PRESSED };
+					memcpy(message.message, &key, sizeof(int));
+					Messaging::recieveMessage(&message);
 					sKeys[key] = true;
 				}
 				else if (action == RELEASE)
 				{
+					Messaging::Message message = { Messaging::MessageType::KEY_RELEASED };
+					memcpy(message.message, &key, sizeof(int));
+					Messaging::recieveMessage(&message);
+
 					sKeys[key] = false;
 				}
 			});
@@ -54,57 +71,98 @@ namespace Core
 			{
 				if (action == PRESS)
 				{
+					Messaging::Message message = { Messaging::MessageType::BUTTON_PRESSED };
+					memcpy(message.message, &button, sizeof(int));
+					Messaging::recieveMessage(&message);
 					sButtons[button] = true;
 				}
 				else if (action == RELEASE)
 				{
+					Messaging::Message message = { Messaging::MessageType::BUTTON_RELEASED };
+					memcpy(message.message, &button, sizeof(int));
+					Messaging::recieveMessage(&message);
+
 					sButtons[button] = false;
 				}
 			});
 
 	}
-	void Input::update()
+	void onMessage(const Messaging::Message* pMessage)
 	{
-		sPrevCursorX = sCursorX;
-		sPrevCursorY = sCursorY;
-		memcpy(sPrevKeys,  sKeys, sizeof(sKeys));
+		switch (pMessage->type)
+		{
+		case Messaging::MessageType::TOGGLE_CURSOR:
+		{
+			toggleCursor();
+			break;
+		}
+		}
+	}
+	void request(Messaging::RequestType type, Messaging::Request* pRequest)
+	{
+		switch (type)
+		{
+		case Messaging::RequestType::CURSOR_POS:
+		{
+			double data[] = { (float)getCursorX(), (float)getCursorY() };
+			memcpy(pRequest->data, data, sizeof(data));
+			break;
+		}
+		case Messaging::RequestType::CURSOR_DELTA:
+		{
+			double data[] = { (float)getCursorDX(), (float)getCursorDY() };
+			memcpy(pRequest->data, data, sizeof(data));
+			break;
+		}
+		case Messaging::RequestType::CURSOR_LOCKED:
+		{
+			int data = cursorLocked();
+			memcpy(pRequest->data, &data, sizeof(data));
+			break;
+		}
+		}
+	}
+	void update()
+	{
+		
+		memcpy(sPrevKeys, sKeys, sizeof(sKeys));
 		memcpy(sPrevButtons, sButtons, sizeof(sButtons));
 	}
 
 
-	bool Input::isKeyPressed(uint16_t code) { return sKeys[code]; }
-	bool Input::isKeyPressedOnce(uint16_t code) { return sKeys[code] && !sPrevKeys[code]; }
-	bool Input::isKeyReleased(uint16_t code) { return !sKeys[code]; }
-	bool Input::isButtonPressed(uint16_t code) { return sButtons[code]; }
-	bool Input::isButtonPressedOnce(uint16_t code) { return sButtons[code] && !sPrevButtons[code]; }
-	bool Input::isButtonReleased(uint16_t code) { return !sButtons[code]; }
+	bool  isKeyPressed(uint16_t code) { return sKeys[code]; }
+	bool  isKeyPressedOnce(uint16_t code) { return sKeys[code] && !sPrevKeys[code]; }
+	bool  isKeyReleased(uint16_t code) { return !sKeys[code]; }
+	bool  isButtonPressed(uint16_t code) { return sButtons[code]; }
+	bool  isButtonPressedOnce(uint16_t code) { return sButtons[code] && !sPrevButtons[code]; }
+	bool  isButtonReleased(uint16_t code) { return !sButtons[code]; }
 
-	double Input::getCursorX() { return sCursorX; }
-	double Input::getCursorY() { return sCursorY; }
+	double  getCursorX() { return sCursorX; }
+	double  getCursorY() { return sCursorY; }
 
-	double Input::getCursorDX()
+	double  getCursorDX()
 	{
 		return sCursorX - sPrevCursorX;
 	}
 
-	double Input::getCursorDY()
+	double  getCursorDY()
 	{
 		return sCursorY - sPrevCursorY;
 	}
 
-	void Input::disableCursor()
+	void  disableCursor()
 	{
 		glfwSetInputMode(sWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		if (glfwRawMouseMotionSupported())
 			glfwSetInputMode(sWindow, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 	}
-	void Input::enableCursor()
+	void enableCursor()
 	{
 		glfwSetInputMode(sWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		if (glfwRawMouseMotionSupported())
 			glfwSetInputMode(sWindow, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
 	}
-	void Input::toggleCursor()
+	void  toggleCursor()
 	{
 		int status = glfwGetInputMode(sWindow, GLFW_CURSOR);
 		if (status == GLFW_CURSOR_DISABLED) {
@@ -114,7 +172,7 @@ namespace Core
 			disableCursor();
 		}
 	}
-	bool Input::cursorLocked()
+	bool  cursorLocked()
 	{
 		int status = glfwGetInputMode(sWindow, GLFW_CURSOR);
 		if (status == GLFW_CURSOR_DISABLED) {

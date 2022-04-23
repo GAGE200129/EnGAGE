@@ -35,8 +35,8 @@ namespace Core
 
 		void update(float delta);
 
-		ColliderData getColliderData(ColliderType type);
-
+		const ColliderData& getColliderData(ColliderType type);
+		void initCollider(char* colliderData, ColliderType type);
 
 	}
 }

@@ -14,6 +14,6 @@ uniform mat4 uModel;
 void main()
 {
 	FSTexCoord = inTexCoord;
-	FSNormal = normalize(inNormal);
+	FSNormal = normalize((mat3(uModel) * inNormal).xyz);
 	gl_Position = uProj * uView * uModel * vec4(inPos, 1);
 }

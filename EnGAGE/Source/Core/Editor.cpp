@@ -9,6 +9,7 @@
 #include "Scene.hpp"
 #include "Input.hpp"
 #include "Physics.hpp"
+#include "Messaging.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -24,6 +25,8 @@ static void processRenderer();
 static void processResourceBrowser();
 static void processMenuBar();
 static void processConsole();
+
+static bool gEnabled = false;
 
 void Core::Editor::init(GLFWwindow* pWindow)
 {
@@ -44,15 +47,22 @@ void Core::Editor::shutdown()
 	ImGui::DestroyContext();
 }
 
+void Core::Editor::onMessage(const Messaging::Message* pMessage)
+{
+	if (pMessage->type == Messaging::MessageType::KEY_PRESSED)
+	{
+		unsigned int keyCode = *reinterpret_cast<const unsigned int*>(pMessage->message);
+		if (keyCode == InputCodes::KEY_F5)
+		{
+			gEnabled = !gEnabled;
+		}
+	}
+}
+
 void Core::Editor::render()
 {
 #ifdef EN_DEBUG
-	static bool enabled = false;
-
-	if (Input::isKeyPressedOnce(InputCodes::KEY_F5))
-		enabled = !enabled;
-
-	if (enabled)
+	if (gEnabled)
 	{
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
@@ -101,6 +111,15 @@ static void processGameEngine()
 
 		ImGui::TreePop();
 	}
+	if (ImGui::TreeNode("Messages"))
+	{
+		for (unsigned int i = 0; i < Messaging::getMessageCount(); i++)
+		{
+			const char* name = Messaging::getMessageName(Messaging::getMessages()[i].type);
+			ImGui::Text("%s", name);
+		}
+		ImGui::TreePop();
+	}
 	ImGui::End();
 }
 
@@ -146,23 +165,21 @@ static void processSceneGraph()
 void processCollisionShape(const Core::Physics::ColliderType type, Core::ECS::RigidBodyComponent* pRigidBody)
 {
 	using namespace Core::Physics;
-	ImGui::Separator();
+
 	switch (type)
 	{
 	case ColliderType::SPHERE:
 	{
-		ImGui::Text("Sphere collider");
 		SphereCollider* pSphere = (SphereCollider*)pRigidBody->colliderData;
-		ImGui::DragFloat("Radius", &pSphere->radius);
+		ImGui::DragFloat("Radius", &pSphere->radius, 0.1f);
 		break;
 	}
 	case ColliderType::PLANE:
 	{
-		ImGui::Text("Plane collider");
 		PlaneCollider* pPlane = (PlaneCollider*)pRigidBody->colliderData;
 
 		float lengthSquared = pPlane->x * pPlane->x + pPlane->y * pPlane->y + pPlane->z * pPlane->z;
-		if (ImGui::DragFloat3("Normal", &pPlane->x) && lengthSquared != 0.0f)
+		if (ImGui::DragFloat3("Normal", &pPlane->x, 0.1f) && lengthSquared != 0.0f)
 		{
 			float length = glm::sqrt(lengthSquared);
 			pPlane->x /= length;
@@ -170,7 +187,7 @@ void processCollisionShape(const Core::Physics::ColliderType type, Core::ECS::Ri
 			pPlane->z /= length;
 		}
 
-		ImGui::DragFloat("Distance", &pPlane->distance);
+		ImGui::DragFloat("Distance", &pPlane->distance, 0.1f);
 		break;
 	}
 	}
@@ -193,7 +210,22 @@ static void processComponent(Core::ECS::ComponentType type, Core::ECS::Component
 		RigidBodyComponent* pRigidBody = (RigidBodyComponent*)pHeader;
 		ImGui::DragFloat3("Velocity", &pRigidBody->velocity.x, 0.1f);
 		ImGui::DragFloat3("Force", &pRigidBody->force.x, 0.1f);
-		ImGui::DragFloat("Mass", &pRigidBody->mass, 0.1f);
+		ImGui::DragFloat("Mass", &pRigidBody->mass, 0.1f, 0.0f);
+
+		const ColliderData& currentCollider = getColliderData((ColliderType)pRigidBody->colliderType);
+		if (ImGui::BeginCombo("Collider Type", currentCollider.name))
+		{
+			for (unsigned int i = 0; i < (unsigned int)ColliderType::COUNT; i++)
+			{
+				const ColliderData& data = getColliderData((ColliderType)i);
+				if (ImGui::Selectable(data.name))
+				{
+					pRigidBody->colliderType = i;
+					initCollider(pRigidBody->colliderData, (ColliderType)i);
+				}
+			}
+			ImGui::EndCombo();
+		}
 		processCollisionShape((ColliderType)pRigidBody->colliderType, pRigidBody);
 		break;
 	}
@@ -201,7 +233,22 @@ static void processComponent(Core::ECS::ComponentType type, Core::ECS::Component
 	{
 		TransformComponent* pTransform = (TransformComponent*)pHeader;
 		ImGui::DragFloat3("Translation", &pTransform->x, 0.1f);
-		ImGui::DragFloat4("Rotation", &pTransform->rw, 0.1f);
+		if (ImGui::DragFloat4("Rotation", &pTransform->rw, 0.1f))
+		{
+			float lengthSquared = pTransform->rw * pTransform->rw +
+				pTransform->rx * pTransform->rx +
+				pTransform->ry * pTransform->ry +
+				pTransform->rz * pTransform->rz;
+			if (lengthSquared != 0.0f)
+			{
+				float length = glm::sqrt(lengthSquared);
+				pTransform->rw/= length;
+				pTransform->rx/= length;
+				pTransform->ry/= length;
+				pTransform->rz/= length;
+			}
+		}
+
 		ImGui::DragFloat3("Scale", &pTransform->sx, 0.1f);
 		break;
 	}

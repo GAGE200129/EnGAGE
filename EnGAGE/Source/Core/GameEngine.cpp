@@ -11,79 +11,84 @@
 #include "Script.hpp"
 #include "Physics.hpp"
 #include "Scene.hpp"
+#include "Messaging.hpp"
 
-namespace Core
+namespace Core::GameEngine
 {
-	namespace GameEngine
-	{	
-		void init(uint16_t width, uint16_t height, const String& title)
-		{
-			Log::init();
-			Window::init(width, height, title);
-			Input::init(Window::getRawWindow());
-			Editor::init(Window::getRawWindow());
+	void init(unsigned int width, unsigned int height, unsigned int fullScreenWidth, unsigned int fullScreenHeight, const String& title)
+	{
+		Log::init();
+		Messaging::init();
+		Window::init(width, height, fullScreenWidth, fullScreenHeight, title);
+		Input::init(Window::getRawWindow());
+		Editor::init(Window::getRawWindow());
 
-			ECS::init();
-			
-			Renderer::init();
-			Physics::init();
-		}
+		ECS::init();
 
-		void run()
-		{
-			constexpr unsigned int FPS = 120; 
-			constexpr unsigned int TPS = 60; //Tick per seconds
+		Renderer::init();
+		Physics::init();
+	}
 
-			const double secsPerUpdate = 1.0 / (double)FPS;
-			const double secsPerRender = 1.0 / (double)TPS;
-			double prevTime = Window::getCurrentTime();
-			double steps = 0.0;
-			while (!Window::closeRequested()) {
+	void run()
+	{
+		constexpr unsigned int TPS = 120; //Tick per seconds
 
-				double currentTime = Window::getCurrentTime();
-				double delta = currentTime - prevTime;
-				prevTime = currentTime;
+		const double secsPerUpdate = 1.0 / (double)TPS;
+		double prevTime = Window::getCurrentTime();
+		double steps = 0.0;
+		while (!Window::closeRequested()) {
 
-				steps += delta;
+			double currentTime = Window::getCurrentTime();
+			double delta = currentTime - prevTime;
+			prevTime = currentTime;
 
-				
-				Script::input();
-				Input::update();
-				Window::pollEvents();
+			steps += delta;
 
-				while (steps > secsPerUpdate)
-				{
-					steps -= secsPerUpdate;
 
-					//Update
-					Thread luaThread(Script::update, float(secsPerUpdate));
-					Thread physicsThread(Physics::update, float(secsPerUpdate));
-					
-					luaThread.join();
-					physicsThread.join();
-				}
-			
-				//Render
-				Renderer::render();
-				Editor::render();
-				Window::swapBuffers();
+			while (steps > secsPerUpdate)
+			{
+				steps -= secsPerUpdate;
 
-				ECS::updateRemovedEntities();
-				Scene::checkForSceneSwitch();
+				//Update
+				Thread luaThread(Script::update, float(secsPerUpdate));
+				Thread physicsThread(Physics::update, float(secsPerUpdate));
+
+				luaThread.join();
+				physicsThread.join();
 			}
-			clearResources();
-			Editor::shutdown();
-			Renderer::shutdown();
-			Physics::shutdown();
-			Window::destroy();
-		}
-		void clearResources()
-		{
-			ECS::shutdown();
-			Script::shutdown();
-			Resource::shutdown();
-		}
 
+			Input::update();
+			Window::pollEvents();
+
+			//Render
+			Renderer::render();
+			Editor::render();
+			Window::swapBuffers();
+
+			Messaging::flushQueued();
+			while (const Messaging::Message* pMessage = Messaging::queryMessage())
+			{
+				Window::onMessage(pMessage);
+				Script::onMessage(pMessage);
+				Editor::onMessage(pMessage);
+				Input::onMessage(pMessage);
+			}
+
+			ECS::updateRemovedEntities();
+			Scene::checkForSceneSwitch();
+		}
+		clearResources();
+		Editor::shutdown();
+		Renderer::shutdown();
+		Physics::shutdown();
+		Window::destroy();
+		Messaging::shutdown();
+	}
+	void clearResources()
+	{
+		ECS::shutdown();
+		Script::shutdown();
+		Resource::shutdown();
 	}
 }
 

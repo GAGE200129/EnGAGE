@@ -11,10 +11,12 @@ namespace Core::Physics
 	template<> ColliderData ColliderDataEnum<ColliderType::SPHERE> = { "SPHERE", sizeof(SphereCollider) };
 	template<> ColliderData ColliderDataEnum<ColliderType::PLANE> = { "PLANE", sizeof(PlaneCollider) };
 
-	ColliderData Physics::getColliderData(ColliderType type)
+	const ColliderData& Physics::getColliderData(ColliderType type)
 	{
 		switch (type)
 		{
+		case ColliderType::NONE:
+			return ColliderDataEnum<ColliderType::NONE>;
 		case ColliderType::PLANE:
 			return ColliderDataEnum<ColliderType::PLANE>;
 		case ColliderType::SPHERE:
@@ -22,6 +24,29 @@ namespace Core::Physics
 		}
 		EN_ASSERT(false, "Unknown collider data: {}", (unsigned int)type);
 		return ColliderDataEnum<ColliderType::NONE>;
+	}
+
+	void initCollider(char* colliderData, ColliderType type)
+	{
+		switch (type)
+		{
+		case ColliderType::SPHERE:
+		{
+			SphereCollider* collider = (SphereCollider*)colliderData;
+			collider->radius = 1.0f;
+			break;
+		}
+		case ColliderType::PLANE:
+		{
+			PlaneCollider* collider = (PlaneCollider*)colliderData;
+			collider->distance = 0;
+			collider->x = 0;
+			collider->y = 1;
+			collider->z = 0;
+			break;
+		}
+		
+		}
 	}
 
 	struct CollisionPoints
@@ -207,7 +232,7 @@ namespace Core::Physics
 
 		auto impulseSolve = [](CollisionPoints& point)
 		{
-			constexpr float aBounciness = 0.9f, bBounciness = 0.9f;
+			constexpr float aBounciness = 0.0f, bBounciness = 0.0f;
 			constexpr float aStaticFriction = 0.96f, bStaticFriction = 0.96f;
 			constexpr float aDynamicFriction = 0.96f, bDynamicFriction = 0.96f;
 			glm::vec3 relativeVel = point.a->velocity - point.b->velocity;
