@@ -13,5 +13,6 @@ include "spdlog.lua"
 include "glad.lua"
 include "imgui.lua"
 include "lua.lua"
+include "bullet3.lua"
 include "EnGAGE.lua"
 

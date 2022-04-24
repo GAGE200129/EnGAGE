@@ -19,6 +19,7 @@ project "EnGAGE"
 		"Libraries/imgui",
 		"Libraries/imgui/backends",
 		"Libraries/lua",
+		"Libraries/bullet3/src",
 		"%{prj.location}/Source"
 	}
 
@@ -27,7 +28,8 @@ project "EnGAGE"
 		"spdlog",
 		"glad",
 		"imgui",
-		"lua"
+		"lua",
+		"bullet3"
 	}
 
 	defines {"SPDLOG_COMPILED_LIB", "_CRT_SECURE_NO_WARNINGS"}
