@@ -102,38 +102,39 @@ static bool checkLua(lua_State* L, int r)
 
 void writeComponent(std::ofstream& out, const String& entity, Core::ECS::ComponentType componentType, Core::ECS::ComponentHeader* header)
 {
-	auto data = Core::ECS::getComponentData(componentType);
+	using namespace Core::ECS;
+	auto data = getComponentData(componentType);
 	switch (componentType)
 	{
-	case Core::ECS::ComponentType::NAME:
+	case ComponentType::NAME:
 		break;
-	case Core::ECS::ComponentType::TRANSFORM:	
+	case ComponentType::TRANSFORM:	
 	{
 		String componentName = entity + "_transform";
 		out << componentName << " = _addComponent(" << entity << ", " << data.name << ")\n";
-		Core::ECS::TransformComponent* component = (Core::ECS::TransformComponent*)header;
+		TransformComponent* component = (TransformComponent*)header;
 		out << "_setPosition(" << componentName << ", " << component->x << ", " << component->y << ", " << component->z << ")\n";
 		out << "_setRotation(" << componentName << ", " << component->rw << ", " << component->rx << ", " << component->ry << ", " << component->rz << ")\n";
 		out << "_setScale(" << componentName << ", " << component->sx << ", " << component->sy << ", " << component->sz << ")\n";
 		break;
 	}
-	case Core::ECS::ComponentType::MODEL_RENDERER:
+	case ComponentType::MODEL_RENDERER:
 	{
-		Core::ECS::ModelRendererComponent* component = (Core::ECS::ModelRendererComponent*)header;
+		ModelRendererComponent* component = (ModelRendererComponent*)header;
 		out << "_setModel(" << "_addComponent(" << entity << ", " << data.name << ")" << ", \"" << component->modelPath << "\")\n";
 		break;
 	}
-	case Core::ECS::ComponentType::SCRIPT:
+	case ComponentType::SCRIPT:
 	{
-		Core::ECS::ScriptComponent* component = (Core::ECS::ScriptComponent*)header;
+		ScriptComponent* component = (ScriptComponent*)header;
 		out << "_setScript(" << "_addComponent(" << entity << ", " << data.name << ")" << ", \"" << component->scriptPath << "\")\n";
 		break;
 	}
-	case Core::ECS::ComponentType::RIGID_BODY:
+	case ComponentType::RIGID_BODY:
 	{
 		String componentName = entity + "_rigidBody";
 		out << componentName << " = _addComponent(" << entity << ", " << data.name << ")\n";
-		Core::ECS::RigidBodyComponent* component = (Core::ECS::RigidBodyComponent*)header;
+		RigidBodyComponent* component = (RigidBodyComponent*)header;
 		out << "_setRigidBody(" << componentName << ", "
 			<< component->velocity.x << ", " << component->velocity.y << ", " << component->velocity.z << ", "
 			<< component->force.x << ", " << component->force.y << ", " << component->force.z << ", "
@@ -141,6 +142,16 @@ void writeComponent(std::ofstream& out, const String& entity, Core::ECS::Compone
 			<< ")\n";
 
 		writeCollisionShape(out, componentName, component);
+		break;
+	}
+	case ComponentType::DIRECTIONAL_LIGHT:
+	{
+		DirectionalLightComponent* component = (DirectionalLightComponent*)header;
+
+		out << "_setDirectionalLight(_addComponent(" << entity << ", " << data.name << "), " <<
+			component->direction.x << ", " << component->direction.y << ", " << component->direction.z << ", " <<
+			component->color.x << ", " << component->color.y << ", " << component->color.z << ", " <<
+			component->intensity << ")\n";
 		break;
 	}
 	}

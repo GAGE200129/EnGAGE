@@ -11,6 +11,7 @@ namespace Core::ECS
 	template<> ComponentData ComponentDataEnum<ComponentType::MODEL_RENDERER> = { "MODEL_RENDERER", sizeof(ModelRendererComponent) };
 	template<> ComponentData ComponentDataEnum<ComponentType::SCRIPT> = { "SCRIPT", sizeof(ScriptComponent) };
 	template<> ComponentData ComponentDataEnum<ComponentType::RIGID_BODY> = { "RIGID_BODY", sizeof(RigidBodyComponent) };
+	template<> ComponentData ComponentDataEnum<ComponentType::DIRECTIONAL_LIGHT> = { "DIRECTIONAL_LIGHT", sizeof(DirectionalLightComponent) };
 
 	const ComponentData& getComponentData(ComponentType type)
 	{
@@ -27,6 +28,8 @@ namespace Core::ECS
 			return ComponentDataEnum<ComponentType::SCRIPT>;
 		case ComponentType::RIGID_BODY:
 			return ComponentDataEnum<ComponentType::RIGID_BODY>;
+		case ComponentType::DIRECTIONAL_LIGHT:
+			return ComponentDataEnum<ComponentType::DIRECTIONAL_LIGHT>;
 		}
 		EN_ASSERT(false, "Unknown component: {}", (unsigned int)type);
 		return  ComponentDataEnum<ComponentType::COUNT>;
@@ -73,6 +76,19 @@ namespace Core::ECS
 			component->velocity = { 0, 0, 0 };
 			component->colliderType = 0;
 			memset(component->colliderData, 0, MAX_COLLIDER_BUFFER_SIZE);
+
+			break;
+		}
+		case ComponentType::DIRECTIONAL_LIGHT:
+		{
+			DirectionalLightComponent* component = (DirectionalLightComponent*)pHeader;
+			component->direction.x = 0.0f;
+			component->direction.y = -1.0f;
+			component->direction.z = 0.0f;
+			component->color.x = 1.0f;
+			component->color.y = 1.0f;
+			component->color.z = 1.0f;
+			component->intensity = 1.0f;
 
 			break;
 		}

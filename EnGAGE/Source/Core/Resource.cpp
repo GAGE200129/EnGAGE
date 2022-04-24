@@ -26,56 +26,54 @@ static void extractAccessorBuffer(const tinygltf::Model& model, const tinygltf::
 
 static DynArr<Scope<Core::Model>> gModels;
 
-namespace Core
+namespace Core::Resource
 {
-	namespace Resource
+	const Model* getModel(const String& filePath)
 	{
-		Model* getModel(const String& filePath)
+		bool found = false;
+		for (const auto& pModel : gModels)
 		{
-			bool found = false;
-			for (const auto& pModel : gModels)
+			if (pModel->name == filePath)
 			{
-				if (pModel->name == filePath)
-				{
-					found = true;
-					return pModel.get();
-				}
+				found = true;
+				return pModel.get();
 			}
-
-			if (!found)
-			{
-				//Load and add a new model to the pool
-				auto model = loadModel(filePath);
-				if(model != nullptr)
-					gModels.push_back(std::move(model));
-			}		
-			return gModels.back().get();
 		}
 
-		void shutdown()
+		if (!found)
 		{
-			for (const auto& model : gModels)
-			{
-				for (const auto& mesh : model->meshes)
-				{
-					for (const auto& primitive : mesh.primitives)
-					{
-						glDeleteVertexArrays(1, &primitive.vao);
-						glDeleteBuffers(1, &primitive.vbo);
-						glDeleteBuffers(1, &primitive.ebo);
-						EN_INFO("Deallocating gpu memory: vao: {}, vbo: {}, ebo: {}", primitive.vao, primitive.vbo, primitive.ebo);
-					}
-				}
-
-				for (const auto& texture : model->textures)
-				{
-					EN_INFO("Deleting texture: {}", texture.textureID);
-					glDeleteTextures(1, &texture.textureID);
-				}
-			}
-			gModels.clear();
+			//Load and add a new model to the pool
+			auto model = loadModel(filePath);
+			if (model != nullptr)
+				gModels.push_back(std::move(model));
 		}
+		return gModels.back().get();
 	}
+
+	void shutdown()
+	{
+		for (const auto& model : gModels)
+		{
+			for (const auto& mesh : model->meshes)
+			{
+				for (const auto& primitive : mesh.primitives)
+				{
+					glDeleteVertexArrays(1, &primitive.vao);
+					glDeleteBuffers(1, &primitive.vbo);
+					glDeleteBuffers(1, &primitive.ebo);
+					EN_INFO("Deallocating gpu memory: vao: {}, vbo: {}, ebo: {}", primitive.vao, primitive.vbo, primitive.ebo);
+				}
+			}
+
+			for (const auto& texture : model->textures)
+			{
+				EN_INFO("Deleting texture: {}", texture.textureID);
+				glDeleteTextures(1, &texture.textureID);
+			}
+		}
+		gModels.clear();
+	}
+
 }
 
 static Scope<Core::Model> loadModel(const String& filePath)
@@ -113,7 +111,7 @@ static Scope<Core::Model> loadModel(const String& filePath)
 	{
 		result->nodes.push_back(parseNode(gltfNode));
 	}
-	
+
 	for (const auto& gltfTexture : model.textures)
 	{
 		result->textures.push_back(parseTexture(model, gltfTexture));
@@ -167,7 +165,7 @@ static Core::Node parseNode(const tinygltf::Node& node)
 {
 	Core::Node result;
 	result.name = node.name;
-	
+
 	result.meshIndex = node.mesh;
 	result.children = node.children;
 
@@ -177,24 +175,24 @@ static Core::Node parseNode(const tinygltf::Node& node)
 
 	if (node.translation.size() != 0)
 	{
-		result.position.x = (float) node.translation[0];
-		result.position.y = (float) node.translation[1];
-		result.position.z = (float) node.translation[2];
+		result.position.x = (float)node.translation[0];
+		result.position.y = (float)node.translation[1];
+		result.position.z = (float)node.translation[2];
 	}
 
 	if (node.scale.size() != 0)
 	{
-		result.scale.x =(float) node.scale[0];
-		result.scale.y =(float) node.scale[1];
-		result.scale.z =(float) node.scale[2];
+		result.scale.x = (float)node.scale[0];
+		result.scale.y = (float)node.scale[1];
+		result.scale.z = (float)node.scale[2];
 	}
 
 	if (node.rotation.size() != 0)
 	{
-		result.rotation.w =(float) node.rotation[0];
-		result.rotation.x =(float) node.rotation[1];
-		result.rotation.y =(float) node.rotation[2];
-		result.rotation.z =(float) node.rotation[3];
+		result.rotation.w = (float)node.rotation[0];
+		result.rotation.x = (float)node.rotation[1];
+		result.rotation.y = (float)node.rotation[2];
+		result.rotation.z = (float)node.rotation[3];
 	}
 
 	if (node.matrix.size() != 0)
@@ -248,7 +246,7 @@ static Core::Mesh parseMesh(const tinygltf::Model& model, const tinygltf::Mesh& 
 		glGenBuffers(1, &primitive.ebo);
 
 		EN_INFO("Allocating gpu memory: vao: {}, vbo: {}, ebo: {}", primitive.vao, primitive.vbo, primitive.ebo);
-		
+
 
 		glBindVertexArray(primitive.vao);
 		glBindBuffer(GL_ARRAY_BUFFER, primitive.vbo);

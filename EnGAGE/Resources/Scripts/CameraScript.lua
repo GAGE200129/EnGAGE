@@ -120,13 +120,11 @@ function update(delta, entity)
 			direction.y = direction.y / direction_length;
 			direction.z = direction.z / direction_length;
 		end
-		--local upVector
 
 		x = x + direction.x * delta * flycam_speed
 		y = y + direction.y * delta * flycam_speed
 		z = z + direction.z * delta * flycam_speed
 	
-		_updateCamera(x, y, z, pitch, yaw, roll, fov, near, far)
-
 	end
+	_updateCamera(x, y, z, pitch, yaw, roll, fov, near, far)
 end

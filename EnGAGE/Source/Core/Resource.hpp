@@ -7,6 +7,6 @@ namespace Core
 	namespace Resource
 	{
 		void shutdown();
-		Model* getModel(const String& filePath);
+		const Model* getModel(const String& filePath);
 	}
 }

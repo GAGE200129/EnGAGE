@@ -4,8 +4,9 @@ layout(location = 0) in vec3 inPos;
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inTexCoord;
 
-out vec2 FSTexCoord;
+out vec3 FSPosition;
 out vec3 FSNormal;
+out vec2 FSTexCoord;
 
 uniform mat4 uView;
 uniform mat4 uProj;
@@ -13,7 +14,9 @@ uniform mat4 uModel;
 
 void main()
 {
+	vec4 position = uModel * vec4(inPos, 1); 
+	FSPosition = position.xyz;
+	FSNormal = (mat3(uModel) * inNormal).xyz;
 	FSTexCoord = inTexCoord;
-	FSNormal = normalize((mat3(uModel) * inNormal).xyz);
-	gl_Position = uProj * uView * uModel * vec4(inPos, 1);
+	gl_Position = uProj * uView * position;
 }

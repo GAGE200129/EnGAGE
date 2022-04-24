@@ -86,6 +86,7 @@ static void processGameEngine()
 {
 	using namespace Core;
 	ImGui::Begin("GameEngine");
+
 	if (ImGui::TreeNode("Memory")) {
 		{// Entities
 			char buf[50];
@@ -121,6 +122,7 @@ static void processGameEngine()
 		ImGui::TreePop();
 	}
 	ImGui::End();
+
 }
 
 static void processSceneGraph()
@@ -242,10 +244,10 @@ static void processComponent(Core::ECS::ComponentType type, Core::ECS::Component
 			if (lengthSquared != 0.0f)
 			{
 				float length = glm::sqrt(lengthSquared);
-				pTransform->rw/= length;
-				pTransform->rx/= length;
-				pTransform->ry/= length;
-				pTransform->rz/= length;
+				pTransform->rw /= length;
+				pTransform->rx /= length;
+				pTransform->ry /= length;
+				pTransform->rz /= length;
 			}
 		}
 
@@ -260,7 +262,7 @@ static void processComponent(Core::ECS::ComponentType type, Core::ECS::Component
 
 		if (ImGui::BeginDragDropTarget())
 		{
-			if (const ImGuiPayload * payload = ImGui::AcceptDragDropPayload("RESOURCE_MODEL"))
+			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("RESOURCE_MODEL"))
 			{
 				pModel->pModel = Core::Resource::getModel((const char*)payload->Data);
 				strcpy(pModel->modelPath, (const char*)payload->Data);
@@ -285,6 +287,14 @@ static void processComponent(Core::ECS::ComponentType type, Core::ECS::Component
 		}
 		break;
 	}
+	case Core::ECS::ComponentType::DIRECTIONAL_LIGHT:
+	{
+		DirectionalLightComponent* pLight = (DirectionalLightComponent*)pHeader;
+		ImGui::DragFloat3("Direction", &pLight->direction.x, 0.1f, -1, 1);
+		ImGui::DragFloat3("Color", &pLight->color.x, 0.1f, 0, 1);
+		ImGui::DragFloat("Intensity", &pLight->intensity, 0.1f, 0.0f, 1.0f);
+		break;
+	}
 	};
 
 }
@@ -307,7 +317,7 @@ void processInspector(const Core::ECS::EntitySignature* pEntity)
 
 				ImGui::PushID(i);
 				if (ImGui::Button("Remove"))
-				{	
+				{
 					ECS::removeComponent(pEntity->id, (ECS::ComponentType)i);
 				}
 				ImGui::PopID();
@@ -341,6 +351,9 @@ static void processRenderer()
 	{
 		ImGui::DragFloat3("position", &Core::Renderer::getCamera().x, 0.1f);
 		ImGui::DragFloat3("rotation", &Core::Renderer::getCamera().pitch, 0.1f);
+		ImGui::DragFloat("fov", &Core::Renderer::getCamera().fov, 0.1f, 1.0f, 180.0f);
+		ImGui::DragFloat("near", &Core::Renderer::getCamera().near, 0.1f);
+		ImGui::DragFloat("far", &Core::Renderer::getCamera().far, 0.1f);
 		ImGui::TreePop();
 	}
 	ImGui::End();
@@ -352,7 +365,7 @@ static void processResourceBrowser()
 	static const char* scriptPath = "Resources/Scripts";
 	ImGui::Begin("ResourceBrowser");
 
-	if(ImGui::TreeNode("Models"))
+	if (ImGui::TreeNode("Models"))
 	{
 		for (auto& entry : std::filesystem::recursive_directory_iterator(modelPath))
 		{
@@ -408,18 +421,18 @@ static void processMenuBar()
 
 		if (ImGui::MenuItem("Load"))
 			openLoadPopup = true;
-		
-		
+
+
 
 		if (ImGui::MenuItem("Save"))
 			openSavePopup = true;
-		
+
 
 		ImGui::EndMenu();
 	}
 	ImGui::EndMainMenuBar();
 
-	if(openSavePopup)
+	if (openSavePopup)
 		ImGui::OpenPopup("SaveScenePopup");
 	if (ImGui::BeginPopup("SaveScenePopup"))
 	{
@@ -453,40 +466,40 @@ void processConsole()
 {
 	ImGui::Begin("Console");
 
-		//Console output
-		const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
-		ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), false, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
-			const auto& stringLines = Core::Log::getStringLines();
+	//Console output
+	const float footer_height_to_reserve = ImGui::GetStyle().ItemSpacing.y + ImGui::GetFrameHeightWithSpacing();
+	ImGui::BeginChild("ScrollingRegion", ImVec2(0, -footer_height_to_reserve), false, ImGuiWindowFlags_HorizontalScrollbar | ImGuiWindowFlags_AlwaysVerticalScrollbar);
+	const auto& stringLines = Core::Log::getStringLines();
 
-			ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(4, 1)); // Tighten spacing
 
-			for (const auto& line : stringLines) {
-				ImVec4 color;
-				bool has_color = false;
+	for (const auto& line : stringLines) {
+		ImVec4 color;
+		bool has_color = false;
 
-				if (has_color = (line.find("[info]") != std::string::npos))
-				{
-					color = ImVec4(0, 1, 0, 1);
-				} 
-				else if(has_color = (line.find("[warn]") != std::string::npos))
-				{
-					color = ImVec4(1, 1, 0, 1);
-				}
+		if (has_color = (line.find("[info]") != std::string::npos))
+		{
+			color = ImVec4(0, 1, 0, 1);
+		}
+		else if (has_color = (line.find("[warn]") != std::string::npos))
+		{
+			color = ImVec4(1, 1, 0, 1);
+		}
 
-				else if (has_color = (line.find("[error]") != std::string::npos))
-				{
-					color = ImVec4(1, 0, 0, 1);
-				}
+		else if (has_color = (line.find("[error]") != std::string::npos))
+		{
+			color = ImVec4(1, 0, 0, 1);
+		}
 
-				if (has_color)
-					ImGui::PushStyleColor(ImGuiCol_Text, color);
-				ImGui::TextUnformatted(line.c_str());
-				if (has_color)
-					ImGui::PopStyleColor();
-			}
+		if (has_color)
+			ImGui::PushStyleColor(ImGuiCol_Text, color);
+		ImGui::TextUnformatted(line.c_str());
+		if (has_color)
+			ImGui::PopStyleColor();
+	}
 
-			ImGui::PopStyleVar();
-		ImGui::EndChild();
+	ImGui::PopStyleVar();
+	ImGui::EndChild();
 
 	ImGui::End();
 }

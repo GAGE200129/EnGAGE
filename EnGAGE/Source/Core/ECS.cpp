@@ -58,6 +58,10 @@ namespace Core::ECS
 		SET_BIT(signature, (unsigned int)ComponentType::TRANSFORM);
 		gSystems[SystemType::PHYSICS].signature = signature;
 
+		signature = 0;
+		SET_BIT(signature, (unsigned int)ComponentType::DIRECTIONAL_LIGHT);
+		gSystems[SystemType::DIRECTIONAL].signature = signature;
+
 	}
 
 	void shutdown()

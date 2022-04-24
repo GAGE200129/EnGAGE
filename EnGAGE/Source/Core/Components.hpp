@@ -19,6 +19,7 @@ namespace Core::ECS
 		MODEL_RENDERER,
 		SCRIPT,
 		RIGID_BODY,
+		DIRECTIONAL_LIGHT,
 		COUNT
 	};
 
@@ -55,7 +56,7 @@ namespace Core::ECS
 	{
 		ComponentHeader header;
 		char modelPath[MAX_NAME_SIZE];
-		Model* pModel;
+		const Model* pModel;
 	};
 
 	struct ScriptComponent
@@ -73,6 +74,14 @@ namespace Core::ECS
 		float mass;
 		unsigned int colliderType;
 		char colliderData[MAX_COLLIDER_BUFFER_SIZE];
+	};
+
+	struct DirectionalLightComponent
+	{
+		ComponentHeader header;
+		glm::vec3 direction;
+		glm::vec3 color;
+		float intensity;
 	};
 
 	struct ComponentData

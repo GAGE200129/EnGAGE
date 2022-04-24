@@ -25,7 +25,7 @@ namespace Core::GameEngine
 
 		ECS::init();
 
-		Renderer::init();
+		Renderer::init(width, height);
 		Physics::init();
 	}
 
@@ -72,6 +72,7 @@ namespace Core::GameEngine
 				Script::onMessage(pMessage);
 				Editor::onMessage(pMessage);
 				Input::onMessage(pMessage);
+				Renderer::onMessage(pMessage);
 			}
 
 			ECS::updateRemovedEntities();

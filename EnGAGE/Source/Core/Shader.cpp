@@ -57,9 +57,29 @@ namespace Core
 		glUniformMatrix4fv(loc, 1, GL_FALSE, &mat[0][0]);
 	}
 
+	void Shader::uploadInt(int loc, int v)
+	{
+		glUniform1i(loc, v);
+	}
+
+	void Shader::uploadFloat(int loc, float v)
+	{
+		glUniform1f(loc, v);
+	}
+
+	void Shader::uploadVec3(int loc, const glm::vec3& v)
+	{
+		glUniform3f(loc, v.x, v.y, v.z);
+	}
+
 	void Shader::bind() const
 	{
 		glUseProgram(mProgramID);
+	}
+
+	void Shader::unBind() const
+	{
+		glUseProgram(0);
 	}
 
 	void Shader::loadSource(const String& filePath, ShaderType type)

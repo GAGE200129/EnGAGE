@@ -1,21 +1,19 @@
 #pragma once
 
-namespace Core
+#include "Messaging.hpp"
+
+namespace Core::Renderer
 {
-	namespace Renderer
+	struct Camera
 	{
-		struct Camera
-		{
-			float x, y, z;
-			float pitch, yaw, roll;
-			float fov, near, far;
-		};
+		float x, y, z;
+		float pitch, yaw, roll;
+		float fov, near, far;
+	};
 
-		void init();
-		void shutdown();
-
-		void render();
-
-		Camera& getCamera();
-	}
+	void init(unsigned int currentWidth, unsigned int currentHeight);
+	void onMessage(const Messaging::Message* pMessage);
+	void shutdown();
+	void render();
+	Camera& getCamera();
 }

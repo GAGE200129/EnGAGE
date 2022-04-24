@@ -87,6 +87,7 @@ namespace Core::Messaging
 			TO_STRING(BUTTON_RELEASED);
 			TO_STRING(CURSOR_MOVED);
 			TO_STRING(TOGGLE_CURSOR);
+			TO_STRING(WINDOW_RESIZED);
 		}
 		EN_ASSERT(false, "Unknown message type: {}", (unsigned int)type);
 		return "";

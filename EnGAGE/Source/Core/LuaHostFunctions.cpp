@@ -18,10 +18,10 @@ extern "C"
 }
 
 #ifdef EN_DEBUG
-#define CHECK_NUM_ARGS(L, numArgs, ...) checkNumArguments(L, numArgs, __FUNCTION__)
+#define CHECK_NUM_ARGS(L, numArgs) checkNumArguments(L, numArgs, __FUNCTION__)
 #define CHECK_ARG(L, index, type) checkArgument(L, index, type, __FUNCTION__)
 #else
-#define CHECK_NUM_ARGS(L, numArgs, ...)
+#define CHECK_NUM_ARGS(L, numArgs)
 #define CHECK_ARG(L, index, type)
 #endif
 
@@ -54,6 +54,7 @@ int setScript(lua_State* L);
 
 //Render
 int updateCamera(lua_State* L);
+int setDirectionalLight(lua_State* L);
 
 //Scene
 int loadScene(lua_State* L);
@@ -114,6 +115,7 @@ namespace LuaHostFunctions
 		lua_register(L, "_markForRemove", markForRemove);
 		lua_register(L, "_addComponent", addComponent);
 		lua_register(L, "_getComponent", getComponent);
+		lua_register(L, "_setDirectionalLight", setDirectionalLight);
 		lua_register(L, "_setModel", setModel);
 		lua_register(L, "_setRigidBody", setRigidBody);
 		lua_register(L, "_setPosition", setPosition);
@@ -126,6 +128,34 @@ namespace LuaHostFunctions
 }
 
 using namespace Core;
+
+int setDirectionalLight(lua_State* L)
+{
+	CHECK_NUM_ARGS(L, 8);
+	CHECK_ARG(L, 1, LUA_TLIGHTUSERDATA);
+	CHECK_ARG(L, 2, LUA_TNUMBER);
+	CHECK_ARG(L, 3, LUA_TNUMBER);
+	CHECK_ARG(L, 4, LUA_TNUMBER);
+	CHECK_ARG(L, 5, LUA_TNUMBER);
+	CHECK_ARG(L, 6, LUA_TNUMBER);
+	CHECK_ARG(L, 7, LUA_TNUMBER);
+	CHECK_ARG(L, 8, LUA_TNUMBER);
+	
+	ECS::ComponentHeader* header = (ECS::ComponentHeader*)lua_touserdata(L, 1);
+	EN_ASSERT(header->type == ECS::ComponentType::DIRECTIONAL_LIGHT, "Invalid component type");
+	ECS::DirectionalLightComponent* component = (ECS::DirectionalLightComponent*)header;
+	component->direction.x = (float)lua_tonumber(L, 2);
+	component->direction.y = (float)lua_tonumber(L, 3);
+	component->direction.z = (float)lua_tonumber(L, 4);
+
+	component->color.x = (float)lua_tonumber(L, 5);
+	component->color.y = (float)lua_tonumber(L, 6);
+	component->color.z = (float)lua_tonumber(L, 7);
+
+	component->intensity = (float)lua_tonumber(L, 8);
+
+	return 0;
+}
 
 int getInt(lua_State* L)
 {

@@ -14,6 +14,7 @@ namespace Core::Messaging
 		BUTTON_RELEASED,
 		CURSOR_MOVED,
 		TOGGLE_CURSOR,
+		WINDOW_RESIZED,
 		COUNT
 	};
 

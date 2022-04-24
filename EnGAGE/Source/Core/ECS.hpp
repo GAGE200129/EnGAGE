@@ -23,7 +23,7 @@ namespace Core
 		enum class SystemType : unsigned int
 		{
 			RENDERER,
-			DIRECTIONAL_RENDERER,
+			DIRECTIONAL,
 			SCRIPTING,
 			PHYSICS,
 			COUNT
