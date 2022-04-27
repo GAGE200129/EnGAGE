@@ -7,8 +7,9 @@
 #include "Resource.hpp"
 #include "Script.hpp"
 #include "Scene.hpp"
-#include "Physics.hpp"
-#include "Messaging.hpp"
+#include "Messenger.hpp"
+
+#include <BulletDynamics/Dynamics/btRigidBody.h>
 
 extern "C"
 {
@@ -47,7 +48,6 @@ int setModel(lua_State* L);
 
 //Ridgidbody
 int setRigidBody(lua_State* L);
-int setCollisionShape(lua_State* L);
 
 //Script
 int setScript(lua_State* L);
@@ -121,7 +121,6 @@ namespace LuaHostFunctions
 		lua_register(L, "_setPosition", setPosition);
 		lua_register(L, "_setRotation", setRotation);
 		lua_register(L, "_setScale", setScale);
-		lua_register(L, "_setCollisionShape", setCollisionShape);
 		lua_register(L, "_setScript", setScript);
 	}
 
@@ -141,9 +140,9 @@ int setDirectionalLight(lua_State* L)
 	CHECK_ARG(L, 7, LUA_TNUMBER);
 	CHECK_ARG(L, 8, LUA_TNUMBER);
 	
-	ECS::ComponentHeader* header = (ECS::ComponentHeader*)lua_touserdata(L, 1);
-	EN_ASSERT(header->type == ECS::ComponentType::DIRECTIONAL_LIGHT, "Invalid component type");
-	ECS::DirectionalLightComponent* component = (ECS::DirectionalLightComponent*)header;
+	ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
+	EN_ASSERT(header->type == ComponentType::DIRECTIONAL_LIGHT, "Invalid component type");
+	DirectionalLightComponent* component = (DirectionalLightComponent*)header;
 	component->direction.x = (float)lua_tonumber(L, 2);
 	component->direction.y = (float)lua_tonumber(L, 3);
 	component->direction.z = (float)lua_tonumber(L, 4);
@@ -200,9 +199,9 @@ int sendMessage(lua_State* L)
 	CHECK_ARG(L, 1, LUA_TNUMBER);
 	
 	unsigned int numArgs = lua_gettop(L) - 1;
-	Messaging::Message message;
+	Message message;
 
-	message.type = (Messaging::MessageType)lua_tointeger(L, 1);
+	message.type = (MessageType)lua_tointeger(L, 1);
 	unsigned int offset = 0;
 	for (unsigned int i = 1; i < numArgs; i++)
 	{
@@ -220,7 +219,7 @@ int sendMessage(lua_State* L)
 		}
 	}
 
-	Messaging::queueMessage(&message);
+	Messenger::queueMessage(&message);
 
 	return 0;
 }
@@ -249,7 +248,7 @@ int addComponent(lua_State* L)
 	CHECK_ARG(L, 2, LUA_TNUMBER);// Type
 
 	unsigned int entityID = (unsigned int)lua_tointeger(L, 1);
-	ECS::ComponentType componentType = (ECS::ComponentType)lua_tointeger(L, 2);
+	ComponentType componentType = (ComponentType)lua_tointeger(L, 2);
 
 	void* data = ECS::addComponent(entityID, componentType);
 	lua_pushlightuserdata(L, data);
@@ -263,9 +262,9 @@ int getComponent(lua_State* L)
 	CHECK_ARG(L, 2, LUA_TNUMBER);// Type
 
 	unsigned int entityID = (unsigned int)lua_tointeger(L, 1);
-	ECS::ComponentType componentType = (ECS::ComponentType)lua_tointeger(L, 2);
+	ComponentType componentType = (ComponentType)lua_tointeger(L, 2);
 
-	void* component = getComponent(entityID, componentType);
+	void* component = ECS::getComponent(entityID, componentType);
 
 	if (component == nullptr)
 	{
@@ -281,7 +280,7 @@ int getCursorPosDelta(lua_State* L)
 {
 	CHECK_NUM_ARGS(L, 0);
 
-	auto message = Messaging::request(Messaging::RequestType::CURSOR_DELTA);
+	auto message = Messenger::request(RequestType::CURSOR_DELTA);
 	double data[2];
 	memcpy(data, message.data, sizeof(data));
 
@@ -292,14 +291,14 @@ int getCursorPosDelta(lua_State* L)
 int toggleCursor(lua_State* L)
 {
 	CHECK_NUM_ARGS(L, 0);
-	Messaging::Message message = { Messaging::MessageType::TOGGLE_CURSOR };
-	Messaging::recieveMessage(&message);
+	Message message = { MessageType::TOGGLE_CURSOR };
+	Messenger::recieveMessage(&message);
 	return 0;
 }
 int isCursorLocked(lua_State* L)
 {
 	CHECK_NUM_ARGS(L, 0);
-	auto message = Messaging::request(Messaging::RequestType::CURSOR_LOCKED);
+	auto message = Messenger::request(RequestType::CURSOR_LOCKED);
 	int result = *reinterpret_cast<int*>(message.data);
 	lua_pushboolean(L, result);
 	return 1;
@@ -314,9 +313,9 @@ int setPosition(lua_State* L)
 	CHECK_ARG(L, 3, LUA_TNUMBER);
 	CHECK_ARG(L, 4, LUA_TNUMBER);
 
-	ECS::ComponentHeader* header = (ECS::ComponentHeader*)lua_touserdata(L, 1);
-	EN_ASSERT(header->type == ECS::ComponentType::TRANSFORM, "Invalid component type");
-	ECS::TransformComponent* transform = (ECS::TransformComponent*)header;
+	ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
+	EN_ASSERT(header->type == ComponentType::TRANSFORM, "Invalid component type");
+	TransformComponent* transform = (TransformComponent*)header;
 	transform->x = (float)lua_tonumber(L, 2);
 	transform->y = (float)lua_tonumber(L, 3);
 	transform->z = (float)lua_tonumber(L, 4);
@@ -332,9 +331,9 @@ int setRotation(lua_State* L)
 	CHECK_ARG(L, 4, LUA_TNUMBER);
 	CHECK_ARG(L, 5, LUA_TNUMBER);
 
-	ECS::ComponentHeader* header = (ECS::ComponentHeader*)lua_touserdata(L, 1);
-	EN_ASSERT(header->type == ECS::ComponentType::TRANSFORM, "Invalid component type");
-	ECS::TransformComponent* transform = (ECS::TransformComponent*)header;
+	ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
+	EN_ASSERT(header->type == ComponentType::TRANSFORM, "Invalid component type");
+	TransformComponent* transform = (TransformComponent*)header;
 	transform->rw = (float)lua_tonumber(L, 2);
 	transform->rx = (float)lua_tonumber(L, 3);
 	transform->ry = (float)lua_tonumber(L, 4);
@@ -350,9 +349,9 @@ int setScale(lua_State* L)
 	CHECK_ARG(L, 3, LUA_TNUMBER);
 	CHECK_ARG(L, 4, LUA_TNUMBER);
 
-	ECS::ComponentHeader* header = (ECS::ComponentHeader*)lua_touserdata(L, 1);
-	EN_ASSERT(header->type == ECS::ComponentType::TRANSFORM, "Invalid component type");
-	ECS::TransformComponent* transform = (ECS::TransformComponent*)header;
+	ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
+	EN_ASSERT(header->type == ComponentType::TRANSFORM, "Invalid component type");
+	TransformComponent* transform = (TransformComponent*)header;
 	transform->sx = (float)lua_tonumber(L, 2);
 	transform->sy = (float)lua_tonumber(L, 3);
 	transform->sz = (float)lua_tonumber(L, 4);
@@ -367,114 +366,68 @@ int setModel(lua_State* L)
 	CHECK_ARG(L, 2, LUA_TSTRING);
 
 
-	ECS::ComponentHeader* header = (ECS::ComponentHeader*)lua_touserdata(L, 1);
-	EN_ASSERT(header->type == ECS::ComponentType::MODEL_RENDERER, "Invalid component type");
+	ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
+	EN_ASSERT(header->type == ComponentType::MODEL_RENDERER, "Invalid component type");
 
 	const char* modelName = lua_tostring(L, 2);
 	EN_ASSERT(modelName != nullptr, "modelName is null");
 
-	ECS::ModelRendererComponent* pModelRenderer = (ECS::ModelRendererComponent*)header;
+	ModelRendererComponent* pModelRenderer = (ModelRendererComponent*)header;
 	pModelRenderer->pModel = Resource::getModel(modelName);
 	strcpy(pModelRenderer->modelPath, modelName);
 	return 0;
 }
 int setRigidBody(lua_State* L)
 {
-	CHECK_NUM_ARGS(L, 8);
 	CHECK_ARG(L, 1, LUA_TLIGHTUSERDATA);
 	CHECK_ARG(L, 2, LUA_TNUMBER);
 	CHECK_ARG(L, 3, LUA_TNUMBER);
-	CHECK_ARG(L, 4, LUA_TNUMBER);
-	CHECK_ARG(L, 5, LUA_TNUMBER);
-	CHECK_ARG(L, 6, LUA_TNUMBER);
-	CHECK_ARG(L, 7, LUA_TNUMBER);
-	CHECK_ARG(L, 8, LUA_TNUMBER);
 
-	ECS::ComponentHeader* header = (ECS::ComponentHeader*)lua_touserdata(L, 1);
-	EN_ASSERT(header->type == ECS::ComponentType::RIGID_BODY, "Invalid component type");
-
-	ECS::RigidBodyComponent* pRigidBody = (ECS::RigidBodyComponent*)header;
-	pRigidBody->velocity.x = (float)lua_tonumber(L, 2);
-	pRigidBody->velocity.y = (float)lua_tonumber(L, 3);
-	pRigidBody->velocity.z = (float)lua_tonumber(L, 4);
-
-	pRigidBody->force.x = (float)lua_tonumber(L, 5);
-	pRigidBody->force.y = (float)lua_tonumber(L, 6);
-	pRigidBody->force.z = (float)lua_tonumber(L, 7);
-
-	pRigidBody->mass = (float)lua_tonumber(L, 8);
-
-	return 0;
-}
-
-int setCollisionShape(lua_State* L)
-{
-	using namespace Core::Physics;
-	using namespace Core::ECS;
-	CHECK_ARG(L, 1, LUA_TLIGHTUSERDATA);
-	CHECK_ARG(L, 2, LUA_TNUMBER);
 	ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
 	EN_ASSERT(header->type == ComponentType::RIGID_BODY, "Invalid component type");
 
-	RigidBodyComponent* pRigidBody = (RigidBodyComponent*)header;
-	ColliderType type = (ColliderType)lua_tonumber(L, 2);
+	RigidBodyComponent* pComponent = (RigidBodyComponent*)header;
+	btRigidBody* pRigidBody = (btRigidBody*)pComponent->pRigidbody;
+	pRigidBody->setMassProps((float)lua_tonumber(L, 2), pRigidBody->getLocalInertia());
+	pComponent->collisionShapeType = (unsigned int)lua_tointeger(L, 3);
 
-	switch (type)
+	unsigned int numArguments = lua_gettop(L) - 3;
+
+	struct Data
 	{
-	case Core::Physics::ColliderType::NONE:
-		break;
-	case Core::Physics::ColliderType::SPHERE:
+		btRigidBody* body;
+		unsigned int type;
+		unsigned char arguments[50];
+	};
+	Message message = { MessageType::INIT_COLLISION_SHAPE };
+	Data data;
+	data.body = pRigidBody;
+	data.type = pComponent->collisionShapeType;
+
+	EN_ASSERT(numArguments * sizeof(float) < 50, "Args overflow !");
+	float* argData = (float*)data.arguments;
+	for (unsigned int i = 0; i < numArguments; i++)
 	{
-		CHECK_ARG(L, 3, LUA_TNUMBER);
-		pRigidBody->colliderType = (unsigned int)ColliderType::SPHERE;
-
-		SphereCollider* pCollider = (SphereCollider*)pRigidBody->colliderData;
-		pCollider->radius = (float)lua_tonumber(L, 3);
-		break;
+		argData[i] = (float)lua_tonumber(L, i + 4);
 	}
-	case Core::Physics::ColliderType::PLANE:
-	{
-		CHECK_ARG(L, 3, LUA_TNUMBER);
-		CHECK_ARG(L, 4, LUA_TNUMBER);
-		CHECK_ARG(L, 5, LUA_TNUMBER);
-		CHECK_ARG(L, 6, LUA_TNUMBER);
-		pRigidBody->colliderType = (unsigned int)ColliderType::PLANE;
 
-		PlaneCollider* pCollider = (PlaneCollider*)pRigidBody->colliderData;
-		pCollider->x = (float)lua_tonumber(L, 3);
-		pCollider->y = (float)lua_tonumber(L, 4);
-		pCollider->z = (float)lua_tonumber(L, 5);
-		pCollider->distance = (float)lua_tonumber(L, 6);
-		break;
-	}
-	default:
-		EN_ASSERT(false, "Unknown collider type");
-		break;
-	}
-	return 0;
-}
-int setCollisionShapePlane(lua_State* L)
-{
-	EN_ASSERT(lua_gettop(L) == 5, "Invalid argument");
-	Core::ECS::ComponentHeader* header = (Core::ECS::ComponentHeader*)lua_touserdata(L, 1);
-	EN_ASSERT(header->type == Core::ECS::ComponentType::RIGID_BODY, "Invalid component type");
-	Core::ECS::RigidBodyComponent* pRigidBody = (Core::ECS::RigidBodyComponent*)header;
-	pRigidBody->colliderType = (unsigned int)Core::Physics::ColliderType::PLANE;
-
+	memcpy(message.message, &data, sizeof(Data));
+	Messenger::recieveMessage(&message);
 
 	return 0;
 }
+
 int setScript(lua_State* L)
 {
 	EN_ASSERT(lua_gettop(L) == 2, "Invalid argument");
-	Core::ECS::ComponentHeader* header = (Core::ECS::ComponentHeader*)lua_touserdata(L, 1);
-	EN_ASSERT(header->type == Core::ECS::ComponentType::SCRIPT, "Invalid component type");
+	ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
+	EN_ASSERT(header->type == ComponentType::SCRIPT, "Invalid component type");
 
 	const char* scriptPath = lua_tostring(L, 2);
 	EN_ASSERT(scriptPath != nullptr, "scriptPath is null");
 
-	Core::ECS::ScriptComponent* sciptComponent = (Core::ECS::ScriptComponent*)header;
-	Core::Script::loadFile(sciptComponent->L, scriptPath);
+	ScriptComponent* sciptComponent = (ScriptComponent*)header;
+	Script::loadFile(sciptComponent->L, scriptPath);
 	strcpy(sciptComponent->scriptPath, scriptPath);
 	return 0;
 }

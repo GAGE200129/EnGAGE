@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Messaging.hpp"
+#include "Messenger.hpp"
 
 namespace Core::Renderer
 {
@@ -12,7 +12,7 @@ namespace Core::Renderer
 	};
 
 	void init(unsigned int currentWidth, unsigned int currentHeight);
-	void onMessage(const Messaging::Message* pMessage);
+	void onMessage(const Message* pMessage);
 	void shutdown();
 	void render();
 	Camera& getCamera();

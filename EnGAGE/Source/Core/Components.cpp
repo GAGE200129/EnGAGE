@@ -1,10 +1,12 @@
 #include "pch.hpp"
 
 #include "Components.hpp"
-#include "Script.hpp"
+#include "Messenger.hpp"
 
-namespace Core::ECS
+
+namespace Core
 {
+
 	template<ComponentType> ComponentData ComponentDataEnum = { "INVALID", 0 };
 	template<> ComponentData ComponentDataEnum<ComponentType::NAME> = { "NAME", sizeof(NameComponent) };
 	template<> ComponentData ComponentDataEnum<ComponentType::TRANSFORM> = { "TRANSFORM", sizeof(TransformComponent) };
@@ -34,6 +36,7 @@ namespace Core::ECS
 		EN_ASSERT(false, "Unknown component: {}", (unsigned int)type);
 		return  ComponentDataEnum<ComponentType::COUNT>;
 	}
+	
 	void initComponent(ComponentHeader* pHeader, ComponentType type)
 	{
 		switch (type)
@@ -41,6 +44,7 @@ namespace Core::ECS
 		case ComponentType::TRANSFORM:
 		{
 			TransformComponent* transformComponent = (TransformComponent*)pHeader;
+			transformComponent->isStatic = true;
 			transformComponent->x = 0;
 			transformComponent->y = 0;
 			transformComponent->z = 0;
@@ -64,19 +68,19 @@ namespace Core::ECS
 		case ComponentType::SCRIPT:
 		{
 			ScriptComponent* component = (ScriptComponent*)pHeader;
-			component->L = Script::newScript();
+
+			auto request = Messenger::request(RequestType::NEW_SCRIPT);
+			memcpy(&component->L, request.data, sizeof(lua_State*));
 			memset(component->scriptPath, 0, MAX_NAME_SIZE);
 			break;
 		}
 		case ComponentType::RIGID_BODY:
 		{
 			RigidBodyComponent* component = (RigidBodyComponent*)pHeader;
-			component->mass = 0.0f;
-			component->force = { 0, 0, 0 };
-			component->velocity = { 0, 0, 0 };
-			component->colliderType = 0;
-			memset(component->colliderData, 0, MAX_COLLIDER_BUFFER_SIZE);
 
+			auto request = Messenger::request(RequestType::NEW_RIGID_BODY);
+			memcpy(&component->pRigidbody, request.data, sizeof(btRigidBody*));
+			component->collisionShapeType = 0;
 			break;
 		}
 		case ComponentType::DIRECTIONAL_LIGHT:
@@ -102,7 +106,12 @@ namespace Core::ECS
 		{
 			ScriptComponent* component = (ScriptComponent*)pHeader;
 			if (component)
-				Script::removeScript(component->L);
+			{
+				Message message = {MessageType::REMOVE_SCRIPT};
+
+				memcpy(message.message, &component->L, sizeof(lua_State*));
+				Messenger::recieveMessage(&message);
+			}
 			break;
 		}
 		}

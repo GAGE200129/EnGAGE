@@ -13,8 +13,7 @@ extern "C"
 #include <lualib.h>
 }
 static bool checkLua(lua_State* L, int r);
-static void writeComponent(std::ofstream& out, const String& entity, Core::ECS::ComponentType componentType, Core::ECS::ComponentHeader* header);
-static void writeCollisionShape(std::ofstream& out, const String& componentName, Core::ECS::RigidBodyComponent* component);
+static void writeComponent(std::ofstream& out, const String& entity, Core::ComponentType componentType, Core::ComponentHeader* header);
 
 static bool gSceneSwitch = false;
 static String gScenePath = "";
@@ -35,13 +34,13 @@ void Core::Scene::saveScene(const String& filePath)
 		fileOut << entityName  << " = _createEntity()\n";
 
 		//Unload all components
-		for (unsigned int j = 0; j < (unsigned int)ECS::ComponentType::COUNT; j++)
+		for (unsigned int j = 0; j < (unsigned int)ComponentType::COUNT; j++)
 		{
 			auto& signatures = ECS::getEntitySignatures();
-			ECS::ComponentHeader* pHeader = (ECS::ComponentHeader*)ECS::getComponent(signatures[i].id, (ECS::ComponentType)j);
+			ComponentHeader* pHeader = (ComponentHeader*)ECS::getComponent(signatures[i].id, (ComponentType)j);
 			if (pHeader)
 			{
-				writeComponent(fileOut, entityName, (ECS::ComponentType)j, pHeader);
+				writeComponent(fileOut, entityName, (ComponentType)j, pHeader);
 			}
 		}
 		fileOut << "\n";
@@ -60,19 +59,20 @@ void Core::Scene::checkForSceneSwitch()
 		lua_State* L = luaL_newstate();
 		luaL_openlibs(L);
 
-		for (unsigned int i = 0; i < (unsigned int)ECS::ComponentType::COUNT; i++)
+		for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
 		{
-			ECS::ComponentData data = ECS::getComponentData((ECS::ComponentType)i);
+			ComponentData data = getComponentData((ComponentType)i);
 			lua_pushinteger(L, i);
 			lua_setglobal(L, data.name);
 		}
 
-		for (unsigned int i = 0; i < (unsigned int)Physics::ColliderType::COUNT; i++)
+		for (unsigned int i = 0; i < (unsigned int)Physics::CollisionShapeType::COUNT; i++)
 		{
-			const Physics::ColliderData& data = Physics::getColliderData((Physics::ColliderType)i);
+			const char* name = Physics::getCollisionShapeName((Physics::CollisionShapeType)i);
 			lua_pushinteger(L, i);
-			lua_setglobal(L, data.name);
+			lua_setglobal(L, name);
 		}
+
 		LuaHostFunctions::registerAllSceneFunctions(L);
 
 		checkLua(L, luaL_dofile(L, gScenePath.c_str()));
@@ -100,9 +100,9 @@ static bool checkLua(lua_State* L, int r)
 	return true;
 }
 
-void writeComponent(std::ofstream& out, const String& entity, Core::ECS::ComponentType componentType, Core::ECS::ComponentHeader* header)
+void writeComponent(std::ofstream& out, const String& entity, Core::ComponentType componentType, Core::ComponentHeader* header)
 {
-	using namespace Core::ECS;
+	using namespace Core;
 	auto data = getComponentData(componentType);
 	switch (componentType)
 	{
@@ -135,13 +135,11 @@ void writeComponent(std::ofstream& out, const String& entity, Core::ECS::Compone
 		String componentName = entity + "_rigidBody";
 		out << componentName << " = _addComponent(" << entity << ", " << data.name << ")\n";
 		RigidBodyComponent* component = (RigidBodyComponent*)header;
-		out << "_setRigidBody(" << componentName << ", "
+		/*out << "_setRigidBody(" << componentName << ", "
 			<< component->velocity.x << ", " << component->velocity.y << ", " << component->velocity.z << ", "
 			<< component->force.x << ", " << component->force.y << ", " << component->force.z << ", "
 			<< component->mass
-			<< ")\n";
-
-		writeCollisionShape(out, componentName, component);
+			<< ")\n";*/
 		break;
 	}
 	case ComponentType::DIRECTIONAL_LIGHT:
@@ -157,26 +155,3 @@ void writeComponent(std::ofstream& out, const String& entity, Core::ECS::Compone
 	}
 }
 
-void writeCollisionShape(std::ofstream& out, const String& componentName, Core::ECS::RigidBodyComponent* component)
-{
-	using namespace Core::Physics;
-	out << "_setCollisionShape(";
-
-	auto type = (ColliderType)component->colliderType;
-	const ColliderData& data = getColliderData(type);
-	switch (type)
-	{
-	case ColliderType::SPHERE: // Float(radius)
-	{
-		SphereCollider* collider = (SphereCollider*)component->colliderData;
-		out  << componentName << ", " << data.name << ", " << collider->radius << ")\n";
-		break;
-	}
-	case ColliderType::PLANE: // Vec3(Normal), Float(distance)
-	{
-		PlaneCollider* collider = (PlaneCollider*)component->colliderData;
-		out  << componentName << ", " << data.name << ", " << collider->x << ", " << collider->y << ", " << collider->z << ", " << collider->distance << ")\n";
-		break;
-	}
-	}
-}

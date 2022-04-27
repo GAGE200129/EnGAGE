@@ -26,11 +26,11 @@ namespace Core::Window
 		glfwSetFramebufferSizeCallback(sWindow, [](GLFWwindow* window, int width, int height) {
 			sWindowResized = true;
 
-			Messaging::Message message;
+			Message message;
 			int data[] = { width, height };
-			message.type = Messaging::MessageType::WINDOW_RESIZED;
+			message.type = MessageType::WINDOW_RESIZED;
 			memcpy(message.message, data, sizeof(data));
-			Messaging::recieveMessage(&message);
+			Messenger::recieveMessage(&message);
 		});
 	}
 
@@ -69,9 +69,9 @@ namespace Core::Window
 		glfwTerminate();
 	}
 
-	void onMessage(const Messaging::Message* pMessage)
+	void onMessage(const Message* pMessage)
 	{
-		if (pMessage->type == Messaging::MessageType::KEY_PRESSED)
+		if (pMessage->type == MessageType::KEY_PRESSED)
 		{
 			unsigned int keyCode = *reinterpret_cast<const unsigned int*>(pMessage->message);
 			// Toggle full screen
@@ -81,11 +81,11 @@ namespace Core::Window
 
 				if (gFullScreen)
 				{
-					Messaging::Message message;
+					Message message;
 					int data[] = { sFullScreenWidth, sFullScreenHeight };
-					message.type = Messaging::MessageType::WINDOW_RESIZED;
+					message.type = MessageType::WINDOW_RESIZED;
 					memcpy(message.message, data, sizeof(data));
-					Messaging::queueMessage(&message);
+					Messenger::queueMessage(&message);
 
 					glfwSetWindowMonitor(sWindow, glfwGetPrimaryMonitor(), 0, 0, sFullScreenWidth, sFullScreenHeight, GLFW_DONT_CARE);
 				}

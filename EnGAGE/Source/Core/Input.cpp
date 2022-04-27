@@ -1,7 +1,7 @@
 #include "pch.hpp"
 #include "Input.hpp"
 
-#include "Messaging.hpp"
+#include "Messenger.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -43,25 +43,25 @@ namespace Core::Input
 				sPrevCursorX = sCursorX;
 				sPrevCursorY = sCursorY;
 
-				Messaging::Message message = { Messaging::MessageType::CURSOR_MOVED };
+				Message message = { MessageType::CURSOR_MOVED };
 				memcpy(message.message, data, sizeof(data));
-				Messaging::recieveMessage(&message);
+				Messenger::recieveMessage(&message);
 			});
 
 		glfwSetKeyCallback(rawWindow, [](GLFWwindow* window, int key, int scancode, int action, int mods)
 			{
 				if (action == PRESS)
 				{
-					Messaging::Message message = { Messaging::MessageType::KEY_PRESSED };
+					Message message = { MessageType::KEY_PRESSED };
 					memcpy(message.message, &key, sizeof(int));
-					Messaging::recieveMessage(&message);
+					Messenger::recieveMessage(&message);
 					sKeys[key] = true;
 				}
 				else if (action == RELEASE)
 				{
-					Messaging::Message message = { Messaging::MessageType::KEY_RELEASED };
+					Message message = { MessageType::KEY_RELEASED };
 					memcpy(message.message, &key, sizeof(int));
-					Messaging::recieveMessage(&message);
+					Messenger::recieveMessage(&message);
 
 					sKeys[key] = false;
 				}
@@ -71,50 +71,50 @@ namespace Core::Input
 			{
 				if (action == PRESS)
 				{
-					Messaging::Message message = { Messaging::MessageType::BUTTON_PRESSED };
+					Message message = { MessageType::BUTTON_PRESSED };
 					memcpy(message.message, &button, sizeof(int));
-					Messaging::recieveMessage(&message);
+					Messenger::recieveMessage(&message);
 					sButtons[button] = true;
 				}
 				else if (action == RELEASE)
 				{
-					Messaging::Message message = { Messaging::MessageType::BUTTON_RELEASED };
+					Message message = { MessageType::BUTTON_RELEASED };
 					memcpy(message.message, &button, sizeof(int));
-					Messaging::recieveMessage(&message);
+					Messenger::recieveMessage(&message);
 
 					sButtons[button] = false;
 				}
 			});
 
 	}
-	void onMessage(const Messaging::Message* pMessage)
+	void onMessage(const Message* pMessage)
 	{
 		switch (pMessage->type)
 		{
-		case Messaging::MessageType::TOGGLE_CURSOR:
+		case MessageType::TOGGLE_CURSOR:
 		{
 			toggleCursor();
 			break;
 		}
 		}
 	}
-	void request(Messaging::RequestType type, Messaging::Request* pRequest)
+	void onRequest(Request* pRequest)
 	{
-		switch (type)
+		switch (pRequest->type)
 		{
-		case Messaging::RequestType::CURSOR_POS:
+		case RequestType::CURSOR_POS:
 		{
 			double data[] = { (float)getCursorX(), (float)getCursorY() };
 			memcpy(pRequest->data, data, sizeof(data));
 			break;
 		}
-		case Messaging::RequestType::CURSOR_DELTA:
+		case RequestType::CURSOR_DELTA:
 		{
 			double data[] = { (float)getCursorDX(), (float)getCursorDY() };
 			memcpy(pRequest->data, data, sizeof(data));
 			break;
 		}
-		case Messaging::RequestType::CURSOR_LOCKED:
+		case RequestType::CURSOR_LOCKED:
 		{
 			int data = cursorLocked();
 			memcpy(pRequest->data, &data, sizeof(data));

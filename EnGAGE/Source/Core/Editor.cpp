@@ -9,17 +9,18 @@
 #include "Scene.hpp"
 #include "Input.hpp"
 #include "Physics.hpp"
-#include "Messaging.hpp"
+#include "Messenger.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <misc/cpp/imgui_stdlib.h>
 
+#include <btBulletDynamicsCommon.h>
+
 static void processGameEngine();
 static void processSceneGraph();
-static void processCollisionShape(const Core::Physics::ColliderType type, Core::ECS::RigidBodyComponent* pRigidBody);
-static void processComponent(Core::ECS::ComponentType type, Core::ECS::ComponentHeader* pHeader);
+static void processComponent(unsigned int entity, Core::ComponentType type, Core::ComponentHeader* pHeader);
 static void processInspector(const Core::ECS::EntitySignature* pEntity);
 static void processRenderer();
 static void processResourceBrowser();
@@ -47,9 +48,9 @@ void Core::Editor::shutdown()
 	ImGui::DestroyContext();
 }
 
-void Core::Editor::onMessage(const Messaging::Message* pMessage)
+void Core::Editor::onMessage(const Message* pMessage)
 {
-	if (pMessage->type == Messaging::MessageType::KEY_PRESSED)
+	if (pMessage->type == MessageType::KEY_PRESSED)
 	{
 		unsigned int keyCode = *reinterpret_cast<const unsigned int*>(pMessage->message);
 		if (keyCode == InputCodes::KEY_F5)
@@ -98,13 +99,13 @@ static void processGameEngine()
 			ImGui::Separator();
 		}
 		//Components
-		for (unsigned int i = 0; i < (unsigned int)ECS::ComponentType::COUNT; i++)
+		for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
 		{
 			char buf[50];
-			unsigned int currentArrMemSize = ECS::getComponentArrayMemorySize((ECS::ComponentType)i);
+			unsigned int currentArrMemSize = ECS::getComponentArrayMemorySize((ComponentType)i);
 			unsigned int totalArrMemSize = ECS::MAX_COMPONENT_ARRAY_BUFFER_SIZE;
 			sprintf(buf, "%d/%d bytes", currentArrMemSize, totalArrMemSize);
-			ECS::ComponentData data = ECS::getComponentData((ECS::ComponentType)i);
+			ComponentData data = getComponentData((ComponentType)i);
 			ImGui::Text(data.name);
 			ImGui::ProgressBar((float)currentArrMemSize / (float)totalArrMemSize, ImVec2(0.0f, 0.0f), buf);
 			ImGui::Separator();
@@ -114,9 +115,9 @@ static void processGameEngine()
 	}
 	if (ImGui::TreeNode("Messages"))
 	{
-		for (unsigned int i = 0; i < Messaging::getMessageCount(); i++)
+		for (unsigned int i = 0; i < Messenger::getMessageCount(); i++)
 		{
-			const char* name = Messaging::getMessageName(Messaging::getMessages()[i].type);
+			const char* name = getMessageName(Messenger::getMessages()[i].type);
 			ImGui::Text("%s", name);
 		}
 		ImGui::TreePop();
@@ -164,40 +165,10 @@ static void processSceneGraph()
 	processInspector(selectedEntity);
 }
 
-void processCollisionShape(const Core::Physics::ColliderType type, Core::ECS::RigidBodyComponent* pRigidBody)
+
+static void processComponent(unsigned int entity, Core::ComponentType type, Core::ComponentHeader* pHeader)
 {
-	using namespace Core::Physics;
-
-	switch (type)
-	{
-	case ColliderType::SPHERE:
-	{
-		SphereCollider* pSphere = (SphereCollider*)pRigidBody->colliderData;
-		ImGui::DragFloat("Radius", &pSphere->radius, 0.1f);
-		break;
-	}
-	case ColliderType::PLANE:
-	{
-		PlaneCollider* pPlane = (PlaneCollider*)pRigidBody->colliderData;
-
-		float lengthSquared = pPlane->x * pPlane->x + pPlane->y * pPlane->y + pPlane->z * pPlane->z;
-		if (ImGui::DragFloat3("Normal", &pPlane->x, 0.1f) && lengthSquared != 0.0f)
-		{
-			float length = glm::sqrt(lengthSquared);
-			pPlane->x /= length;
-			pPlane->y /= length;
-			pPlane->z /= length;
-		}
-
-		ImGui::DragFloat("Distance", &pPlane->distance, 0.1f);
-		break;
-	}
-	}
-}
-
-static void processComponent(Core::ECS::ComponentType type, Core::ECS::ComponentHeader* pHeader)
-{
-	using namespace Core::ECS;
+	using namespace Core;
 	using namespace Core::Physics;
 	switch (type)
 	{
@@ -209,33 +180,63 @@ static void processComponent(Core::ECS::ComponentType type, Core::ECS::Component
 	}
 	case ComponentType::RIGID_BODY:
 	{
-		RigidBodyComponent* pRigidBody = (RigidBodyComponent*)pHeader;
-		ImGui::DragFloat3("Velocity", &pRigidBody->velocity.x, 0.1f);
-		ImGui::DragFloat3("Force", &pRigidBody->force.x, 0.1f);
-		ImGui::DragFloat("Mass", &pRigidBody->mass, 0.1f, 0.0f);
+		RigidBodyComponent* pComponent = (RigidBodyComponent*)pHeader;
+		btRigidBody* pRigidBody = pComponent->pRigidbody;
 
-		const ColliderData& currentCollider = getColliderData((ColliderType)pRigidBody->colliderType);
-		if (ImGui::BeginCombo("Collider Type", currentCollider.name))
+		if (pComponent->collisionShapeType != (unsigned int)CollisionShapeType::EMPTY)
 		{
-			for (unsigned int i = 0; i < (unsigned int)ColliderType::COUNT; i++)
+			float mass = pRigidBody->getMass();
+			if (ImGui::DragFloat("Mass", &mass, 0.1f, 0.0f, 500.0f))
 			{
-				const ColliderData& data = getColliderData((ColliderType)i);
-				if (ImGui::Selectable(data.name))
+				btVector3 inertia;
+				pRigidBody->getCollisionShape()->calculateLocalInertia(mass, inertia);
+				pRigidBody->setMassProps(mass, inertia);
+				pRigidBody->updateInertiaTensor();
+
+				Core::Message message;
+				message.type = Core::MessageType::PHYSICS_UPDATE_RIGID_BODY;
+				memcpy(message.message, &pRigidBody, sizeof(btRigidBody*));
+				Core::Messenger::queueMessage(&message);
+			}
+		}
+		const char* currentColliderName = getCollisionShapeName((CollisionShapeType)pComponent->collisionShapeType);
+		if (ImGui::BeginCombo("Collision shape type", currentColliderName))
+		{
+			for (unsigned int i = 0; i < (unsigned int)CollisionShapeType::COUNT; i++)
+			{
+				const char* colliderName = getCollisionShapeName((CollisionShapeType)i);
+				if (ImGui::Selectable(colliderName))
 				{
-					pRigidBody->colliderType = i;
-					initCollider(pRigidBody->colliderData, (ColliderType)i);
+					pComponent->collisionShapeType = i;
+					initCollisionShapeRuntime(pRigidBody, (CollisionShapeType)i);
 				}
 			}
 			ImGui::EndCombo();
 		}
-		processCollisionShape((ColliderType)pRigidBody->colliderType, pRigidBody);
+
 		break;
 	}
 	case ComponentType::TRANSFORM:
 	{
 		TransformComponent* pTransform = (TransformComponent*)pHeader;
-		ImGui::DragFloat3("Translation", &pTransform->x, 0.1f);
-		if (ImGui::DragFloat4("Rotation", &pTransform->rw, 0.1f))
+
+		float x, y, z;
+		float rx, ry, rz, rw;
+		x = pTransform->x;
+		y = pTransform->y;
+		z = pTransform->z;
+		rw = pTransform->rw;
+		rx = pTransform->rx;
+		ry = pTransform->ry;
+		rz = pTransform->rz;
+		bool changed = false;
+		if (changed |= ImGui::DragFloat3("Translation", &pTransform->x, 0.1f))
+		{
+			x = pTransform->x;
+			y = pTransform->y;
+			z = pTransform->z;
+		}
+		if (changed |= ImGui::DragFloat4("Rotation", &pTransform->rw, 0.1f))
 		{
 			float lengthSquared = pTransform->rw * pTransform->rw +
 				pTransform->rx * pTransform->rx +
@@ -249,12 +250,30 @@ static void processComponent(Core::ECS::ComponentType type, Core::ECS::Component
 				pTransform->ry /= length;
 				pTransform->rz /= length;
 			}
+
+			rw = pTransform->rw;
+			rx = pTransform->rx;
+			ry = pTransform->ry;
+			rz = pTransform->rz;
+		}
+		if (!pTransform->isStatic)
+		{
+			RigidBodyComponent* comp = (RigidBodyComponent*)ECS::getComponent(entity, ComponentType::RIGID_BODY);
+
+			btVector3& position = comp->pRigidbody->getWorldTransform().getOrigin();
+			btQuaternion rotation = comp->pRigidbody->getWorldTransform().getRotation();
+			if (changed)
+			{
+				position.setValue(x, y, z);
+				rotation.setValue(rx, ry, rz, rw);
+				comp->pRigidbody->getWorldTransform().setRotation(rotation);
+			}
 		}
 
 		ImGui::DragFloat3("Scale", &pTransform->sx, 0.1f);
 		break;
 	}
-	case Core::ECS::ComponentType::MODEL_RENDERER:
+	case ComponentType::MODEL_RENDERER:
 	{
 		ModelRendererComponent* pModel = (ModelRendererComponent*)pHeader;
 
@@ -271,7 +290,7 @@ static void processComponent(Core::ECS::ComponentType type, Core::ECS::Component
 		}
 		break;
 	}
-	case Core::ECS::ComponentType::SCRIPT:
+	case ComponentType::SCRIPT:
 	{
 		ScriptComponent* pScript = (ScriptComponent*)pHeader;
 
@@ -287,7 +306,7 @@ static void processComponent(Core::ECS::ComponentType type, Core::ECS::Component
 		}
 		break;
 	}
-	case Core::ECS::ComponentType::DIRECTIONAL_LIGHT:
+	case ComponentType::DIRECTIONAL_LIGHT:
 	{
 		DirectionalLightComponent* pLight = (DirectionalLightComponent*)pHeader;
 		ImGui::DragFloat3("Direction", &pLight->direction.x, 0.1f, -1, 1);
@@ -295,11 +314,12 @@ static void processComponent(Core::ECS::ComponentType type, Core::ECS::Component
 		ImGui::DragFloat("Intensity", &pLight->intensity, 0.1f, 0.0f, 1.0f);
 		break;
 	}
+
 	};
 
 }
 
-void processInspector(const Core::ECS::EntitySignature* pEntity)
+static void processInspector(const Core::ECS::EntitySignature* pEntity)
 {
 	using namespace Core::ECS;
 	using namespace Core;
@@ -308,17 +328,17 @@ void processInspector(const Core::ECS::EntitySignature* pEntity)
 	ImGui::Begin("Inspector");
 	//Process component
 	if (pEntity) {
-		for (unsigned int i = 0; i < (unsigned int)ECS::ComponentType::COUNT; i++)
+		for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
 		{
-			ECS::ComponentHeader* pHeader = (ECS::ComponentHeader*)ECS::getComponent(pEntity->id, (ECS::ComponentType)i);
+			ComponentHeader* pHeader = (ComponentHeader*)getComponent(pEntity->id, (ComponentType)i);
 			if (pHeader)
 			{
-				processComponent((ECS::ComponentType)i, pHeader);
+				processComponent(pEntity->id, (ComponentType)i, pHeader);
 
 				ImGui::PushID(i);
 				if (ImGui::Button("Remove"))
 				{
-					ECS::removeComponent(pEntity->id, (ECS::ComponentType)i);
+					removeComponent(pEntity->id, (ComponentType)i);
 				}
 				ImGui::PopID();
 				ImGui::Separator();
@@ -330,12 +350,12 @@ void processInspector(const Core::ECS::EntitySignature* pEntity)
 
 		if (ImGui::BeginPopup("NewComponent"))
 		{
-			for (unsigned int i = 0; i < (unsigned int)ECS::ComponentType::COUNT; i++)
+			for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
 			{
-				ECS::ComponentData data = ECS::getComponentData((ECS::ComponentType)i);
+				ComponentData data = getComponentData((ComponentType)i);
 				if (ImGui::Selectable(data.name))
 				{
-					ECS::addComponent(pEntity->id, (ECS::ComponentType)i);
+					ECS::addComponent(pEntity->id, (ComponentType)i);
 				}
 			}
 			ImGui::EndPopup();

@@ -1,11 +1,12 @@
 #include "pch.hpp"
-#include "Messaging.hpp"
+#include "Messenger.hpp"
 
 #include "Input.hpp"
+#include "Script.hpp"
+#include "Physics.hpp"
 
-#define TO_STRING(x) case MessageType::x: return #x
 
-namespace Core::Messaging
+namespace Core::Messenger
 {
 	static Message* gMessages;
 	static Message* gQueuedMessages;
@@ -54,7 +55,11 @@ namespace Core::Messaging
 	Request request(RequestType type)
 	{
 		Request result;
-		Input::request(type, &result);
+		result.type = type;
+
+		Input::onRequest(&result);
+		Script::onRequest(&result);
+		Physics::onRequest(&result);
 		return result;
 	}
 
@@ -77,20 +82,6 @@ namespace Core::Messaging
 		return gMessages;
 	}
 
-	const char* getMessageName(MessageType type)
-	{
-		switch (type)
-		{
-			TO_STRING(KEY_PRESSED);
-			TO_STRING(KEY_RELEASED);
-			TO_STRING(BUTTON_PRESSED);
-			TO_STRING(BUTTON_RELEASED);
-			TO_STRING(CURSOR_MOVED);
-			TO_STRING(TOGGLE_CURSOR);
-			TO_STRING(WINDOW_RESIZED);
-		}
-		EN_ASSERT(false, "Unknown message type: {}", (unsigned int)type);
-		return "";
-	}
+	
 
 }

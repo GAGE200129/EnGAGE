@@ -1,7 +1,6 @@
 #include "pch.hpp"
 #include "ECS.hpp"
 
-#include "Script.hpp"
 
 #define SET_BIT(x, loc) x |= 1 << loc
 #define UNSET_BIT(x, loc) x &= ~(1 << loc)

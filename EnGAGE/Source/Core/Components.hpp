@@ -1,16 +1,14 @@
 #pragma once
 
-
 struct lua_State;
-
+class btRigidBody;
 namespace Core
 {
 	struct Model;
 }
-namespace Core::ECS
+namespace Core
 {
 	static constexpr unsigned int MAX_NAME_SIZE = 70u;
-	static constexpr unsigned int MAX_COLLIDER_BUFFER_SIZE = 128u;
 	//Component
 	enum class ComponentType : unsigned int
 	{
@@ -47,6 +45,7 @@ namespace Core::ECS
 	struct TransformComponent
 	{
 		ComponentHeader header;
+		bool isStatic;
 		float x, y, z,
 			rw, rx, ry, rz,
 			sx, sy, sz;
@@ -69,11 +68,8 @@ namespace Core::ECS
 	struct RigidBodyComponent
 	{
 		ComponentHeader header;
-		glm::vec3 velocity;
-		glm::vec3 force;
-		float mass;
-		unsigned int colliderType;
-		char colliderData[MAX_COLLIDER_BUFFER_SIZE];
+		unsigned int collisionShapeType;
+		btRigidBody* pRigidbody;
 	};
 
 	struct DirectionalLightComponent
@@ -90,7 +86,9 @@ namespace Core::ECS
 		unsigned int size;
 	};
 
+
 	const ComponentData& getComponentData(ComponentType type);
+	
 	void initComponent(ComponentHeader* pHeader, ComponentType type);
 	void destroyComponent(ComponentHeader* pHeader, ComponentType type);
 }

@@ -57,9 +57,9 @@ namespace Core::Renderer
 		initGBuffer(currentWidth, currentHeight);
 		initQuad();	
 	}
-	void onMessage(const Messaging::Message* pMessage)
+	void onMessage(const Message* pMessage)
 	{
-		if (pMessage->type == Messaging::MessageType::WINDOW_RESIZED)
+		if (pMessage->type == MessageType::WINDOW_RESIZED)
 		{
 			const int* data = reinterpret_cast<const int*>(pMessage->message);
 			int width = data[0];
@@ -97,11 +97,11 @@ namespace Core::Renderer
 		gBufferShader->uploadMat4x4(projLoc, gProj);
 		gBufferShader->uploadMat4x4(viewLoc, gView);
 
-		ECS::System& system = ECS::getSystem(ECS::SystemType::RENDERER);
+		System& system = ECS::getSystem(SystemType::RENDERER);
 		for (unsigned int e : system.entities)
 		{
-			ECS::TransformComponent* pTransform = (ECS::TransformComponent*)ECS::getComponent(e, ECS::ComponentType::TRANSFORM);
-			ECS::ModelRendererComponent* pModelComp = (ECS::ModelRendererComponent*)ECS::getComponent(e, ECS::ComponentType::MODEL_RENDERER);
+			TransformComponent* pTransform = (TransformComponent*)ECS::getComponent(e, ComponentType::TRANSFORM);
+			ModelRendererComponent* pModelComp = (ModelRendererComponent*)ECS::getComponent(e, ComponentType::MODEL_RENDERER);
 			if (pModelComp->pModel)
 			{
 				const Model* pModel = pModelComp->pModel;
@@ -138,10 +138,10 @@ namespace Core::Renderer
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		//Directional
-		ECS::System& directionalSystem = ECS::getSystem(ECS::SystemType::DIRECTIONAL);
+		System& directionalSystem = ECS::getSystem(SystemType::DIRECTIONAL);
 		for (unsigned int e : directionalSystem.entities)
 		{
-			ECS::DirectionalLightComponent* pLight = (ECS::DirectionalLightComponent*)ECS::getComponent(e, ECS::ComponentType::DIRECTIONAL_LIGHT);
+			DirectionalLightComponent* pLight = (DirectionalLightComponent*)ECS::getComponent(e, ComponentType::DIRECTIONAL_LIGHT);
 			gDirectionalShader->bind();
 			gDirectionalShader->uploadVec3(gDirectionLoc, pLight->direction);
 			gDirectionalShader->uploadVec3(gColorLoc, pLight->color);

@@ -5,6 +5,7 @@
 #include "LuaHostFunctions.hpp"
 #include "InputCodes.hpp"
 #include "Physics.hpp"
+#include "Messenger.hpp"
 
 extern "C"
 {
@@ -19,19 +20,28 @@ static bool checkLua(lua_State* L, int r);
 static DynArr<lua_State*> gScripts;
 
 
-void Core::Script::onMessage(const Messaging::Message* pMessage)
+void Core::Script::onMessage(const Message* pMessage)
 {
-	ECS::System& system = ECS::getSystem(ECS::SystemType::SCRIPTING);
+	switch (pMessage->type)
+	{
+	case MessageType::REMOVE_SCRIPT:
+	{
+		removeScript((lua_State*)pMessage->message);
+		break;
+	}
+	}
+
+	System& system = ECS::getSystem(SystemType::SCRIPTING);
 	for (unsigned int entity : system.entities)
 	{
-		ECS::ScriptComponent* pScriptComponent = (ECS::ScriptComponent*)ECS::getComponent(entity, ECS::ComponentType::SCRIPT);
+		ScriptComponent* pScriptComponent = (ScriptComponent*)ECS::getComponent(entity, ComponentType::SCRIPT);
 		lua_State* L = pScriptComponent->L;
 		lua_getglobal(L, "onMessage");
 		if (lua_isfunction(L, -1))
 		{
 			lua_pushinteger(L, entity);
 			lua_pushinteger(L, (lua_Integer)pMessage->type);
-			lua_pushlstring(L, pMessage->message, Messaging::BUFFER_SIZE);
+			lua_pushlstring(L, (char*)pMessage->message, Messenger::BUFFER_SIZE);
 
 			checkLua(L, lua_pcall(L, 3, 0, 0));
 		}
@@ -39,12 +49,25 @@ void Core::Script::onMessage(const Messaging::Message* pMessage)
 	}
 }
 
+void Core::Script::onRequest(Request* pRequest)
+{
+	switch(pRequest->type)
+	{
+	case RequestType::NEW_SCRIPT:
+	{
+		lua_State* L = newScript();
+		memcpy(pRequest->data, &L, sizeof(lua_State*));
+		return;
+	}
+	}
+}
+
 void Core::Script::update(float delta)
 {
-	ECS::System& system = ECS::getSystem(ECS::SystemType::SCRIPTING);
+	System& system = ECS::getSystem(SystemType::SCRIPTING);
 	for (unsigned int entity : system.entities)
 	{
-		ECS::ScriptComponent* pScriptComponent = (ECS::ScriptComponent*)ECS::getComponent(entity, ECS::ComponentType::SCRIPT);
+		ScriptComponent* pScriptComponent = (ScriptComponent*)ECS::getComponent(entity, ComponentType::SCRIPT);
 		lua_State* L = pScriptComponent->L;
 
 		lua_getglobal(L, "update");
@@ -77,23 +100,17 @@ lua_State* Core::Script::newScript()
 	LuaHostFunctions::registerAllScriptFunctions(L);
 	
 	//Add globals
-	for (unsigned int i = 0; i < (unsigned int)ECS::ComponentType::COUNT; i++)
+	for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
 	{
-		const ECS::ComponentData& data = ECS::getComponentData((ECS::ComponentType)i);
+		const ComponentData& data = getComponentData((ComponentType)i);
 		lua_pushinteger(L, i);
 		lua_setglobal(L, data.name);
 	}
 
-	for (unsigned int i = 0; i < (unsigned int)Physics::ColliderType::COUNT; i++)
-	{
-		const Physics::ColliderData& data = Physics::getColliderData((Physics::ColliderType)i);
-		lua_pushinteger(L, i);
-		lua_setglobal(L, data.name);
-	}
 
-	for (unsigned int i = 0; i < (unsigned int)Messaging::MessageType::COUNT; i++)
+	for (unsigned int i = 0; i < (unsigned int)MessageType::COUNT; i++)
 	{
-		const char* name = Messaging::getMessageName((Messaging::MessageType)i);
+		const char* name = getMessageName((MessageType)i);
 		lua_pushinteger(L, i);
 		lua_setglobal(L, name);
 	}

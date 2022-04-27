@@ -1,42 +1,80 @@
 #pragma once
+#include "Messenger.hpp"
 
-namespace Core
+class btRigidBody;
+namespace Core::Physics
 {
-	namespace Physics
+	//Colliders
+	enum class CollisionShapeType : unsigned int
 	{
+		EMPTY,
+		PLANE,
+		SPHERE,
+		COUNT
+	};
+	const char* getCollisionShapeName(CollisionShapeType type);
 
-		enum class ColliderType : unsigned int
-		{
-			NONE,
-			SPHERE,
-			PLANE,
-			COUNT
-		};
+	void init();
+	void shutdown();
+	void onMessage(const Message* pMessage);
+	void onRequest(Request* pRequest);
+	void updateRigidBody(btRigidBody* rigidBody);
+	btRigidBody* newRigidBody();
+	void update(float delta);
 
-		struct SphereCollider
-		{
-			float radius;
-		};
-
-		struct PlaneCollider
-		{
-			float x, y, z; // Normal
-			float distance;
-		};
-
-		struct ColliderData
-		{
-			const char* name;
-			unsigned int size;
-		};
-
-		void init();
-		void shutdown();
-
-		void update(float delta);
-
-		const ColliderData& getColliderData(ColliderType type);
-		void initCollider(char* colliderData, ColliderType type);
-
+	template<CollisionShapeType type>
+	inline static void initCollisionShape(btRigidBody* rigidBody, void* data = nullptr)
+	{
+		static_assert(false);
 	}
+
+	template<>
+	inline static void initCollisionShape<CollisionShapeType::SPHERE>(btRigidBody* rigidBody, void* data)
+	{
+		delete rigidBody->getCollisionShape();
+		float* sphereData = (float*)data;
+
+		float radius = data ? sphereData[0] : 1.0f;
+		btSphereShape* shape = new btSphereShape(radius);
+		rigidBody->setCollisionShape(shape);
+		btVector3 inertia;
+		shape->calculateLocalInertia(rigidBody->getMass(), inertia);
+		rigidBody->setMassProps(rigidBody->getMass(), inertia);
+		updateRigidBody(rigidBody);
+	}
+
+	template<>
+	inline static void initCollisionShape<CollisionShapeType::PLANE>(btRigidBody* rigidBody, void* data)
+	{
+		delete rigidBody->getCollisionShape();
+		float* planeData = (float*)data;
+		btVector3 normal = {0, 1, 0};
+		btScalar distance = 0.0f;
+
+		if (data)
+		{
+			normal = btVector3(planeData[0], planeData[1], planeData[2]);
+			distance = planeData[3];
+		}
+		btStaticPlaneShape* shape = new btStaticPlaneShape(normal, distance);
+		rigidBody->setCollisionShape(shape);
+		btVector3 inertia;
+		shape->calculateLocalInertia(rigidBody->getMass(), inertia);
+		rigidBody->setMassProps(rigidBody->getMass(), inertia);
+		updateRigidBody(rigidBody);
+	}
+
+	inline static void initCollisionShapeRuntime(btRigidBody* rigidBody, CollisionShapeType type, void* data = nullptr)
+	{
+		switch (type)
+		{
+		case CollisionShapeType::PLANE:
+			initCollisionShape<CollisionShapeType::PLANE>(rigidBody, data);
+			return;
+		case CollisionShapeType::SPHERE:
+			initCollisionShape<CollisionShapeType::SPHERE>(rigidBody, data);
+			return;
+		}
+	}
+
 }

@@ -12,7 +12,4 @@ int main()
 	Scene::loadScene("Resources/Scenes/Dump2.lua");
 	GameEngine::run();
 
-	btCollisionConfiguration* collisionConfig = new btDefaultCollisionConfiguration();
-
-	delete collisionConfig;
 }

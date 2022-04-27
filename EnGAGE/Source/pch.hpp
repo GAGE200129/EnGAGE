@@ -23,6 +23,9 @@
 #include <glm/gtx/quaternion.hpp>
 #include <imgui.h>
 
+#include <btBulletCollisionCommon.h>
+#include <btBulletDynamicsCommon.h>
+
 
 #include "Core/Log.hpp"
 

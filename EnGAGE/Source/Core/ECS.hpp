@@ -1,38 +1,20 @@
 #pragma once
 
 #include "Components.hpp"
-
+#include "Systems.hpp"
+#include "ECSConstants.hpp"
 
 namespace Core
 {
 	
 	namespace ECS
 	{
-		static constexpr unsigned int MAX_ENTITIES = 3000;
-		static constexpr unsigned int MAX_COMPONENTS = 32; //32 bits field
-		static constexpr unsigned int MAX_COMPONENT_ARRAY_BUFFER_SIZE = 1048576u;
-		
+			
 		//Entity 
 		struct EntitySignature
 		{
 			unsigned int id;
 			unsigned int signature : MAX_COMPONENTS;
-		};
-
-		//System
-		enum class SystemType : unsigned int
-		{
-			RENDERER,
-			DIRECTIONAL,
-			SCRIPTING,
-			PHYSICS,
-			COUNT
-		};
-
-		struct System
-		{
-			unsigned int signature : MAX_COMPONENTS; 
-			Set<unsigned int> entities;
 		};
 
 		void init();

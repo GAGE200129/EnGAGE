@@ -11,14 +11,14 @@
 #include "Script.hpp"
 #include "Physics.hpp"
 #include "Scene.hpp"
-#include "Messaging.hpp"
+#include "Messenger.hpp"
 
 namespace Core::GameEngine
 {
 	void init(unsigned int width, unsigned int height, unsigned int fullScreenWidth, unsigned int fullScreenHeight, const String& title)
 	{
 		Log::init();
-		Messaging::init();
+		Messenger::init();
 		Window::init(width, height, fullScreenWidth, fullScreenHeight, title);
 		Input::init(Window::getRawWindow());
 		Editor::init(Window::getRawWindow());
@@ -65,14 +65,15 @@ namespace Core::GameEngine
 			Editor::render();
 			Window::swapBuffers();
 
-			Messaging::flushQueued();
-			while (const Messaging::Message* pMessage = Messaging::queryMessage())
+			Messenger::flushQueued();
+			while (const Message* pMessage = Messenger::queryMessage())
 			{
 				Window::onMessage(pMessage);
 				Script::onMessage(pMessage);
 				Editor::onMessage(pMessage);
 				Input::onMessage(pMessage);
 				Renderer::onMessage(pMessage);
+				Physics::onMessage(pMessage);
 			}
 
 			ECS::updateRemovedEntities();
@@ -83,7 +84,7 @@ namespace Core::GameEngine
 		Renderer::shutdown();
 		Physics::shutdown();
 		Window::destroy();
-		Messaging::shutdown();
+		Messenger::shutdown();
 	}
 	void clearResources()
 	{

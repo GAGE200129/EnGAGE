@@ -1,7 +1,7 @@
 #pragma once
 #include "InputCodes.hpp"
 #include "ButtonCodes.hpp"
-#include "Messaging.hpp"
+#include "Messenger.hpp"
 
 struct GLFWwindow;
 namespace Core::Input
@@ -11,8 +11,8 @@ namespace Core::Input
 	static constexpr uint8_t REPEAT = 2;
 
 	void init(GLFWwindow* rawWindow);
-	void onMessage(const Messaging::Message* pMessage);
-	void request(Messaging::RequestType type, Messaging::Request* pRequest);
+	void onMessage(const Message* pMessage);
+	void onRequest(Request* pRequest);
 	void update();
 
 

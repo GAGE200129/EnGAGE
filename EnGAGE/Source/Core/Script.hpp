@@ -1,11 +1,13 @@
 #pragma once
 
-#include "Messaging.hpp"
+#include "MessageTypes.hpp"
+#include "RequestTypes.hpp"
 
 struct lua_State;
 namespace Core::Script
 {
-	void onMessage(const Messaging::Message* pMessage);
+	void onMessage(const Message* pMessage);
+	void onRequest(Request* pRequest);
 	void update(float delta);
 	void shutdown();
 	lua_State* newScript();
