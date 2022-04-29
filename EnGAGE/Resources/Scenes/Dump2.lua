@@ -12,10 +12,12 @@ _setRigidBody(entity1_rigidBody, 0, PLANE, 0, 1, 0, 0)
 
 entity2 = _createEntity()
 entity2_transform = _addComponent(entity2, TRANSFORM)
-_setPosition(entity2_transform, 0, 0, 0)
+_setPosition(entity2_transform, 0, 5, 0)
 _setRotation(entity2_transform, 1, 0, 0, 0)
 _setScale(entity2_transform, 1, 1, 1)
 _setModel(_addComponent(entity2, MODEL_RENDERER), "Resources/Models/Sphere.glb")
 entity2_rigidBody = _addComponent(entity2, RIGID_BODY)
 _setRigidBody(entity2_rigidBody, 1, SPHERE, 1)
 
+entity3 = _createEntity()
+_setDirectionalLight(_addComponent(entity3, DIRECTIONAL_LIGHT), 0, -1, 0, 1, 1, 1, 0.8)

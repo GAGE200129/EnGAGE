@@ -11,8 +11,9 @@ namespace Core::Messenger
 	void shutdown();
 	void flushQueued();
 	void recieveMessage(Message* pMessage);
+	void recieveMessage(MessageType type, void* data = nullptr);
 	void queueMessage(Message* pMessage);
-	Request request(RequestType type);
+	Request request(RequestType type, unsigned int size = 0, void* data = nullptr);
 	Message* queryMessage();
 	unsigned int getMessageCount();
 	Message* getMessages();

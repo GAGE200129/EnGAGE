@@ -8,6 +8,7 @@ namespace Core
 	{
 		RENDERER,
 		DIRECTIONAL,
+		POINT,
 		SCRIPTING,
 		PHYSICS,
 		COUNT

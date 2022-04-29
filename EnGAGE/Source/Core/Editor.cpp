@@ -117,8 +117,8 @@ static void processGameEngine()
 	{
 		for (unsigned int i = 0; i < Messenger::getMessageCount(); i++)
 		{
-			const char* name = getMessageName(Messenger::getMessages()[i].type);
-			ImGui::Text("%s", name);
+			const auto& data = getMessageData(Messenger::getMessages()[i].type);
+			ImGui::Text("%s", data.name);
 		}
 		ImGui::TreePop();
 	}
@@ -220,23 +220,8 @@ static void processComponent(unsigned int entity, Core::ComponentType type, Core
 	{
 		TransformComponent* pTransform = (TransformComponent*)pHeader;
 
-		float x, y, z;
-		float rx, ry, rz, rw;
-		x = pTransform->x;
-		y = pTransform->y;
-		z = pTransform->z;
-		rw = pTransform->rw;
-		rx = pTransform->rx;
-		ry = pTransform->ry;
-		rz = pTransform->rz;
-		bool changed = false;
-		if (changed |= ImGui::DragFloat3("Translation", &pTransform->x, 0.1f))
-		{
-			x = pTransform->x;
-			y = pTransform->y;
-			z = pTransform->z;
-		}
-		if (changed |= ImGui::DragFloat4("Rotation", &pTransform->rw, 0.1f))
+		ImGui::DragFloat3("Translation", &pTransform->x, 0.1f);
+		if (ImGui::DragFloat4("Rotation", &pTransform->rw, 0.1f))
 		{
 			float lengthSquared = pTransform->rw * pTransform->rw +
 				pTransform->rx * pTransform->rx +
@@ -251,23 +236,7 @@ static void processComponent(unsigned int entity, Core::ComponentType type, Core
 				pTransform->rz /= length;
 			}
 
-			rw = pTransform->rw;
-			rx = pTransform->rx;
-			ry = pTransform->ry;
-			rz = pTransform->rz;
-		}
-		if (!pTransform->isStatic)
-		{
-			RigidBodyComponent* comp = (RigidBodyComponent*)ECS::getComponent(entity, ComponentType::RIGID_BODY);
-
-			btVector3& position = comp->pRigidbody->getWorldTransform().getOrigin();
-			btQuaternion rotation = comp->pRigidbody->getWorldTransform().getRotation();
-			if (changed)
-			{
-				position.setValue(x, y, z);
-				rotation.setValue(rx, ry, rz, rw);
-				comp->pRigidbody->getWorldTransform().setRotation(rotation);
-			}
+	
 		}
 
 		ImGui::DragFloat3("Scale", &pTransform->sx, 0.1f);

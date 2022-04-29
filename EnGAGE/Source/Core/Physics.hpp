@@ -10,6 +10,7 @@ namespace Core::Physics
 		EMPTY,
 		PLANE,
 		SPHERE,
+		BOX,
 		COUNT
 	};
 	const char* getCollisionShapeName(CollisionShapeType type);
@@ -17,9 +18,9 @@ namespace Core::Physics
 	void init();
 	void shutdown();
 	void onMessage(const Message* pMessage);
-	void onRequest(Request* pRequest);
+	bool onRequest(Request* pRequest);
 	void updateRigidBody(btRigidBody* rigidBody);
-	btRigidBody* newRigidBody();
+	btRigidBody* newRigidBody(unsigned int entityID);
 	void update(float delta);
 
 	template<CollisionShapeType type>
@@ -64,6 +65,29 @@ namespace Core::Physics
 		updateRigidBody(rigidBody);
 	}
 
+	template<>
+	inline static void initCollisionShape<CollisionShapeType::BOX>(btRigidBody* rigidBody, void* data)
+	{
+		delete rigidBody->getCollisionShape();
+		float* boxData = (float*)data;
+		btVector3 halfExtends = {1.0f, 1.0f, 1.0f};
+
+		if (data)
+		{
+			halfExtends.setX(boxData[0]);
+			halfExtends.setY(boxData[1]);
+			halfExtends.setZ(boxData[2]);
+		}
+
+		btBoxShape* shape = new btBoxShape(halfExtends);
+		rigidBody->setCollisionShape(shape);
+		btVector3 inertia;
+		shape->calculateLocalInertia(rigidBody->getMass(), inertia);
+		rigidBody->setMassProps(rigidBody->getMass(), inertia);
+		updateRigidBody(rigidBody);
+	}
+
+
 	inline static void initCollisionShapeRuntime(btRigidBody* rigidBody, CollisionShapeType type, void* data = nullptr)
 	{
 		switch (type)
@@ -73,6 +97,9 @@ namespace Core::Physics
 			return;
 		case CollisionShapeType::SPHERE:
 			initCollisionShape<CollisionShapeType::SPHERE>(rigidBody, data);
+			return;
+		case CollisionShapeType::BOX:
+			initCollisionShape<CollisionShapeType::BOX>(rigidBody, data);
 			return;
 		}
 	}

@@ -5,7 +5,7 @@
 #include "Shader.hpp"
 #include "Window.hpp"
 #include "Model.hpp"
-
+#include "Shaders.hpp"
 #include <glad/glad.h>
 
 
@@ -38,11 +38,13 @@ namespace Core::Renderer
 	static Scope<Shader> gBufferShader;
 	static int projLoc, viewLoc, modelLoc;
 
-	static Scope<Shader> gAmbientShader;
-	static int gAmbientLoc;
+	static Scope<AmbientShader> gAmbientShader;
+	static Scope<DirectionalShader> gDirectionalShader;
+	static Scope<PointShader> gPointShader;
+	
 
-	static Scope<Shader> gDirectionalShader;
-	static int gDirectionLoc, gColorLoc, gIntensityLoc, gCamPosLoc;
+	
+
 	
 	static unsigned int gFBO, gRBO;
 	static unsigned int gPoisitonTex, gNormalTex, gColorTex;
@@ -134,7 +136,7 @@ namespace Core::Renderer
 
 		//Ambient pass
 		gAmbientShader->bind();
-		gAmbientShader->uploadVec3(gAmbientLoc, gAmbient);
+		gAmbientShader->uploadAmbient(gAmbient);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		//Directional
@@ -143,10 +145,26 @@ namespace Core::Renderer
 		{
 			DirectionalLightComponent* pLight = (DirectionalLightComponent*)ECS::getComponent(e, ComponentType::DIRECTIONAL_LIGHT);
 			gDirectionalShader->bind();
-			gDirectionalShader->uploadVec3(gDirectionLoc, pLight->direction);
-			gDirectionalShader->uploadVec3(gColorLoc, pLight->color);
-			gDirectionalShader->uploadFloat(gIntensityLoc, pLight->intensity);
-			gDirectionalShader->uploadVec3(gCamPosLoc, {gCamera.x, gCamera.y, gCamera.z});
+			gDirectionalShader->uploadParams(pLight->direction, pLight->color, pLight->intensity, { gCamera.x, gCamera.y, gCamera.z });
+			
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
+
+		//Point
+		System& pointSystem = ECS::getSystem(SystemType::POINT);
+		for (unsigned int e : pointSystem.entities)
+		{
+			PointLightComponent* pLight = (PointLightComponent*)ECS::getComponent(e, ComponentType::POINT_LIGHT);
+			TransformComponent* pTransform = (TransformComponent*)ECS::getComponent(e, ComponentType::TRANSFORM);
+		
+			gPointShader->bind();
+			gPointShader->uploadParams(pLight->color, 
+				{ pTransform->x, pTransform->y, pTransform->z },
+				pLight->intensity, 
+				pLight->constant,
+				pLight->linear,
+				pLight->exponent, 
+				{ gCamera.x, gCamera.y, gCamera.z });
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
 
@@ -249,31 +267,9 @@ namespace Core::Renderer
 		viewLoc = gBufferShader->registerUniform("uView");
 		modelLoc = gBufferShader->registerUniform("uModel");
 
-		gAmbientShader = createScope<Core::Shader>();
-		gAmbientShader->loadVertexShader("Resources/Shaders/Quad.glsl");
-		gAmbientShader->loadFragmentShader("Resources/Shaders/Ambient.glsl");
-		gAmbientShader->compile();
-
-		gAmbientShader->bind();
-		gAmbientShader->uploadInt(gAmbientShader->registerUniform("gPositionTex"), 0);
-		gAmbientShader->uploadInt(gAmbientShader->registerUniform("gNormalTex"), 1);
-		gAmbientShader->uploadInt(gAmbientShader->registerUniform("gColorTex"), 2);
-		gAmbientLoc = gAmbientShader->registerUniform("uAmbient");
-		gAmbientShader->unBind();
-
-		gDirectionalShader = createScope<Core::Shader>();
-		gDirectionalShader->loadVertexShader("Resources/Shaders/Quad.glsl");
-		gDirectionalShader->loadFragmentShader("Resources/Shaders/Directional.glsl");
-		gDirectionalShader->compile();
-		gDirectionalShader->bind();
-		gDirectionalShader->uploadInt(gDirectionalShader->registerUniform("gPositionTex"), 0);
-		gDirectionalShader->uploadInt(gDirectionalShader->registerUniform("gNormalTex"), 1);
-		gDirectionalShader->uploadInt(gDirectionalShader->registerUniform("gColorTex"), 2);
-		gDirectionLoc = gDirectionalShader->registerUniform("uDirection");
-		gColorLoc = gDirectionalShader->registerUniform("uColor");
-		gIntensityLoc = gDirectionalShader->registerUniform("uIntensity");
-		gCamPosLoc = gDirectionalShader->registerUniform("uCamPos");
-		gDirectionalShader->unBind();
+		gAmbientShader = createScope<Core::AmbientShader>();
+		gDirectionalShader = createScope<Core::DirectionalShader>();
+		gPointShader = createScope<Core::PointShader>();
 	}
 
 	static void buildProjViewMatrix(const Camera& camera, unsigned int width, unsigned int height, glm::mat4x4& outProjMat, glm::mat4x4& outViewMat)

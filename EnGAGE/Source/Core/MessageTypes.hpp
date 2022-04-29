@@ -2,6 +2,7 @@
 
 #include "MessageConstants.hpp"
 
+struct lua_State;
 namespace Core
 {
 	enum class MessageType : unsigned int
@@ -14,9 +15,16 @@ namespace Core
 		TOGGLE_CURSOR,
 		WINDOW_RESIZED,
 		PHYSICS_UPDATE_RIGID_BODY,
-		INIT_COLLISION_SHAPE,
+		PHYSICS_INIT_COLLISION_SHAPE,
 		REMOVE_SCRIPT,
+		REMOVE_RIGID_BODY,
 		COUNT
+	};
+
+	struct MessageData
+	{
+		const char* name;
+		unsigned int size;
 	};
 
 	struct Message
@@ -25,7 +33,61 @@ namespace Core
 		unsigned char message[Messenger::BUFFER_SIZE];
 	};
 
-	const char* getMessageName(MessageType type);
+	struct KeyPressedMessage
+	{
+		unsigned int keyCode;
+	};
+
+	struct KeyReleasedMessage
+	{
+		unsigned int keyCode;
+	};
+
+	struct ButtonPressedMessage
+	{
+		unsigned int buttonCode;
+	};
+
+	struct ButtonReleasedMessage
+	{
+		unsigned int buttonCode;
+	};
+
+	struct CursorMovedMessage
+	{
+		float x, y, dx, dy;
+	};
+
+	struct WindowResizedMessage
+	{
+		unsigned int width, height;
+	};
+
+	struct PhysicsUpdateRigidBodyMessage
+	{
+		btRigidBody* body;
+	};
+
+	struct PhysicsInitCollisionShapeMessage
+	{
+		btRigidBody* body;
+		unsigned int type;
+		unsigned char arguments[50];
+	};
+
+	struct RemoveScriptMessage
+	{
+		lua_State* L;
+	};
+
+	struct RemoveRigidBodyMessage
+	{
+		btRigidBody* body;
+	};
+
+
+	const MessageData& getMessageData(MessageType type);
 
 	
+
 }

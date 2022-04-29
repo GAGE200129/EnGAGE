@@ -3,6 +3,7 @@
 #include "Components.hpp"
 #include "Messenger.hpp"
 
+#define TO_SWITCH(x) case ComponentType::x: return ComponentDataEnum<ComponentType::x>
 
 namespace Core
 {
@@ -14,37 +15,32 @@ namespace Core
 	template<> ComponentData ComponentDataEnum<ComponentType::SCRIPT> = { "SCRIPT", sizeof(ScriptComponent) };
 	template<> ComponentData ComponentDataEnum<ComponentType::RIGID_BODY> = { "RIGID_BODY", sizeof(RigidBodyComponent) };
 	template<> ComponentData ComponentDataEnum<ComponentType::DIRECTIONAL_LIGHT> = { "DIRECTIONAL_LIGHT", sizeof(DirectionalLightComponent) };
+	template<> ComponentData ComponentDataEnum<ComponentType::POINT_LIGHT> = { "POINT_LIGHT", sizeof(PointLightComponent) };
 
 	const ComponentData& getComponentData(ComponentType type)
 	{
 
 		switch (type)
 		{
-		case ComponentType::NAME:
-			return ComponentDataEnum<ComponentType::NAME>;
-		case ComponentType::TRANSFORM:
-			return ComponentDataEnum<ComponentType::TRANSFORM>;
-		case ComponentType::MODEL_RENDERER:
-			return ComponentDataEnum<ComponentType::MODEL_RENDERER>;
-		case ComponentType::SCRIPT:
-			return ComponentDataEnum<ComponentType::SCRIPT>;
-		case ComponentType::RIGID_BODY:
-			return ComponentDataEnum<ComponentType::RIGID_BODY>;
-		case ComponentType::DIRECTIONAL_LIGHT:
-			return ComponentDataEnum<ComponentType::DIRECTIONAL_LIGHT>;
+			TO_SWITCH(NAME);
+			TO_SWITCH(TRANSFORM);
+			TO_SWITCH(MODEL_RENDERER);
+			TO_SWITCH(SCRIPT);
+			TO_SWITCH(RIGID_BODY);
+			TO_SWITCH(DIRECTIONAL_LIGHT);
+			TO_SWITCH(POINT_LIGHT);
 		}
 		EN_ASSERT(false, "Unknown component: {}", (unsigned int)type);
 		return  ComponentDataEnum<ComponentType::COUNT>;
 	}
 	
-	void initComponent(ComponentHeader* pHeader, ComponentType type)
+	void initComponent(unsigned int entityID, ComponentHeader* pHeader, ComponentType type)
 	{
 		switch (type)
 		{
 		case ComponentType::TRANSFORM:
 		{
 			TransformComponent* transformComponent = (TransformComponent*)pHeader;
-			transformComponent->isStatic = true;
 			transformComponent->x = 0;
 			transformComponent->y = 0;
 			transformComponent->z = 0;
@@ -55,6 +51,8 @@ namespace Core
 			transformComponent->sx = 1;
 			transformComponent->sy = 1;
 			transformComponent->sz = 1;
+
+
 			break;
 		}
 		case ComponentType::MODEL_RENDERER:
@@ -77,8 +75,7 @@ namespace Core
 		case ComponentType::RIGID_BODY:
 		{
 			RigidBodyComponent* component = (RigidBodyComponent*)pHeader;
-
-			auto request = Messenger::request(RequestType::NEW_RIGID_BODY);
+			auto request = Messenger::request(RequestType::NEW_RIGID_BODY, sizeof(unsigned int), &entityID);
 			memcpy(&component->pRigidbody, request.data, sizeof(btRigidBody*));
 			component->collisionShapeType = 0;
 			break;
@@ -96,6 +93,20 @@ namespace Core
 
 			break;
 		}
+		case ComponentType::POINT_LIGHT:
+		{
+			PointLightComponent* component = (PointLightComponent*)pHeader;
+			component->color.x = 1.0f;
+			component->color.y = 1.0f;
+			component->color.z = 1.0f;
+			component->intensity = 1.0f;
+
+			component->constant = 1.0f;
+			component->linear = 0.1f;
+			component->exponent = 0.01f;
+
+			break;
+		}
 		}
 	}
 	void destroyComponent(ComponentHeader* pHeader, ComponentType type)
@@ -107,10 +118,21 @@ namespace Core
 			ScriptComponent* component = (ScriptComponent*)pHeader;
 			if (component)
 			{
-				Message message = {MessageType::REMOVE_SCRIPT};
+				RemoveScriptMessage	message;
+				message.L = component->L;
+				Messenger::recieveMessage(MessageType::REMOVE_SCRIPT, &message);
+			}
+			break;
+		}
 
-				memcpy(message.message, &component->L, sizeof(lua_State*));
-				Messenger::recieveMessage(&message);
+		case ComponentType::RIGID_BODY:
+		{
+			RigidBodyComponent* component = (RigidBodyComponent*)pHeader;
+			if (component)
+			{
+				RemoveRigidBodyMessage message;
+				message.body = component->pRigidbody;
+				Messenger::recieveMessage(MessageType::REMOVE_RIGID_BODY, &message);
 			}
 			break;
 		}

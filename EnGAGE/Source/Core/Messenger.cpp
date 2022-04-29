@@ -4,7 +4,7 @@
 #include "Input.hpp"
 #include "Script.hpp"
 #include "Physics.hpp"
-
+#include "ECS.hpp"
 
 namespace Core::Messenger
 {
@@ -44,6 +44,19 @@ namespace Core::Messenger
 		memcpy(result, pMessage, sizeof(Message));
 	}
 
+	void recieveMessage(MessageType type, void* data)
+	{
+		EN_ASSERT(data != nullptr, "Data is null");
+		EN_ASSERT(gMessageCount <= MAX_MESSAGE_COUNT, "Message overflow");
+		Message* result = &gMessages[gMessageCount++];
+
+		Message message;
+		message.type = type;
+		if(data != nullptr)
+			memcpy(message.message, data, getMessageData(type).size);
+		memcpy(result, &message, sizeof(Message));
+	}
+
 	void queueMessage(Message* pMessage)
 	{
 		EN_ASSERT(pMessage != nullptr, "pMessage is null");
@@ -52,14 +65,17 @@ namespace Core::Messenger
 		memcpy(result, pMessage, sizeof(Message));
 	}
 
-	Request request(RequestType type)
+	Request request(RequestType type, unsigned int size, void* data)
 	{
 		Request result;
 		result.type = type;
+		memcpy(result.data, data, size);
 
-		Input::onRequest(&result);
-		Script::onRequest(&result);
-		Physics::onRequest(&result);
+		if (Input::onRequest(&result)) { return result;  }
+		if (Script::onRequest(&result)) { return result; }
+		if (Physics::onRequest(&result)) { return result; }
+		if (ECS::onRequest(&result)) { return result; }
+
 		return result;
 	}
 

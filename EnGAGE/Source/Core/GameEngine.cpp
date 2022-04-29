@@ -57,7 +57,6 @@ namespace Core::GameEngine
 				physicsThread.join();
 			}
 
-			Input::update();
 			Window::pollEvents();
 
 			//Render

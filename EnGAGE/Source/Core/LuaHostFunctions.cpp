@@ -34,7 +34,6 @@ int getComponent(lua_State* L);
 
 
 //Input
-int getCursorPosDelta(lua_State* L);
 int toggleCursor(lua_State* L);
 int isCursorLocked(lua_State* L);
 
@@ -96,9 +95,11 @@ namespace LuaHostFunctions
 {
 	void registerAllScriptFunctions(lua_State* L)
 	{
+		lua_register(L, "_createEntity", createEntity);
+		lua_register(L, "_addComponent", addComponent);
+		lua_register(L, "_setScript", setScript);
 		lua_register(L, "_markForRemove", markForRemove);
 		lua_register(L, "_getComponent", getComponent);
-		lua_register(L, "_getCursorPosDelta", getCursorPosDelta);
 		lua_register(L, "_toggleCursor", toggleCursor);
 		lua_register(L, "_isCursorLocked", isCursorLocked);
 		lua_register(L, "_setPosition", setPosition);
@@ -108,6 +109,8 @@ namespace LuaHostFunctions
 		lua_register(L, "_getInt", getInt);
 		lua_register(L, "_getFloat", getFloat);
 		lua_register(L, "_sendMessage", sendMessage);
+		lua_register(L, "_setModel", setModel);
+		lua_register(L, "_setRigidBody", setRigidBody);
 	}
 	void registerAllSceneFunctions(lua_State* L)
 	{
@@ -211,9 +214,9 @@ int sendMessage(lua_State* L)
 		{
 		case LUA_TNUMBER:
 		{
-			int value = (int)lua_tonumber(L, i);
+			double value = (double)lua_tonumber(L, i);
 			memcpy(message.message + offset, &value, sizeof(int));
-			offset += sizeof(int);
+			offset += sizeof(double);
 			break;
 		}
 		}
@@ -276,23 +279,10 @@ int getComponent(lua_State* L)
 	return 1;
 }
 
-int getCursorPosDelta(lua_State* L)
-{
-	CHECK_NUM_ARGS(L, 0);
-
-	auto message = Messenger::request(RequestType::CURSOR_DELTA);
-	double data[2];
-	memcpy(data, message.data, sizeof(data));
-
-	lua_pushnumber(L, data[0]);
-	lua_pushnumber(L, data[1]);
-	return 2;
-}
 int toggleCursor(lua_State* L)
 {
 	CHECK_NUM_ARGS(L, 0);
-	Message message = { MessageType::TOGGLE_CURSOR };
-	Messenger::recieveMessage(&message);
+	Messenger::recieveMessage(MessageType::TOGGLE_CURSOR);
 	return 0;
 }
 int isCursorLocked(lua_State* L)
@@ -393,26 +383,19 @@ int setRigidBody(lua_State* L)
 
 	unsigned int numArguments = lua_gettop(L) - 3;
 
-	struct Data
-	{
-		btRigidBody* body;
-		unsigned int type;
-		unsigned char arguments[50];
-	};
-	Message message = { MessageType::INIT_COLLISION_SHAPE };
-	Data data;
-	data.body = pRigidBody;
-	data.type = pComponent->collisionShapeType;
+	PhysicsInitCollisionShapeMessage message;
+
+	message.body = pRigidBody;
+	message.type = pComponent->collisionShapeType;
 
 	EN_ASSERT(numArguments * sizeof(float) < 50, "Args overflow !");
-	float* argData = (float*)data.arguments;
+	float* argData = (float*)message.arguments;
 	for (unsigned int i = 0; i < numArguments; i++)
 	{
 		argData[i] = (float)lua_tonumber(L, i + 4);
 	}
 
-	memcpy(message.message, &data, sizeof(Data));
-	Messenger::recieveMessage(&message);
+	Messenger::recieveMessage(MessageType::PHYSICS_INIT_COLLISION_SHAPE , &message);
 
 	return 0;
 }

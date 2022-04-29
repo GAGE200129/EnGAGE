@@ -3,6 +3,7 @@
 #include "Components.hpp"
 #include "Systems.hpp"
 #include "ECSConstants.hpp"
+#include "Messenger.hpp"
 
 namespace Core
 {
@@ -16,6 +17,8 @@ namespace Core
 			unsigned int id;
 			unsigned int signature : MAX_COMPONENTS;
 		};
+
+		bool onRequest(Request* pRequest);
 
 		void init();
 		void shutdown();

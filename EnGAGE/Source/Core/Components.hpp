@@ -18,6 +18,7 @@ namespace Core
 		SCRIPT,
 		RIGID_BODY,
 		DIRECTIONAL_LIGHT,
+		POINT_LIGHT,
 		COUNT
 	};
 
@@ -45,7 +46,6 @@ namespace Core
 	struct TransformComponent
 	{
 		ComponentHeader header;
-		bool isStatic;
 		float x, y, z,
 			rw, rx, ry, rz,
 			sx, sy, sz;
@@ -80,6 +80,17 @@ namespace Core
 		float intensity;
 	};
 
+	struct PointLightComponent
+	{
+		ComponentHeader header;
+		glm::vec3 color;
+		float intensity;
+
+		float constant;
+		float linear;
+		float exponent;
+	};
+
 	struct ComponentData
 	{
 		const char* name;
@@ -89,6 +100,6 @@ namespace Core
 
 	const ComponentData& getComponentData(ComponentType type);
 	
-	void initComponent(ComponentHeader* pHeader, ComponentType type);
+	void initComponent(unsigned int entityID, ComponentHeader* pHeader, ComponentType type);
 	void destroyComponent(ComponentHeader* pHeader, ComponentType type);
 }

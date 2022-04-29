@@ -7,7 +7,7 @@ struct lua_State;
 namespace Core::Script
 {
 	void onMessage(const Message* pMessage);
-	void onRequest(Request* pRequest);
+	bool onRequest(Request* pRequest);
 	void update(float delta);
 	void shutdown();
 	lua_State* newScript();

@@ -6,12 +6,11 @@ namespace Core
 {
 	enum class RequestType : unsigned int
 	{
-		CURSOR_POS,
-		CURSOR_DELTA,
 		CURSOR_LOCKED,
 
 		NEW_SCRIPT,
 		NEW_RIGID_BODY,
+		ENTITY_COMPONENT
 	};
 
 	struct Request

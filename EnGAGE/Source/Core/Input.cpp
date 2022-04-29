@@ -10,10 +10,6 @@
 namespace Core::Input
 {
 	GLFWwindow* sWindow = nullptr;
-	bool sKeys[InputCodes::NUM_KEYS];
-	bool sPrevKeys[InputCodes::NUM_KEYS];
-	bool sButtons[ButtonCodes::NUM_BUTTONS];
-	bool sPrevButtons[ButtonCodes::NUM_BUTTONS];
 	double sCursorX = 0.0f;
 	double sCursorY = 0.0f;
 	double sPrevCursorX = 0.0f;
@@ -22,48 +18,38 @@ namespace Core::Input
 	void init(GLFWwindow* rawWindow)
 	{
 		sWindow = rawWindow;
-		//Clear sKeys arr
-		for (int i = 0; i < InputCodes::NUM_KEYS; i++) {
-			sKeys[i] = false;
-			sPrevKeys[i] = false;
-		}
-
-		//Clear sButtons arr
-		for (int i = 0; i < ButtonCodes::NUM_BUTTONS; i++) {
-			sButtons[i] = false;
-			sPrevButtons[i] = false;
-		}
 
 		glfwSetCursorPosCallback(rawWindow, [](GLFWwindow* window, double xpos, double ypos)
 			{
+				CursorMovedMessage cursorMessage;
+
 				sCursorX = xpos;
 				sCursorY = ypos;
-				float data[] = { (float)xpos, (float)ypos, (float)(sCursorX - sPrevCursorX), (float)(sCursorY - sPrevCursorY) };
+
+				cursorMessage.x = (float)xpos;
+				cursorMessage.y = (float)ypos;
+				cursorMessage.dx = (float)(sCursorX - sPrevCursorX);
+				cursorMessage.dy = (float)(sCursorY - sPrevCursorY);
 
 				sPrevCursorX = sCursorX;
 				sPrevCursorY = sCursorY;
 
-				Message message = { MessageType::CURSOR_MOVED };
-				memcpy(message.message, data, sizeof(data));
-				Messenger::recieveMessage(&message);
+				Messenger::recieveMessage(MessageType::CURSOR_MOVED , &cursorMessage);
 			});
 
 		glfwSetKeyCallback(rawWindow, [](GLFWwindow* window, int key, int scancode, int action, int mods)
 			{
 				if (action == PRESS)
 				{
-					Message message = { MessageType::KEY_PRESSED };
-					memcpy(message.message, &key, sizeof(int));
-					Messenger::recieveMessage(&message);
-					sKeys[key] = true;
+					KeyPressedMessage message;
+					message.keyCode = key;
+					Messenger::recieveMessage(MessageType::KEY_PRESSED, &message);
 				}
 				else if (action == RELEASE)
 				{
-					Message message = { MessageType::KEY_RELEASED };
-					memcpy(message.message, &key, sizeof(int));
-					Messenger::recieveMessage(&message);
-
-					sKeys[key] = false;
+					KeyReleasedMessage message;
+					message.keyCode = key;
+					Messenger::recieveMessage(MessageType::KEY_RELEASED, &message);
 				}
 			});
 
@@ -71,18 +57,15 @@ namespace Core::Input
 			{
 				if (action == PRESS)
 				{
-					Message message = { MessageType::BUTTON_PRESSED };
-					memcpy(message.message, &button, sizeof(int));
-					Messenger::recieveMessage(&message);
-					sButtons[button] = true;
+					ButtonPressedMessage message;
+					message.buttonCode = button;
+					Messenger::recieveMessage(MessageType::BUTTON_PRESSED, &message);
 				}
 				else if (action == RELEASE)
 				{
-					Message message = { MessageType::BUTTON_RELEASED };
-					memcpy(message.message, &button, sizeof(int));
-					Messenger::recieveMessage(&message);
-
-					sButtons[button] = false;
+					ButtonReleasedMessage message;
+					message.buttonCode = button;
+					Messenger::recieveMessage(MessageType::BUTTON_RELEASED, &message);
 				}
 			});
 
@@ -98,56 +81,19 @@ namespace Core::Input
 		}
 		}
 	}
-	void onRequest(Request* pRequest)
+	bool onRequest(Request* pRequest)
 	{
 		switch (pRequest->type)
 		{
-		case RequestType::CURSOR_POS:
-		{
-			double data[] = { (float)getCursorX(), (float)getCursorY() };
-			memcpy(pRequest->data, data, sizeof(data));
-			break;
-		}
-		case RequestType::CURSOR_DELTA:
-		{
-			double data[] = { (float)getCursorDX(), (float)getCursorDY() };
-			memcpy(pRequest->data, data, sizeof(data));
-			break;
-		}
 		case RequestType::CURSOR_LOCKED:
 		{
 			int data = cursorLocked();
 			memcpy(pRequest->data, &data, sizeof(data));
-			break;
+			return true;
 		}
 		}
-	}
-	void update()
-	{
-		
-		memcpy(sPrevKeys, sKeys, sizeof(sKeys));
-		memcpy(sPrevButtons, sButtons, sizeof(sButtons));
-	}
 
-
-	bool  isKeyPressed(uint16_t code) { return sKeys[code]; }
-	bool  isKeyPressedOnce(uint16_t code) { return sKeys[code] && !sPrevKeys[code]; }
-	bool  isKeyReleased(uint16_t code) { return !sKeys[code]; }
-	bool  isButtonPressed(uint16_t code) { return sButtons[code]; }
-	bool  isButtonPressedOnce(uint16_t code) { return sButtons[code] && !sPrevButtons[code]; }
-	bool  isButtonReleased(uint16_t code) { return !sButtons[code]; }
-
-	double  getCursorX() { return sCursorX; }
-	double  getCursorY() { return sCursorY; }
-
-	double  getCursorDX()
-	{
-		return sCursorX - sPrevCursorX;
-	}
-
-	double  getCursorDY()
-	{
-		return sCursorY - sPrevCursorY;
+		return false;
 	}
 
 	void  disableCursor()

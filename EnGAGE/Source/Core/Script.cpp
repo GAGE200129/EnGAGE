@@ -49,7 +49,7 @@ void Core::Script::onMessage(const Message* pMessage)
 	}
 }
 
-void Core::Script::onRequest(Request* pRequest)
+bool Core::Script::onRequest(Request* pRequest)
 {
 	switch(pRequest->type)
 	{
@@ -57,9 +57,11 @@ void Core::Script::onRequest(Request* pRequest)
 	{
 		lua_State* L = newScript();
 		memcpy(pRequest->data, &L, sizeof(lua_State*));
-		return;
+		return true;
 	}
 	}
+
+	return false;
 }
 
 void Core::Script::update(float delta)
@@ -98,6 +100,13 @@ lua_State* Core::Script::newScript()
 
 	//Register all host functions
 	LuaHostFunctions::registerAllScriptFunctions(L);
+
+	for (unsigned int i = 0; i < (unsigned int)Physics::CollisionShapeType::COUNT; i++)
+	{
+		const char* name = Physics::getCollisionShapeName((Physics::CollisionShapeType)i);
+		lua_pushinteger(L, i);
+		lua_setglobal(L, name);
+	}
 	
 	//Add globals
 	for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
@@ -110,9 +119,9 @@ lua_State* Core::Script::newScript()
 
 	for (unsigned int i = 0; i < (unsigned int)MessageType::COUNT; i++)
 	{
-		const char* name = getMessageName((MessageType)i);
+		const auto& data = getMessageData((MessageType)i);
 		lua_pushinteger(L, i);
-		lua_setglobal(L, name);
+		lua_setglobal(L, data.name);
 	}
 
 	for (unsigned int i = 0; i < InputCodes::NUM_KEYS; i++)

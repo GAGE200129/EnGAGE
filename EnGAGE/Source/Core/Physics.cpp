@@ -3,7 +3,50 @@
 
 #include "ECS.hpp"
 
+class CustomMotionState : public btMotionState
+{
+	Core::TransformComponent* mGraphicsTransform;
+public:
+	CustomMotionState(Core::TransformComponent* graphicsTransform):
+		mGraphicsTransform(graphicsTransform)
+	{
+	}
 
+	inline void setGraphicsTransform(Core::TransformComponent* graphicsTransform)
+	{
+		mGraphicsTransform = graphicsTransform;
+	}
+
+	///synchronizes world transform from user to physics
+	virtual void getWorldTransform(btTransform& centerOfMassWorldTrans) const override
+	{
+		btTransform transform;
+		transform.setIdentity();
+		if (mGraphicsTransform != nullptr)
+		{
+			transform.setOrigin(btVector3(mGraphicsTransform->x, mGraphicsTransform->y, mGraphicsTransform->z));
+			transform.setRotation(btQuaternion(mGraphicsTransform->rx, mGraphicsTransform->ry, mGraphicsTransform->rz, mGraphicsTransform->rw));
+		}
+		centerOfMassWorldTrans = transform;
+	}
+
+	///synchronizes world transform from physics to user
+	///Bullet only calls the update of worldtransform for active objects
+	virtual void setWorldTransform(const btTransform& centerOfMassWorldTrans) override
+	{
+		if (mGraphicsTransform != nullptr)
+		{
+			mGraphicsTransform->x = centerOfMassWorldTrans.getOrigin().x();
+			mGraphicsTransform->y = centerOfMassWorldTrans.getOrigin().y();
+			mGraphicsTransform->z = centerOfMassWorldTrans.getOrigin().z();
+
+			mGraphicsTransform->rw = centerOfMassWorldTrans.getRotation().w();
+			mGraphicsTransform->rx = centerOfMassWorldTrans.getRotation().x();
+			mGraphicsTransform->ry = centerOfMassWorldTrans.getRotation().y();
+			mGraphicsTransform->rz = centerOfMassWorldTrans.getRotation().z();
+		}
+	}
+};
 
 namespace Core::Physics
 {
@@ -25,14 +68,14 @@ namespace Core::Physics
 			return "PLANE";
 		case CollisionShapeType::SPHERE:
 			return "SPHERE";
+		case CollisionShapeType::BOX:
+			return "BOX";
 		}
 		EN_ASSERT(false, "Unknown collision shape: {}", (unsigned int)type);
 		return "";
 	}
 
-	
-
-	void Physics::init()
+	void init()
 	{
 		gConfig = new btDefaultCollisionConfiguration();
 		gDispatcher = new btCollisionDispatcher(gConfig);
@@ -43,7 +86,7 @@ namespace Core::Physics
 
 	}
 
-	void Physics::shutdown()
+	void shutdown()
 	{
 		for (auto& body : gRigidBodies)
 		{
@@ -62,6 +105,25 @@ namespace Core::Physics
 	{
 		switch(pMessage->type)
 		{
+		case MessageType::REMOVE_RIGID_BODY:
+		{
+			btRigidBody* body = nullptr;
+			memcpy(&body, pMessage->message, sizeof(btRigidBody*));
+
+			DynArr<btRigidBody*>::iterator removeIt;
+			for (auto it = gRigidBodies.begin(); it != gRigidBodies.end(); it++)
+			{
+				if (*it == body)
+				{
+					removeIt = it;
+					break;
+				}
+			}
+
+			gRigidBodies.erase(removeIt);
+
+			break;
+		}
 		case MessageType::PHYSICS_UPDATE_RIGID_BODY:
 		{
 			btRigidBody* body = nullptr;
@@ -69,7 +131,7 @@ namespace Core::Physics
 			updateRigidBody(body);
 			break;
 		}
-		case MessageType::INIT_COLLISION_SHAPE:
+		case MessageType::PHYSICS_INIT_COLLISION_SHAPE:
 		{
 			struct Data
 			{
@@ -87,33 +149,52 @@ namespace Core::Physics
 		}
 	}
 
-	void onRequest(Request* pRequest)
+	bool onRequest(Request* pRequest)
 	{
 		switch (pRequest->type)
 		{
 		case RequestType::NEW_RIGID_BODY:
 		{
-			btRigidBody* body = newRigidBody();
+			unsigned int entityID;
+			memcpy(&entityID, pRequest->data, sizeof(unsigned int));
+			btRigidBody* body = newRigidBody(entityID);
 			memcpy(pRequest->data, &body, sizeof(btRigidBody*));
-			break;
+			return true;
 		}
 		}
+
+		return false;
 	}
 
 	void updateRigidBody(btRigidBody* rigidBody)
 	{
+		rigidBody->activate();
 		gWorld->removeRigidBody(rigidBody);
 		gWorld->addRigidBody(rigidBody);
 	}
 
-	btRigidBody* newRigidBody()
+	btRigidBody* newRigidBody(unsigned int entityID)
 	{
+		struct Data
+		{
+			unsigned int entityID;
+			ComponentType type;
+		} data;
+		data.entityID = entityID;
+		data.type = ComponentType::TRANSFORM;
 
-		btMotionState* pMotionState = new btDefaultMotionState();
+		auto request = Messenger::request(RequestType::ENTITY_COMPONENT, sizeof(Data), &data);
+
+		TransformComponent* component = nullptr;
+
+		memcpy(&component, request.data, sizeof(TransformComponent*));
+
+		btMotionState* pMotionState = new CustomMotionState(component);
 		btEmptyShape* pShape = new btEmptyShape();
 
 		btRigidBody::btRigidBodyConstructionInfo info(0, pMotionState, pShape);
 		btRigidBody* pRigidBody = new btRigidBody(info);
+		pRigidBody->setRestitution(0.9f);
 
 		gRigidBodies.push_back(pRigidBody);
 		gWorld->addRigidBody(pRigidBody);
@@ -121,35 +202,9 @@ namespace Core::Physics
 		return pRigidBody;
 	}
 
-	void Physics::update(float delta)
+	void update(float delta)
 	{
-		gWorld->stepSimulation(delta);
-
-		using namespace ECS;
-		const System& system = getSystem(SystemType::PHYSICS);
-		const auto& entities = system.entities;
-		for (auto e : entities)
-		{
-			RigidBodyComponent* pRigidBody = (RigidBodyComponent*)getComponent(e, ComponentType::RIGID_BODY);
-			TransformComponent* pTransform = (TransformComponent*)getComponent(e, ComponentType::TRANSFORM);
-			pRigidBody->pRigidbody->activate();
-			const btTransform& t = pRigidBody->pRigidbody->getCenterOfMassTransform();
-
-			const btVector3& p = t.getOrigin();
-			const btQuaternion& r = t.getRotation();
-
-			pTransform->isStatic = false;
-			pTransform->x = p.x();
-			pTransform->y = p.y();
-			pTransform->z = p.z();
-
-			pTransform->rw = r.w();
-			pTransform->rx = r.x();
-			pTransform->ry = r.y();
-			pTransform->rz = r.z();
-
-		}
-		
+		gWorld->stepSimulation(delta);		
 	}
 }
 

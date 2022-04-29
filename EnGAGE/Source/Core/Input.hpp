@@ -12,21 +12,7 @@ namespace Core::Input
 
 	void init(GLFWwindow* rawWindow);
 	void onMessage(const Message* pMessage);
-	void onRequest(Request* pRequest);
-	void update();
-
-
-	bool isKeyPressed(uint16_t code);
-	bool isKeyPressedOnce(uint16_t code);
-	bool isKeyReleased(uint16_t code);
-	bool isButtonPressed(uint16_t code);
-	bool isButtonPressedOnce(uint16_t code);
-	bool isButtonReleased(uint16_t code);
-
-	double getCursorX();
-	double getCursorY();
-	double getCursorDX();
-	double getCursorDY();
+	bool onRequest(Request* pRequest);
 
 	void disableCursor();
 	void enableCursor();

@@ -25,6 +25,29 @@ namespace Core::ECS
 	static void* constructComponent(unsigned int entity, ComponentType type, const void* extraData);
 
 
+	bool onRequest(Request* pRequest)
+	{
+		switch (pRequest->type)
+		{
+		case RequestType::ENTITY_COMPONENT:
+		{
+			struct Data
+			{
+				unsigned int entityID;
+				ComponentType type;
+			} data;
+
+			memcpy(&data, pRequest->data, sizeof(Data));
+
+
+			void* component = getComponent(data.entityID, data.type);
+			memcpy(pRequest->data, &component, sizeof(void*));
+			return true;
+		}
+		}
+		return false;
+	}
+
 	void init()
 	{
 		gEntityCounter = 0;
@@ -60,6 +83,11 @@ namespace Core::ECS
 		signature = 0;
 		SET_BIT(signature, (unsigned int)ComponentType::DIRECTIONAL_LIGHT);
 		gSystems[SystemType::DIRECTIONAL].signature = signature;
+
+		signature = 0;
+		SET_BIT(signature, (unsigned int)ComponentType::POINT_LIGHT);
+		SET_BIT(signature, (unsigned int)ComponentType::TRANSFORM);
+		gSystems[SystemType::POINT].signature = signature;
 
 	}
 
@@ -155,7 +183,7 @@ namespace Core::ECS
 	{
 		ComponentData data = getComponentData(type);
 		Scope<char[]> extraData = createScope<char[]>(data.size);
-		initComponent((ComponentHeader*)extraData.get(), type);
+		initComponent(entity, (ComponentHeader*)extraData.get(), type);
 
 		return constructComponent(entity, type, extraData.get());
 	}
