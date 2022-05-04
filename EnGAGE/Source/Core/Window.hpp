@@ -13,6 +13,7 @@ namespace Core::Window {
 	void pollEvents();
 	double getCurrentTime();
 
+	const char* getTitleName();
 	const bool& resized();
 	GLFWwindow* getRawWindow();	
 }

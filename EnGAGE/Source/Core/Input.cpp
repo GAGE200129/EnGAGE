@@ -81,20 +81,6 @@ namespace Core::Input
 		}
 		}
 	}
-	bool onRequest(Request* pRequest)
-	{
-		switch (pRequest->type)
-		{
-		case RequestType::CURSOR_LOCKED:
-		{
-			int data = cursorLocked();
-			memcpy(pRequest->data, &data, sizeof(data));
-			return true;
-		}
-		}
-
-		return false;
-	}
 
 	void  disableCursor()
 	{

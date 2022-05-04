@@ -1,5 +1,6 @@
 #include "pch.hpp"
 #include "Physics.hpp"
+#include "ECS.hpp"
 
 #include "ECS.hpp"
 
@@ -86,15 +87,21 @@ namespace Core::Physics
 
 	}
 
-	void shutdown()
+	void clearAllRigidBodies()
 	{
 		for (auto& body : gRigidBodies)
 		{
+			gWorld->removeRigidBody(body);
 			delete body->getCollisionShape();
 			delete body->getMotionState();
 			delete body;
 		}
+		gRigidBodies.clear();
+	}
 
+	void shutdown()
+	{
+		clearAllRigidBodies();
 		delete gConfig;
 		delete gDispatcher;
 		delete gBroadphase;
@@ -119,6 +126,10 @@ namespace Core::Physics
 					break;
 				}
 			}
+			btRigidBody* removedBody = *removeIt;
+			delete removedBody->getCollisionShape();
+			delete removedBody->getMotionState();
+			delete removedBody;
 
 			gRigidBodies.erase(removeIt);
 
@@ -131,63 +142,25 @@ namespace Core::Physics
 			updateRigidBody(body);
 			break;
 		}
-		case MessageType::PHYSICS_INIT_COLLISION_SHAPE:
-		{
-			struct Data
-			{
-				btRigidBody* body;
-				unsigned int type;
-				unsigned char arguments[50];
-			} data;
-
-			memcpy(&data, pMessage->message, sizeof(Data));
-			
-			initCollisionShapeRuntime(data.body, (CollisionShapeType)data.type, data.arguments);
-
-			break;
 		}
+
+		if (auto initCollisionShape = Messenger::messageCast<MessageType::PHYSICS_INIT_COLLISION_SHAPE, PhysicsInitCollisionShapeMessage>(pMessage))
+		{
+			initCollisionShapeRuntime(initCollisionShape->body, (CollisionShapeType)initCollisionShape->type, (void*)initCollisionShape->arguments);
 		}
 	}
 
-	bool onRequest(Request* pRequest)
-	{
-		switch (pRequest->type)
-		{
-		case RequestType::NEW_RIGID_BODY:
-		{
-			unsigned int entityID;
-			memcpy(&entityID, pRequest->data, sizeof(unsigned int));
-			btRigidBody* body = newRigidBody(entityID);
-			memcpy(pRequest->data, &body, sizeof(btRigidBody*));
-			return true;
-		}
-		}
-
-		return false;
-	}
 
 	void updateRigidBody(btRigidBody* rigidBody)
 	{
-		rigidBody->activate();
 		gWorld->removeRigidBody(rigidBody);
+		rigidBody->activate();
 		gWorld->addRigidBody(rigidBody);
 	}
 
 	btRigidBody* newRigidBody(unsigned int entityID)
 	{
-		struct Data
-		{
-			unsigned int entityID;
-			ComponentType type;
-		} data;
-		data.entityID = entityID;
-		data.type = ComponentType::TRANSFORM;
-
-		auto request = Messenger::request(RequestType::ENTITY_COMPONENT, sizeof(Data), &data);
-
-		TransformComponent* component = nullptr;
-
-		memcpy(&component, request.data, sizeof(TransformComponent*));
+		TransformComponent* component = (TransformComponent*)ECS::getComponent(entityID, ComponentType::TRANSFORM);
 
 		btMotionState* pMotionState = new CustomMotionState(component);
 		btEmptyShape* pShape = new btEmptyShape();
@@ -195,6 +168,7 @@ namespace Core::Physics
 		btRigidBody::btRigidBodyConstructionInfo info(0, pMotionState, pShape);
 		btRigidBody* pRigidBody = new btRigidBody(info);
 		pRigidBody->setRestitution(0.9f);
+		pRigidBody->setDamping(0.2f, 0.2f);
 
 		gRigidBodies.push_back(pRigidBody);
 		gWorld->addRigidBody(pRigidBody);

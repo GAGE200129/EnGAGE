@@ -12,14 +12,14 @@
 
 namespace Core::Window
 {
-	GLFWwindow* sWindow = nullptr;
-	int sFullScreenWidth = 0;
-	int sFullScreenHeight = 0;
-	int sWindowedScreenWidth = 0;
-	int sWindowedScreenHeight = 0;
-	std::string sTitle = "";
-	bool sWindowResized = false;
-	bool gFullScreen = false;
+	static GLFWwindow* sWindow = nullptr;
+	static int sFullScreenWidth = 0;
+	static int sFullScreenHeight = 0;
+	static int sWindowedScreenWidth = 0;
+	static int sWindowedScreenHeight = 0;
+	static std::string sTitle = "";
+	static bool sWindowResized = false;
+	static bool gFullScreen = false;
 
 	static void setupCallbacks()
 	{
@@ -71,11 +71,10 @@ namespace Core::Window
 
 	void onMessage(const Message* pMessage)
 	{
-		if (pMessage->type == MessageType::KEY_PRESSED)
+		if (const KeyPressedMessage* keyPressed = Messenger::messageCast<MessageType::KEY_PRESSED, KeyPressedMessage>(pMessage))
 		{
-			unsigned int keyCode = *reinterpret_cast<const unsigned int*>(pMessage->message);
-			// Toggle full screen
-			if (keyCode == InputCodes::KEY_F11) 
+			//Toggle fullscreen
+			if (keyPressed->keyCode == InputCodes::KEY_F11)
 			{
 				gFullScreen = !gFullScreen;
 
@@ -97,6 +96,12 @@ namespace Core::Window
 				}
 			}
 		}
+		else if (const WindowRenamedMessage* windowRenamed = Messenger::messageCast<MessageType::WINDOW_RENAMED, WindowRenamedMessage>(pMessage))
+		{
+			glfwSetWindowTitle(sWindow, windowRenamed->name);
+		}
+
+
 	}
 
 	bool closeRequested()
@@ -118,6 +123,10 @@ namespace Core::Window
 	double getCurrentTime()
 	{
 		return glfwGetTime();
+	}
+	const char* getTitleName()
+	{
+		return sTitle.c_str();
 	}
 	const bool& resized() { return sWindowResized; }
 	GLFWwindow* getRawWindow() { return sWindow; }

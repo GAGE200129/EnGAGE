@@ -16,12 +16,20 @@ namespace Core::Physics
 	const char* getCollisionShapeName(CollisionShapeType type);
 
 	void init();
+	void clearAllRigidBodies();
 	void shutdown();
 	void onMessage(const Message* pMessage);
-	bool onRequest(Request* pRequest);
 	void updateRigidBody(btRigidBody* rigidBody);
 	btRigidBody* newRigidBody(unsigned int entityID);
 	void update(float delta);
+
+	inline static void recalculateIntertia(btCollisionShape* pShape, btRigidBody* pBody)
+	{
+		btVector3 inertia;
+		pShape->calculateLocalInertia(pBody->getMass(), inertia);
+		pBody->setMassProps(pBody->getMass(), inertia);
+		updateRigidBody(pBody);
+	}
 
 	template<CollisionShapeType type>
 	inline static void initCollisionShape(btRigidBody* rigidBody, void* data = nullptr)
@@ -38,20 +46,17 @@ namespace Core::Physics
 		float radius = data ? sphereData[0] : 1.0f;
 		btSphereShape* shape = new btSphereShape(radius);
 		rigidBody->setCollisionShape(shape);
-		btVector3 inertia;
-		shape->calculateLocalInertia(rigidBody->getMass(), inertia);
-		rigidBody->setMassProps(rigidBody->getMass(), inertia);
-		updateRigidBody(rigidBody);
+		recalculateIntertia(shape, rigidBody);
 	}
 
 	template<>
 	inline static void initCollisionShape<CollisionShapeType::PLANE>(btRigidBody* rigidBody, void* data)
 	{
 		delete rigidBody->getCollisionShape();
-		float* planeData = (float*)data;
 		btVector3 normal = {0, 1, 0};
 		btScalar distance = 0.0f;
 
+		float* planeData = (float*)data;
 		if (data)
 		{
 			normal = btVector3(planeData[0], planeData[1], planeData[2]);
@@ -59,19 +64,16 @@ namespace Core::Physics
 		}
 		btStaticPlaneShape* shape = new btStaticPlaneShape(normal, distance);
 		rigidBody->setCollisionShape(shape);
-		btVector3 inertia;
-		shape->calculateLocalInertia(rigidBody->getMass(), inertia);
-		rigidBody->setMassProps(rigidBody->getMass(), inertia);
-		updateRigidBody(rigidBody);
+		recalculateIntertia(shape, rigidBody);
 	}
 
 	template<>
 	inline static void initCollisionShape<CollisionShapeType::BOX>(btRigidBody* rigidBody, void* data)
 	{
 		delete rigidBody->getCollisionShape();
-		float* boxData = (float*)data;
 		btVector3 halfExtends = {1.0f, 1.0f, 1.0f};
 
+		float* boxData = (float*)data;
 		if (data)
 		{
 			halfExtends.setX(boxData[0]);
@@ -81,10 +83,7 @@ namespace Core::Physics
 
 		btBoxShape* shape = new btBoxShape(halfExtends);
 		rigidBody->setCollisionShape(shape);
-		btVector3 inertia;
-		shape->calculateLocalInertia(rigidBody->getMass(), inertia);
-		rigidBody->setMassProps(rigidBody->getMass(), inertia);
-		updateRigidBody(rigidBody);
+		recalculateIntertia(shape, rigidBody);
 	}
 
 

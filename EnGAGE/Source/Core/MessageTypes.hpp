@@ -14,6 +14,7 @@ namespace Core
 		CURSOR_MOVED,
 		TOGGLE_CURSOR,
 		WINDOW_RESIZED,
+		WINDOW_RENAMED,
 		PHYSICS_UPDATE_RIGID_BODY,
 		PHYSICS_INIT_COLLISION_SHAPE,
 		REMOVE_SCRIPT,
@@ -84,10 +85,9 @@ namespace Core
 	{
 		btRigidBody* body;
 	};
-
-
+	struct WindowRenamedMessage
+	{
+		char name[Messenger::BUFFER_SIZE];
+	};
 	const MessageData& getMessageData(MessageType type);
-
-	
-
 }

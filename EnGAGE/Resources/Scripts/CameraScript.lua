@@ -39,7 +39,7 @@ function onMessage(entity, type, message)
 	elseif type == KEY_PRESSED then
 		local key = _getInt(message, 1)
 		if key == KEY_ESCAPE then
-			_sendMessage(TOGGLE_CURSOR)
+			_sendMessage(TOGGLE_CURSOR, {})
 		elseif key == KEY_W then
 			forward = true
 		elseif key == KEY_S then

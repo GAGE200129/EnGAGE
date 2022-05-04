@@ -1,13 +1,14 @@
 #include "pch.hpp"
-
 #include "Components.hpp"
+#include "Script.hpp"
+#include "Physics.hpp"
+
 #include "Messenger.hpp"
 
 #define TO_SWITCH(x) case ComponentType::x: return ComponentDataEnum<ComponentType::x>
 
 namespace Core
 {
-
 	template<ComponentType> ComponentData ComponentDataEnum = { "INVALID", 0 };
 	template<> ComponentData ComponentDataEnum<ComponentType::NAME> = { "NAME", sizeof(NameComponent) };
 	template<> ComponentData ComponentDataEnum<ComponentType::TRANSFORM> = { "TRANSFORM", sizeof(TransformComponent) };
@@ -67,16 +68,14 @@ namespace Core
 		{
 			ScriptComponent* component = (ScriptComponent*)pHeader;
 
-			auto request = Messenger::request(RequestType::NEW_SCRIPT);
-			memcpy(&component->L, request.data, sizeof(lua_State*));
+			component->L = Script::newScript();
 			memset(component->scriptPath, 0, MAX_NAME_SIZE);
 			break;
 		}
 		case ComponentType::RIGID_BODY:
 		{
 			RigidBodyComponent* component = (RigidBodyComponent*)pHeader;
-			auto request = Messenger::request(RequestType::NEW_RIGID_BODY, sizeof(unsigned int), &entityID);
-			memcpy(&component->pRigidbody, request.data, sizeof(btRigidBody*));
+			component->pRigidbody = Physics::newRigidBody(entityID);
 			component->collisionShapeType = 0;
 			break;
 		}

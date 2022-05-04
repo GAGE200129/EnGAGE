@@ -21,3 +21,6 @@ _setRigidBody(entity2_rigidBody, 1, SPHERE, 1)
 
 entity3 = _createEntity()
 _setDirectionalLight(_addComponent(entity3, DIRECTIONAL_LIGHT), 0, -1, 0, 1, 1, 1, 0.8)
+
+entity0 = _createEntity()
+_setScript(_addComponent(entity0, SCRIPT), "Resources/Scripts/Spawn.lua")

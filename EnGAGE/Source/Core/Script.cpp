@@ -3,8 +3,6 @@
 
 #include "ECS.hpp"
 #include "LuaHostFunctions.hpp"
-#include "InputCodes.hpp"
-#include "Physics.hpp"
 #include "Messenger.hpp"
 
 extern "C"
@@ -49,21 +47,6 @@ void Core::Script::onMessage(const Message* pMessage)
 	}
 }
 
-bool Core::Script::onRequest(Request* pRequest)
-{
-	switch(pRequest->type)
-	{
-	case RequestType::NEW_SCRIPT:
-	{
-		lua_State* L = newScript();
-		memcpy(pRequest->data, &L, sizeof(lua_State*));
-		return true;
-	}
-	}
-
-	return false;
-}
-
 void Core::Script::update(float delta)
 {
 	System& system = ECS::getSystem(SystemType::SCRIPTING);
@@ -99,42 +82,8 @@ lua_State* Core::Script::newScript()
 	luaL_openlibs(L);
 
 	//Register all host functions
-	LuaHostFunctions::registerAllScriptFunctions(L);
-
-	for (unsigned int i = 0; i < (unsigned int)Physics::CollisionShapeType::COUNT; i++)
-	{
-		const char* name = Physics::getCollisionShapeName((Physics::CollisionShapeType)i);
-		lua_pushinteger(L, i);
-		lua_setglobal(L, name);
-	}
-	
-	//Add globals
-	for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
-	{
-		const ComponentData& data = getComponentData((ComponentType)i);
-		lua_pushinteger(L, i);
-		lua_setglobal(L, data.name);
-	}
-
-
-	for (unsigned int i = 0; i < (unsigned int)MessageType::COUNT; i++)
-	{
-		const auto& data = getMessageData((MessageType)i);
-		lua_pushinteger(L, i);
-		lua_setglobal(L, data.name);
-	}
-
-	for (unsigned int i = 0; i < InputCodes::NUM_KEYS; i++)
-	{
-		const char* name = InputCodes::toString(i);
-		if (strlen(name) != 0)
-		{
-			lua_pushinteger(L, i);
-			lua_setglobal(L, name);
-		}
-	}
-
-
+	LuaHostFunctions::pushAllGlobals(L);
+	LuaHostFunctions::registerFunctions(L);
 	gScripts.push_back(L);
 	return L;
 }

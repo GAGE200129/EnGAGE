@@ -18,7 +18,6 @@ namespace Core
 			unsigned int signature : MAX_COMPONENTS;
 		};
 
-		bool onRequest(Request* pRequest);
 
 		void init();
 		void shutdown();

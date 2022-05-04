@@ -42,10 +42,6 @@ namespace Core::Renderer
 	static Scope<DirectionalShader> gDirectionalShader;
 	static Scope<PointShader> gPointShader;
 	
-
-	
-
-	
 	static unsigned int gFBO, gRBO;
 	static unsigned int gPoisitonTex, gNormalTex, gColorTex;
 
@@ -76,6 +72,9 @@ namespace Core::Renderer
 	void shutdown()
 	{
 		gBufferShader->cleanup();
+		gAmbientShader->cleanup();
+		gDirectionalShader->cleanup();
+		gPointShader->cleanup();
 		glDeleteFramebuffers(1, &gFBO);
 		glDeleteRenderbuffers(1, &gRBO);
 		glDeleteTextures(1, &gPoisitonTex);
@@ -278,7 +277,13 @@ namespace Core::Renderer
 		outViewMat = glm::rotate(outViewMat, -glm::radians(camera.yaw), { 0, 1, 0 });
 		outViewMat = glm::translate(outViewMat, { -camera.x, -camera.y, -camera.z });
 
-		outProjMat = glm::perspective(glm::radians(camera.fov), (float)width / (float)height, camera.near, camera.far);
+		if (height == 0.0f)
+		{
+			return;
+		}
+		float aspectRatio = (float)width / (float)height;
+
+		outProjMat = glm::perspective(glm::radians(camera.fov), aspectRatio, camera.near, camera.far);
 	}
 
 	static void processNode(const Model* model, const Node& node, glm::mat4x4 accumulatedTransform)

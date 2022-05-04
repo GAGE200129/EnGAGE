@@ -50,10 +50,9 @@ void Core::Editor::shutdown()
 
 void Core::Editor::onMessage(const Message* pMessage)
 {
-	if (pMessage->type == MessageType::KEY_PRESSED)
+	if (auto keyPressedMessage = Messenger::messageCast<MessageType::KEY_PRESSED, KeyPressedMessage>(pMessage))
 	{
-		unsigned int keyCode = *reinterpret_cast<const unsigned int*>(pMessage->message);
-		if (keyCode == InputCodes::KEY_F5)
+		if (keyPressedMessage->keyCode == InputCodes::KEY_F5)
 		{
 			gEnabled = !gEnabled;
 		}
@@ -192,11 +191,19 @@ static void processComponent(unsigned int entity, Core::ComponentType type, Core
 				pRigidBody->getCollisionShape()->calculateLocalInertia(mass, inertia);
 				pRigidBody->setMassProps(mass, inertia);
 				pRigidBody->updateInertiaTensor();
+				pRigidBody->activate();
 
-				Core::Message message;
-				message.type = Core::MessageType::PHYSICS_UPDATE_RIGID_BODY;
-				memcpy(message.message, &pRigidBody, sizeof(btRigidBody*));
-				Core::Messenger::queueMessage(&message);
+				Core::PhysicsUpdateRigidBodyMessage message;
+				message.body = pRigidBody;
+				Core::Messenger::recieveMessage(Core::MessageType::PHYSICS_UPDATE_RIGID_BODY, &message);
+			}
+
+			btVector3 btVel = pRigidBody->getLinearVelocity();
+			float vel[] = { btVel.x(), btVel.y(), btVel.z() };
+			if (ImGui::DragFloat3("Velocity", vel, 0.1f))
+			{
+				pRigidBody->setLinearVelocity(btVector3(vel[0], vel[1], vel[2]));
+				pRigidBody->activate();
 			}
 		}
 		const char* currentColliderName = getCollisionShapeName((CollisionShapeType)pComponent->collisionShapeType);
@@ -219,8 +226,16 @@ static void processComponent(unsigned int entity, Core::ComponentType type, Core
 	case ComponentType::TRANSFORM:
 	{
 		TransformComponent* pTransform = (TransformComponent*)pHeader;
+		RigidBodyComponent* pRigidBody = (RigidBodyComponent * )ECS::getComponent(entity, ComponentType::RIGID_BODY);
 
-		ImGui::DragFloat3("Translation", &pTransform->x, 0.1f);
+		
+		if (ImGui::DragFloat3("Translation", &pTransform->x, 0.1f) && pRigidBody)
+		{
+			pRigidBody->pRigidbody->getWorldTransform().setOrigin(btVector3(pTransform->x, pTransform->y, pTransform->z));
+			Core::PhysicsUpdateRigidBodyMessage message;
+			message.body = pRigidBody->pRigidbody;
+			Core::Messenger::recieveMessage(Core::MessageType::PHYSICS_UPDATE_RIGID_BODY, &message);
+		}
 		if (ImGui::DragFloat4("Rotation", &pTransform->rw, 0.1f))
 		{
 			float lengthSquared = pTransform->rw * pTransform->rw +
@@ -236,7 +251,13 @@ static void processComponent(unsigned int entity, Core::ComponentType type, Core
 				pTransform->rz /= length;
 			}
 
-	
+			if (pRigidBody)
+			{
+				pRigidBody->pRigidbody->getWorldTransform().setRotation(btQuaternion(pTransform->rx, pTransform->ry, pTransform->rz, pTransform->rw));
+				Core::PhysicsUpdateRigidBodyMessage message;
+				message.body = pRigidBody->pRigidbody;
+				Core::Messenger::recieveMessage(Core::MessageType::PHYSICS_UPDATE_RIGID_BODY, &message);
+			}
 		}
 
 		ImGui::DragFloat3("Scale", &pTransform->sx, 0.1f);

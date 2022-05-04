@@ -8,30 +8,28 @@
 
 namespace Core::Messenger
 {
-	static Message* gMessages;
-	static Message* gQueuedMessages;
+	static Scope<Message[]> gMessages;
+	static Scope<Message[]> gQueuedMessages;
 	static unsigned int gMessageCount;
 	static unsigned int gQueuedMessageCount;
 
 	void init()
 	{
-		gMessages = new Message[MAX_MESSAGE_COUNT];
-		gQueuedMessages = new Message[MAX_MESSAGE_COUNT];
+		gMessages = createScope<Message[]>(MAX_MESSAGE_COUNT);
+		gQueuedMessages = createScope<Message[]>(MAX_MESSAGE_COUNT);
 		gMessageCount = 0;
 		gQueuedMessageCount = 0;
-		memset(gMessages, 0, sizeof(Message) * MAX_MESSAGE_COUNT);
-		memset(gQueuedMessages, 0, sizeof(Message) * MAX_MESSAGE_COUNT);
+		memset(gMessages.get(), 0, sizeof(Message) * MAX_MESSAGE_COUNT);
+		memset(gQueuedMessages.get(), 0, sizeof(Message) * MAX_MESSAGE_COUNT);
 	}
 
 	void shutdown()
 	{
-		delete[] gMessages;
-		delete[] gQueuedMessages;
 	}
 
 	void flushQueued()
 	{
-		memcpy(&gMessages[gMessageCount], gQueuedMessages, sizeof(Message) * gQueuedMessageCount);
+		memcpy(&gMessages[gMessageCount], gQueuedMessages.get(), sizeof(Message) * gQueuedMessageCount);
 		gMessageCount += gQueuedMessageCount;
 		gQueuedMessageCount = 0;
 	}
@@ -46,7 +44,6 @@ namespace Core::Messenger
 
 	void recieveMessage(MessageType type, void* data)
 	{
-		EN_ASSERT(data != nullptr, "Data is null");
 		EN_ASSERT(gMessageCount <= MAX_MESSAGE_COUNT, "Message overflow");
 		Message* result = &gMessages[gMessageCount++];
 
@@ -65,19 +62,39 @@ namespace Core::Messenger
 		memcpy(result, pMessage, sizeof(Message));
 	}
 
-	Request request(RequestType type, unsigned int size, void* data)
+	void queueMessage(MessageType type, void* data)
 	{
-		Request result;
-		result.type = type;
-		memcpy(result.data, data, size);
+		EN_ASSERT(gQueuedMessageCount <= MAX_MESSAGE_COUNT, "Message overflow");
+		Message* result = &gQueuedMessages[gQueuedMessageCount++];
 
-		if (Input::onRequest(&result)) { return result;  }
-		if (Script::onRequest(&result)) { return result; }
-		if (Physics::onRequest(&result)) { return result; }
-		if (ECS::onRequest(&result)) { return result; }
-
-		return result;
+		Message message;
+		message.type = type;
+		if (data != nullptr)
+			memcpy(message.message, data, getMessageData(type).size);
+		memcpy(result, &message, sizeof(Message));
 	}
+
+	bool processLuaMessage(lua_State* L)
+	{
+		bool status = false;
+		Message message;
+		message.type = (MessageType)lua_tointeger(L, 1);
+
+		switch (message.type)
+		{
+		case MessageType::TOGGLE_CURSOR:
+		{
+
+			status = true;
+			break;
+		}
+		}
+
+		Messenger::queueMessage(&message);
+
+		return status;
+	}
+
 
 	Message* queryMessage()
 	{
@@ -95,7 +112,7 @@ namespace Core::Messenger
 
 	Message* getMessages()
 	{
-		return gMessages;
+		return gMessages.get();
 	}
 
 	

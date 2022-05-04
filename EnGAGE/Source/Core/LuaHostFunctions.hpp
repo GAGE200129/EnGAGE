@@ -2,8 +2,8 @@
 
 struct lua_State;
 
-namespace LuaHostFunctions
+namespace Core::LuaHostFunctions
 {
-	void registerAllScriptFunctions(lua_State* L);
-	void registerAllSceneFunctions(lua_State* L);
+	void registerFunctions(lua_State* L);
+	void pushAllGlobals(lua_State* L);
 }

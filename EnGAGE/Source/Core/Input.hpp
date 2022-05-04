@@ -12,7 +12,6 @@ namespace Core::Input
 
 	void init(GLFWwindow* rawWindow);
 	void onMessage(const Message* pMessage);
-	bool onRequest(Request* pRequest);
 
 	void disableCursor();
 	void enableCursor();

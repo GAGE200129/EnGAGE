@@ -24,30 +24,6 @@ namespace Core::ECS
 	static void updateSystems(EntitySignature& entity);
 	static void* constructComponent(unsigned int entity, ComponentType type, const void* extraData);
 
-
-	bool onRequest(Request* pRequest)
-	{
-		switch (pRequest->type)
-		{
-		case RequestType::ENTITY_COMPONENT:
-		{
-			struct Data
-			{
-				unsigned int entityID;
-				ComponentType type;
-			} data;
-
-			memcpy(&data, pRequest->data, sizeof(Data));
-
-
-			void* component = getComponent(data.entityID, data.type);
-			memcpy(pRequest->data, &component, sizeof(void*));
-			return true;
-		}
-		}
-		return false;
-	}
-
 	void init()
 	{
 		gEntityCounter = 0;

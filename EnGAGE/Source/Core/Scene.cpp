@@ -12,7 +12,16 @@ extern "C"
 #include <lauxlib.h>
 #include <lualib.h>
 }
-static bool checkLua(lua_State* L, int r);
+static bool checkLua(lua_State* L, int r)
+{
+	if (r != LUA_OK)
+	{
+		EN_ERROR("Lua error: {}", lua_tostring(L, -1));
+		return false;
+	}
+
+	return true;
+}
 static void writeComponent(std::ofstream& out, const String& entity, Core::ComponentType componentType, Core::ComponentHeader* header);
 
 static bool gSceneSwitch = false;
@@ -59,21 +68,8 @@ void Core::Scene::checkForSceneSwitch()
 		lua_State* L = luaL_newstate();
 		luaL_openlibs(L);
 
-		for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
-		{
-			ComponentData data = getComponentData((ComponentType)i);
-			lua_pushinteger(L, i);
-			lua_setglobal(L, data.name);
-		}
-
-		for (unsigned int i = 0; i < (unsigned int)Physics::CollisionShapeType::COUNT; i++)
-		{
-			const char* name = Physics::getCollisionShapeName((Physics::CollisionShapeType)i);
-			lua_pushinteger(L, i);
-			lua_setglobal(L, name);
-		}
-
-		LuaHostFunctions::registerAllSceneFunctions(L);
+		LuaHostFunctions::pushAllGlobals(L);
+		LuaHostFunctions::registerFunctions(L);
 
 		checkLua(L, luaL_dofile(L, gScenePath.c_str()));
 
@@ -86,18 +82,6 @@ void Core::Scene::checkForSceneSwitch()
 String& Core::Scene::getLoadedSceneName()
 {
 	return gScenePath;
-}
-
-
-static bool checkLua(lua_State* L, int r)
-{
-	if (r != LUA_OK)
-	{
-		EN_ERROR("Lua error: {}", lua_tostring(L, -1));
-		return false;
-	}
-
-	return true;
 }
 
 void writeComponent(std::ofstream& out, const String& entity, Core::ComponentType componentType, Core::ComponentHeader* header)

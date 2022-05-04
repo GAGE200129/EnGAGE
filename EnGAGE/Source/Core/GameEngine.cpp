@@ -15,6 +15,9 @@
 
 namespace Core::GameEngine
 {
+
+	static bool gRunning = true;
+
 	void init(unsigned int width, unsigned int height, unsigned int fullScreenWidth, unsigned int fullScreenHeight, const String& title)
 	{
 		Log::init();
@@ -36,6 +39,7 @@ namespace Core::GameEngine
 		const double secsPerUpdate = 1.0 / (double)TPS;
 		double prevTime = Window::getCurrentTime();
 		double steps = 0.0;
+		double timer = 0.0f;
 		while (!Window::closeRequested()) {
 
 			double currentTime = Window::getCurrentTime();
@@ -48,13 +52,33 @@ namespace Core::GameEngine
 			while (steps > secsPerUpdate)
 			{
 				steps -= secsPerUpdate;
+				
+				if (gRunning)
+				{
+					//Update
+					Thread luaThread(Script::update, float(secsPerUpdate));
+					Thread physicsThread(Physics::update, float(secsPerUpdate));
 
-				//Update
-				Thread luaThread(Script::update, float(secsPerUpdate));
-				Thread physicsThread(Physics::update, float(secsPerUpdate));
+					luaThread.join();
+					physicsThread.join();
+				}
 
-				luaThread.join();
-				physicsThread.join();
+				timer += secsPerUpdate;
+
+				if (timer > 1.0f)
+				{
+#ifdef EN_DEBUG
+					WindowRenamedMessage message;
+					std::stringstream ss;
+					ss << Window::getTitleName() << u8" | DEBUG MODE ! | " << (gRunning ? "Running" : "Paused");
+					String name = ss.str();
+					memcpy(message.name, name.c_str(), name.size());
+					message.name[name.size()] = 0;
+					Messenger::queueMessage(MessageType::WINDOW_RENAMED, &message);
+#endif
+					timer = 0.0f;
+				}
+
 			}
 
 			Window::pollEvents();
@@ -67,12 +91,23 @@ namespace Core::GameEngine
 			Messenger::flushQueued();
 			while (const Message* pMessage = Messenger::queryMessage())
 			{
-				Window::onMessage(pMessage);
-				Script::onMessage(pMessage);
+				Window::onMessage(pMessage);		
 				Editor::onMessage(pMessage);
 				Input::onMessage(pMessage);
 				Renderer::onMessage(pMessage);
 				Physics::onMessage(pMessage);
+
+				if (gRunning)
+					Script::onMessage(pMessage);
+#ifdef EN_DEBUG
+				if (auto keyPressedMessage = Messenger::messageCast<MessageType::KEY_PRESSED, KeyPressedMessage>(pMessage))
+				{
+					if (keyPressedMessage->keyCode == InputCodes::KEY_F6)
+					{
+						gRunning = !gRunning;
+					}
+				}			
+#endif
 			}
 
 			ECS::updateRemovedEntities();
@@ -87,6 +122,7 @@ namespace Core::GameEngine
 	}
 	void clearResources()
 	{
+		Physics::clearAllRigidBodies();
 		ECS::shutdown();
 		Script::shutdown();
 		Resource::shutdown();
