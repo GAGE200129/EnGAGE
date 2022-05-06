@@ -8,6 +8,7 @@
 #include "ECS.hpp"
 #include "Editor.hpp"
 #include "Renderer.hpp"
+#include "DebugRenderer.hpp"
 #include "Script.hpp"
 #include "Physics.hpp"
 #include "Scene.hpp"
@@ -24,11 +25,12 @@ namespace Core::GameEngine
 		Messenger::init();
 		Window::init(width, height, fullScreenWidth, fullScreenHeight, title);
 		Input::init(Window::getRawWindow());
-		Editor::init(Window::getRawWindow());
+		Editor::init(Window::getRawWindow(), width, height);
 
 		ECS::init();
 
 		Renderer::init(width, height);
+		DebugRenderer::init(width, height);
 		Physics::init();
 	}
 
@@ -40,7 +42,8 @@ namespace Core::GameEngine
 		double prevTime = Window::getCurrentTime();
 		double steps = 0.0;
 		double timer = 0.0f;
-		while (!Window::closeRequested()) {
+		while (!Window::closeRequested()) 
+		{
 
 			double currentTime = Window::getCurrentTime();
 			double delta = currentTime - prevTime;
@@ -63,31 +66,16 @@ namespace Core::GameEngine
 					physicsThread.join();
 				}
 
-				timer += secsPerUpdate;
-
-				if (timer > 1.0f)
-				{
-#ifdef EN_DEBUG
-					WindowRenamedMessage message;
-					std::stringstream ss;
-					ss << Window::getTitleName() << u8" | DEBUG MODE ! | " << (gRunning ? "Running" : "Paused");
-					String name = ss.str();
-					memcpy(message.name, name.c_str(), name.size());
-					message.name[name.size()] = 0;
-					Messenger::queueMessage(MessageType::WINDOW_RENAMED, &message);
-#endif
-					timer = 0.0f;
-				}
-
 			}
-
-			Window::pollEvents();
 
 			//Render
 			Renderer::render();
 			Editor::render();
+			DebugRenderer::render();
 			Window::swapBuffers();
 
+			//Process messages
+			Window::pollEvents();
 			Messenger::flushQueued();
 			while (const Message* pMessage = Messenger::queryMessage())
 			{
@@ -95,6 +83,7 @@ namespace Core::GameEngine
 				Editor::onMessage(pMessage);
 				Input::onMessage(pMessage);
 				Renderer::onMessage(pMessage);
+				DebugRenderer::onMessage(pMessage);
 				Physics::onMessage(pMessage);
 
 				if (gRunning)
@@ -105,6 +94,15 @@ namespace Core::GameEngine
 					if (keyPressedMessage->keyCode == InputCodes::KEY_F6)
 					{
 						gRunning = !gRunning;
+
+						WindowRenamedMessage message;
+						std::stringstream ss;
+						ss << Window::getTitleName() << u8" | DEBUG MODE ! | " << (gRunning ? "Running" : "Paused");
+						String name = ss.str();
+						memset(message.name, 0, Messenger::BUFFER_SIZE);
+						memcpy(message.name, name.c_str(), name.size());
+						message.name[name.size()] = 0;
+						Messenger::queueMessage(MessageType::WINDOW_RENAMED, &message);
 					}
 				}			
 #endif
@@ -116,6 +114,7 @@ namespace Core::GameEngine
 		clearResources();
 		Editor::shutdown();
 		Renderer::shutdown();
+		DebugRenderer::shutdown();
 		Physics::shutdown();
 		Window::destroy();
 		Messenger::shutdown();

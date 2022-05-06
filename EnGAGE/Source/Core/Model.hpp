@@ -13,6 +13,7 @@ namespace Core
 	{
 		String name;
 		DynArr<Primitive> primitives;
+		glm::vec3 min, max;
 	};
 
 	struct Texture

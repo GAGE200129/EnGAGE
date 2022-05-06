@@ -13,6 +13,8 @@ namespace Core::Input
 	void init(GLFWwindow* rawWindow);
 	void onMessage(const Message* pMessage);
 
+	const double& getX();
+	const double& getY();
 	void disableCursor();
 	void enableCursor();
 	void toggleCursor();

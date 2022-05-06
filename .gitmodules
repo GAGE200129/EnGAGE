@@ -22,3 +22,6 @@
 [submodule "Libraries/bullet3"]
 	path = Libraries/bullet3
 	url = https://github.com/bulletphysics/bullet3
+[submodule "Libraries/ImGuizmo"]
+	path = Libraries/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo

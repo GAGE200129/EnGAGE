@@ -13,10 +13,12 @@
 namespace Core::Window
 {
 	static GLFWwindow* sWindow = nullptr;
-	static int sFullScreenWidth = 0;
-	static int sFullScreenHeight = 0;
-	static int sWindowedScreenWidth = 0;
-	static int sWindowedScreenHeight = 0;
+	static unsigned int sScreenWidth = 0;
+	static unsigned int sScreenHeight = 0;
+	static unsigned int sFullScreenWidth = 0;
+	static unsigned int sFullScreenHeight = 0;
+	static unsigned int sWindowedScreenWidth = 0;
+	static unsigned int sWindowedScreenHeight = 0;
 	static std::string sTitle = "";
 	static bool sWindowResized = false;
 	static bool gFullScreen = false;
@@ -25,7 +27,8 @@ namespace Core::Window
 	{
 		glfwSetFramebufferSizeCallback(sWindow, [](GLFWwindow* window, int width, int height) {
 			sWindowResized = true;
-
+			sScreenWidth = width;
+			sScreenHeight = height;
 			Message message;
 			int data[] = { width, height };
 			message.type = MessageType::WINDOW_RESIZED;
@@ -34,12 +37,14 @@ namespace Core::Window
 		});
 	}
 
-	void init(int screenWidth, int screenHeight, int fullScreenWidth, int fullScreenHeight, const String& titleName)
+	void init(unsigned int screenWidth, unsigned int screenHeight, unsigned int fullScreenWidth, unsigned int fullScreenHeight, const String& titleName)
 	{
 		sWindowedScreenWidth = screenWidth;
 		sWindowedScreenHeight = screenHeight;
 		sFullScreenWidth = fullScreenWidth;
 		sFullScreenHeight = fullScreenHeight;
+		sScreenWidth = screenWidth;
+		sScreenHeight = screenHeight;
 		sTitle = titleName;
 
 		EN_ASSERT(glfwInit(), "Failed to init glfw !");
@@ -80,11 +85,10 @@ namespace Core::Window
 
 				if (gFullScreen)
 				{
-					Message message;
-					int data[] = { sFullScreenWidth, sFullScreenHeight };
-					message.type = MessageType::WINDOW_RESIZED;
-					memcpy(message.message, data, sizeof(data));
-					Messenger::queueMessage(&message);
+					WindowResizedMessage message;
+					message.width = sFullScreenWidth;
+					message.height = sFullScreenHeight;
+					Messenger::queueMessage(MessageType::WINDOW_RESIZED, &message);
 
 					glfwSetWindowMonitor(sWindow, glfwGetPrimaryMonitor(), 0, 0, sFullScreenWidth, sFullScreenHeight, GLFW_DONT_CARE);
 				}
@@ -123,6 +127,14 @@ namespace Core::Window
 	double getCurrentTime()
 	{
 		return glfwGetTime();
+	}
+	unsigned int getWidth()
+	{
+		return sScreenWidth;
+	}
+	unsigned int getHeight()
+	{
+		return sScreenHeight;
 	}
 	const char* getTitleName()
 	{

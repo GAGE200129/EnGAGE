@@ -15,5 +15,6 @@ namespace Core::Renderer
 	void onMessage(const Message* pMessage);
 	void shutdown();
 	void render();
+	void toggleRenderAABB();
 	Camera& getCamera();
 }

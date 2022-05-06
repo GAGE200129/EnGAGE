@@ -6,9 +6,10 @@ namespace Core
 {
 	class Shader
 	{
-		enum class ShaderType
+		enum class ShaderType : unsigned int
 		{
 			VERTEX,
+			GEOMETRY,
 			FRAGMENT,
 			COUNT
 		};
@@ -19,6 +20,7 @@ namespace Core
 		void cleanup();
 
 		void loadVertexShader(const String& filePath);
+		void loadGeometryShader(const String& filePath);
 		void loadFragmentShader(const String& filePath);
 		void compile();
 		int registerUniform(const String& name);

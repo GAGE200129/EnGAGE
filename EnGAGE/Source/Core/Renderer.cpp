@@ -6,6 +6,7 @@
 #include "Window.hpp"
 #include "Model.hpp"
 #include "Shaders.hpp"
+#include "DebugRenderer.hpp"
 #include <glad/glad.h>
 
 
@@ -30,7 +31,7 @@ namespace Core::Renderer
 	void updateGBuffer(unsigned int width, unsigned int height);
 
 	static Camera gCamera;
-	static int gCurrentWidth, gCurrentHeight;
+	static unsigned int gCurrentWidth, gCurrentHeight;
 	static glm::vec3 gAmbient;
 	static unsigned int gQuadVAO;
 	static unsigned int gQuadVBO;
@@ -44,6 +45,8 @@ namespace Core::Renderer
 	
 	static unsigned int gFBO, gRBO;
 	static unsigned int gPoisitonTex, gNormalTex, gColorTex;
+
+	static bool gRenderAABB = false;
 
 	void init(unsigned int currentWidth, unsigned int currentHeight)
 	{
@@ -173,7 +176,10 @@ namespace Core::Renderer
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glDisable(GL_BLEND);
 	}
-
+	void toggleRenderAABB()
+	{
+		gRenderAABB = !gRenderAABB;
+	}
 
 	Camera& getCamera()
 	{
@@ -297,6 +303,10 @@ namespace Core::Renderer
 		{
 			const Core::Mesh& mesh = model->meshes[node.meshIndex];
 
+			if (gRenderAABB)
+			{
+				DebugRenderer::addBox({ 1, 1, 0 }, mesh.min, mesh.max, accumulatedTransform);
+			}
 			for (const auto& primitive : mesh.primitives)
 			{
 				gBufferShader->uploadMat4x4(modelLoc, accumulatedTransform);

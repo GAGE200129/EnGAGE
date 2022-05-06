@@ -26,6 +26,11 @@ namespace Core
 		loadSource(filePath, ShaderType::VERTEX);
 	}
 
+	void Shader::loadGeometryShader(const String& filePath)
+	{
+		loadSource(filePath, ShaderType::GEOMETRY);
+	}
+
 	void Shader::loadFragmentShader(const String& filePath)
 	{
 		loadSource(filePath, ShaderType::FRAGMENT);
@@ -112,11 +117,15 @@ namespace Core
 		case Core::Shader::ShaderType::VERTEX:
 			return GL_VERTEX_SHADER;
 			break;
+		case Core::Shader::ShaderType::GEOMETRY:
+			return GL_GEOMETRY_SHADER;
+			break;
 		case Core::Shader::ShaderType::FRAGMENT:
 			return GL_FRAGMENT_SHADER;
 			break;
 		}
 		EN_ASSERT(false, "Unknown shader type!");
+		return 0;
 	}
 
 }

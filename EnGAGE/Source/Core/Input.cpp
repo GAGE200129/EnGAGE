@@ -82,6 +82,18 @@ namespace Core::Input
 		}
 	}
 
+	const double& getX()
+	{
+		return sCursorX;
+	}
+
+
+	const double& getY()
+	{
+		return sCursorY;
+	}
+
+
 	void  disableCursor()
 	{
 		glfwSetInputMode(sWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);

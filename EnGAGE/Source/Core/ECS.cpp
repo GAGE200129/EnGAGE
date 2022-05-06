@@ -19,9 +19,9 @@ namespace Core::ECS
 	//System
 	static Map<SystemType, System>  gSystems;
 
-	static EntitySignature& searchEntity(unsigned int id);
-	static void removeComponentInternal(ComponentArray& componentArray, EntitySignature& entity);
-	static void updateSystems(EntitySignature& entity);
+	static EntitySignature* searchEntity(unsigned int id);
+	static void removeComponentInternal(ComponentArray& componentArray, EntitySignature* entity);
+	static void updateSystems(EntitySignature* entity);
 	static void* constructComponent(unsigned int entity, ComponentType type, const void* extraData);
 
 	void init()
@@ -107,7 +107,7 @@ namespace Core::ECS
 	}
 	void removeEntity(unsigned int entity)
 	{
-		auto& entitySignature = searchEntity(entity);
+		auto entitySignature = searchEntity(entity);
 
 		//Update component arrays
 		for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
@@ -115,7 +115,7 @@ namespace Core::ECS
 			removeComponent(entity, (ComponentType)i);
 		}
 		//Clear signature
-		entitySignature.signature = 0;
+		entitySignature->signature = 0;
 
 		//Signal each systems
 		updateSystems(entitySignature);
@@ -123,7 +123,7 @@ namespace Core::ECS
 		//Remove entity	
 		for (unsigned int i = 0; i < gLivingEntities; i++)
 		{
-			if (gEntitiesSignatures[i].id == entitySignature.id)
+			if (gEntitiesSignatures[i].id == entitySignature->id)
 			{
 				if (i == (gLivingEntities - 1))
 				{
@@ -166,7 +166,7 @@ namespace Core::ECS
 
 	void removeComponent(unsigned int entity, ComponentType type)
 	{
-		auto& entitySignature = searchEntity(entity);
+		auto entitySignature = searchEntity(entity);
 	
 		destroyComponent((ComponentHeader*)ECS::getComponent(entity, type), type);
 
@@ -174,7 +174,7 @@ namespace Core::ECS
 		removeComponentInternal(gComponentArrays[type], entitySignature);
 
 		//Update entity's signature
-		UNSET_BIT(entitySignature.signature, (unsigned int)type);
+		UNSET_BIT(entitySignature->signature, (unsigned int)type);
 
 		//Signal each systems
 		updateSystems(entitySignature);
@@ -207,21 +207,22 @@ namespace Core::ECS
 
 	
 
-	EntitySignature& searchEntity(unsigned int id)
+	EntitySignature* searchEntity(unsigned int id)
 	{
 		//Search for entity in entity arr
 		for (unsigned int i = 0; i < gLivingEntities; i++)
 		{
 			if (gEntitiesSignatures[i].id == id)
 			{
-				return gEntitiesSignatures[i];
+				return &gEntitiesSignatures[i];
 				break;
 			}
 		}
 		EN_ASSERT(false, "Entity not found");
+		return nullptr;
 	}
 
-	void removeComponentInternal(ComponentArray& componentArray, EntitySignature& entity)
+	void removeComponentInternal(ComponentArray& componentArray, EntitySignature* entity)
 	{
 		ComponentHeader* header;
 		char* offset;
@@ -230,13 +231,13 @@ namespace Core::ECS
 		{
 			offset = componentArray.data.get() + componentArray.size * i;
 			header = (ComponentHeader*)offset;
-			if (header->entity == entity.id) //Entity id matched, remove current i component
+			if (header->entity == entity->id) //Entity id matched, remove current i component
 			{
 				//End of arr, ignore it and decrease arr count by 1
 				if (i == (componentArray.count - 1))
 				{
 					componentArray.count--;
-					componentArray.entityToIndex.erase(entity.id);
+					componentArray.entityToIndex.erase(entity->id);
 					break;
 				}
 				else //Else copy end of arr to removed slot
@@ -253,25 +254,25 @@ namespace Core::ECS
 		}
 	}
 
-	void updateSystems(EntitySignature& entity)
+	void updateSystems(EntitySignature* entity)
 	{
 		for (auto& pair : gSystems)
 		{
 			System& system = pair.second;
-			if ((system.signature & entity.signature) != system.signature) // If signature doesn't match, loop through all entities and remove them
+			if ((system.signature & entity->signature) != system.signature) // If signature doesn't match, loop through all entities and remove them
 			{
-				system.entities.erase(entity.id);
+				system.entities.erase(entity->id);
 			}
-			else if ((system.signature & entity.signature) == system.signature)// Signature match, add to entity list
+			else if ((system.signature & entity->signature) == system.signature)// Signature match, add to entity list
 			{
-				system.entities.insert(entity.id);
+				system.entities.insert(entity->id);
 			}
 		}
 	}
 
 	static void* constructComponent(unsigned int entity, ComponentType type, const void* extraData)
 	{
-		auto& entitySignature = searchEntity(entity);
+		auto entitySignature = searchEntity(entity);
 
 		//Update component arrays
 		ComponentArray* pComponentArray;
@@ -304,7 +305,7 @@ namespace Core::ECS
 
 
 		//Update entity's signature
-		SET_BIT(entitySignature.signature, (unsigned int)type);
+		SET_BIT(entitySignature->signature, (unsigned int)type);
 
 		//Signal each systems
 		updateSystems(entitySignature);

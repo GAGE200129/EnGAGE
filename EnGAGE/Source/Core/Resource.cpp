@@ -209,6 +209,9 @@ static Core::Mesh parseMesh(const tinygltf::Model& model, const tinygltf::Mesh& 
 {
 	Core::Mesh result;
 	result.name = gltfMesh.name;
+	float max = std::numeric_limits<float>::max();
+	result.min = { max, max, max };
+	result.max = { 0, 0, 0 };
 
 	for (const auto& gltfPrimitive : gltfMesh.primitives)
 	{
@@ -235,6 +238,8 @@ static Core::Mesh parseMesh(const tinygltf::Model& model, const tinygltf::Mesh& 
 			memcpy(&v.x, positionBuffer.data() + positonSize * i, positonSize);
 			memcpy(&v.nX, normalBuffer.data() + normalSize * i, normalSize);
 			memcpy(&v.tU, textureBuffer.data() + texCoordSize * i, texCoordSize);
+			result.min = glm::min(result.min, glm::vec3{v.x, v.y, v.x });
+			result.max = glm::max(result.max, glm::vec3{v.x, v.y, v.x });
 			vertices.push_back(v);
 		}
 

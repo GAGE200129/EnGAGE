@@ -17,6 +17,7 @@ project "EnGAGE"
 		"Libraries/glm",
 		"Libraries/json/single_include",
 		"Libraries/imgui",
+		"Libraries/imguizmo",
 		"Libraries/imgui/backends",
 		"Libraries/lua",
 		"Libraries/bullet3/src",
@@ -28,6 +29,7 @@ project "EnGAGE"
 		"spdlog",
 		"glad",
 		"imgui",
+		"imguizmo",
 		"lua",
 		"bullet3"
 	}

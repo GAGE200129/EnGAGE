@@ -4,19 +4,19 @@
 #include "ECS.hpp"
 #include "Resource.hpp"
 #include "Renderer.hpp"
+#include "DebugRenderer.hpp"
 #include "Script.hpp"
 #include "GameEngine.hpp"
 #include "Scene.hpp"
 #include "Input.hpp"
 #include "Physics.hpp"
 #include "Messenger.hpp"
+#include "Window.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
 #include <imgui_impl_opengl3.h>
 #include <misc/cpp/imgui_stdlib.h>
-
-#include <btBulletDynamicsCommon.h>
 
 static void processGameEngine();
 static void processSceneGraph();
@@ -29,7 +29,7 @@ static void processConsole();
 
 static bool gEnabled = false;
 
-void Core::Editor::init(GLFWwindow* pWindow)
+void Core::Editor::init(GLFWwindow* pWindow, int width, int height)
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -228,7 +228,6 @@ static void processComponent(unsigned int entity, Core::ComponentType type, Core
 		TransformComponent* pTransform = (TransformComponent*)pHeader;
 		RigidBodyComponent* pRigidBody = (RigidBodyComponent * )ECS::getComponent(entity, ComponentType::RIGID_BODY);
 
-		
 		if (ImGui::DragFloat3("Translation", &pTransform->x, 0.1f) && pRigidBody)
 		{
 			pRigidBody->pRigidbody->getWorldTransform().setOrigin(btVector3(pTransform->x, pTransform->y, pTransform->z));
@@ -261,6 +260,8 @@ static void processComponent(unsigned int entity, Core::ComponentType type, Core
 		}
 
 		ImGui::DragFloat3("Scale", &pTransform->sx, 0.1f);
+
+		
 		break;
 	}
 	case ComponentType::MODEL_RENDERER:
@@ -356,6 +357,7 @@ static void processInspector(const Core::ECS::EntitySignature* pEntity)
 
 static void processRenderer()
 {
+	static bool drawAABB = false;
 	ImGui::Begin("Renderer");
 	if (ImGui::TreeNode("Camera"))
 	{
@@ -366,6 +368,12 @@ static void processRenderer()
 		ImGui::DragFloat("far", &Core::Renderer::getCamera().far, 0.1f);
 		ImGui::TreePop();
 	}
+	if (ImGui::Button("Toggle AABB"))
+	{
+		Core::Renderer::toggleRenderAABB();
+	}
+	
+
 	ImGui::End();
 }
 
