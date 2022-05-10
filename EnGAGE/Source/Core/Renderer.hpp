@@ -11,10 +11,9 @@ namespace Core::Renderer
 		float fov, near, far;
 	};
 
-	void init(unsigned int currentWidth, unsigned int currentHeight);
+	void init(UInt32 currentWidth, UInt32 currentHeight);
 	void onMessage(const Message* pMessage);
 	void shutdown();
 	void render();
-	void toggleRenderAABB();
 	Camera& getCamera();
 }

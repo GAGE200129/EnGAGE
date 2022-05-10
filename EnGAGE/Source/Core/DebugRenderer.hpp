@@ -4,11 +4,10 @@
 
 namespace Core::DebugRenderer
 {
-	void init(unsigned int width, unsigned int height);
-	void onMessage(const Message* pMessage);
+	void init();
 	void drawAllAABB();
-	void addLine(const glm::vec3& color, const glm::vec3& begin, const glm::vec3& end);
-	void addBox(const glm::vec3& color, const glm::vec3& min, const glm::vec3& max, const glm::mat4x4& modelTransform);
+	void addLine(const Vec3& color, const Vec3& begin, const Vec3& end);
+	void addBox(const Vec3& color, const Vec3& min, const Vec3& max, const Mat4x4& modelTransform);
 	void render();
 	void shutdown();
 }

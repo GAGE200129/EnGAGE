@@ -268,7 +268,7 @@ namespace Core
 
 		ModelRendererComponent* pModelRenderer = (ModelRendererComponent*)header;
 		pModelRenderer->pModel = Resource::getModel(modelName);
-		strcpy(pModelRenderer->modelPath, modelName);
+		strcpy((char*)pModelRenderer->modelPath, modelName);
 		return 0;
 	}
 	int setRigidBody(lua_State* L)
@@ -315,7 +315,7 @@ namespace Core
 
 		ScriptComponent* sciptComponent = (ScriptComponent*)header;
 		Script::loadFile(sciptComponent->L, scriptPath);
-		strcpy(sciptComponent->scriptPath, scriptPath);
+		strcpy((char*)sciptComponent->scriptPath, scriptPath);
 		return 0;
 	}
 	int updateCamera(lua_State* L)

@@ -14,26 +14,26 @@ namespace Core
 		//Entity 
 		struct EntitySignature
 		{
-			unsigned int id;
-			unsigned int signature : MAX_COMPONENTS;
+			UInt64 id;
+			UInt32 signature : MAX_COMPONENTS;
 		};
 
 
 		void init();
 		void shutdown();
 		void updateRemovedEntities();
-		unsigned int createEntity();
-		void removeEntity(unsigned int entity);
-		void markForRemove(unsigned int entity);
+		UInt64 createEntity();
+		void removeEntity(UInt64 entity);
+		void markForRemove(UInt64 entity);
 		const Arr<EntitySignature, MAX_ENTITIES>& getEntitySignatures();
-		unsigned int getEntityCount();
-		void* addComponent(unsigned int entity, ComponentType type);
-		void removeComponent(unsigned int entity, ComponentType type);
-		void* getComponent(unsigned int entity, ComponentType type);
+		UInt64 getEntityCount();
+		void* addComponent(UInt64 entity, ComponentType type);
+		void removeComponent(UInt64 entity, ComponentType type);
+		void* getComponent(UInt64 entity, ComponentType type);
 
 		System& getSystem(SystemType type);
 
-		unsigned int getComponentArrayMemorySize(ComponentType type);
+		UInt64 getComponentArrayMemorySize(ComponentType type);
 		
 		
 	}

@@ -8,9 +8,9 @@ namespace Core
 }
 namespace Core
 {
-	static constexpr unsigned int MAX_NAME_SIZE = 70u;
+	static constexpr UInt8 MAX_NAME_SIZE = 70u;
 	//Component
-	enum class ComponentType : unsigned int
+	enum class ComponentType : UInt8
 	{
 		NAME,
 		TRANSFORM,
@@ -25,28 +25,28 @@ namespace Core
 	struct ComponentHeader
 	{
 		ComponentType type;
-		unsigned int entity;
+		UInt64 entity;
 	};
 
 	struct ComponentArray
 	{
-		unsigned int count;
-		unsigned int size;
-		Scope<char[]> data;
-		Map<unsigned int, unsigned int> entityToIndex;
+		UInt64 count;
+		UInt64 size;
+		Scope<Byte[]> data;
+		Map<UInt64, UInt64> entityToIndex;
 	};
 
 
 	struct NameComponent
 	{
 		ComponentHeader header;
-		char name[MAX_NAME_SIZE];
+		Byte name[MAX_NAME_SIZE];
 	};
 
 	struct TransformComponent
 	{
 		ComponentHeader header;
-		float x, y, z,
+		F32 x, y, z,
 			rw, rx, ry, rz,
 			sx, sy, sz;
 	};
@@ -54,52 +54,52 @@ namespace Core
 	struct ModelRendererComponent
 	{
 		ComponentHeader header;
-		char modelPath[MAX_NAME_SIZE];
+		Byte modelPath[MAX_NAME_SIZE];
 		const Model* pModel;
 	};
 
 	struct ScriptComponent
 	{
 		ComponentHeader header;
-		char scriptPath[MAX_NAME_SIZE];
+		Byte scriptPath[MAX_NAME_SIZE];
 		lua_State* L;
 	};
 
 	struct RigidBodyComponent
 	{
 		ComponentHeader header;
-		unsigned int collisionShapeType;
+		UInt8 collisionShapeType;
 		btRigidBody* pRigidbody;
 	};
 
 	struct DirectionalLightComponent
 	{
 		ComponentHeader header;
-		glm::vec3 direction;
-		glm::vec3 color;
-		float intensity;
+		Vec3 direction;
+		Vec3 color;
+		F32 intensity;
 	};
 
 	struct PointLightComponent
 	{
 		ComponentHeader header;
-		glm::vec3 color;
-		float intensity;
+		Vec3 color;
+		F32 intensity;
 
-		float constant;
-		float linear;
-		float exponent;
+		F32 constant;
+		F32 linear;
+		F32 exponent;
 	};
 
 	struct ComponentData
 	{
-		const char* name;
-		unsigned int size;
+		CStr name;
+		UInt32 size;
 	};
 
 
 	const ComponentData& getComponentData(ComponentType type);
 	
-	void initComponent(unsigned int entityID, ComponentHeader* pHeader, ComponentType type);
+	void initComponent(UInt64 entityID, ComponentHeader* pHeader, ComponentType type);
 	void destroyComponent(ComponentHeader* pHeader, ComponentType type);
 }

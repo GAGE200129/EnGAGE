@@ -18,6 +18,8 @@ namespace Core
 	template<> MessageData MessageDataEnum<MessageType::PHYSICS_INIT_COLLISION_SHAPE> = {"PHYSICS_INIT_COLLISION_SHAPE", sizeof(PhysicsInitCollisionShapeMessage)};
 	template<> MessageData MessageDataEnum<MessageType::REMOVE_SCRIPT			   > = {"REMOVE_SCRIPT", sizeof(RemoveScriptMessage)};
 	template<> MessageData MessageDataEnum<MessageType::REMOVE_RIGID_BODY		   > = {"REMOVE_RIGID_BODY", sizeof(RemoveRigidBodyMessage)};
+	template<> MessageData MessageDataEnum<MessageType::RENDERER_TOGGLE_AABB		   > = {"RENDERER_TOGGLE_AABB", 0};
+	template<> MessageData MessageDataEnum<MessageType::RENDERER_SET_SCALE		   > = {"RENDERER_SET_SCALE", sizeof(RendererSetScaleMessage)};
 	template<> MessageData MessageDataEnum<MessageType::COUNT> = {"INVALID", 0};
 
 
@@ -37,6 +39,8 @@ namespace Core
 			TO_SWITCH(PHYSICS_INIT_COLLISION_SHAPE);
 			TO_SWITCH(REMOVE_SCRIPT);
 			TO_SWITCH(REMOVE_RIGID_BODY);
+			TO_SWITCH(RENDERER_TOGGLE_AABB);
+			TO_SWITCH(RENDERER_SET_SCALE);
 		}
 		EN_ASSERT(false, "Unknown message type: {}", (unsigned int)type);
 		return MessageDataEnum<MessageType::COUNT>;

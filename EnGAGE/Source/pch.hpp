@@ -46,6 +46,24 @@ extern "C"
 #define EN_ASSERT(condition, ...) condition
 #endif
 
+//Data type name
+
+using UInt8 = uint8_t;
+using UInt16 = uint16_t;
+using UInt32 = uint32_t;
+using UInt64 = uint64_t;
+using Byte = int8_t;
+using Int8 = int8_t;
+using Int16 = int16_t;
+using Int32 = int32_t;
+using Int64 = int64_t;
+using F32 = float;
+using F64 = double;
+using CStr = const char*;
+using Vec3 = glm::vec3;
+using Mat4x4 = glm::mat4x4;
+
+
 using Thread = std::thread;
 
 template<typename T>
@@ -85,6 +103,7 @@ using Ref = std::shared_ptr<T>;
 //Alias for unique_ptr
 template<typename T>
 using Scope = std::unique_ptr<T>;
+
 
 template<typename T, typename... Args>
 Ref<T> createRef(Args&&... args)

@@ -8,8 +8,7 @@ out vec3 FSPosition;
 out vec3 FSNormal;
 out vec2 FSTexCoord;
 
-uniform mat4 uView;
-uniform mat4 uProj;
+uniform mat4 uProjView;
 uniform mat4 uModel;
 
 void main()
@@ -18,5 +17,5 @@ void main()
 	FSPosition = position.xyz;
 	FSNormal = (mat3(uModel) * inNormal).xyz;
 	FSTexCoord = inTexCoord;
-	gl_Position = uProj * uView * position;
+	gl_Position = uProjView * position;
 }

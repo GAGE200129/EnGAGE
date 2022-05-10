@@ -35,7 +35,7 @@ namespace Core
 		return  ComponentDataEnum<ComponentType::COUNT>;
 	}
 	
-	void initComponent(unsigned int entityID, ComponentHeader* pHeader, ComponentType type)
+	void initComponent(UInt64 entityID, ComponentHeader* pHeader, ComponentType type)
 	{
 		switch (type)
 		{

@@ -20,7 +20,7 @@
 
 static void processGameEngine();
 static void processSceneGraph();
-static void processComponent(unsigned int entity, Core::ComponentType type, Core::ComponentHeader* pHeader);
+static void processComponent(UInt64 entity, Core::ComponentType type, Core::ComponentHeader* pHeader);
 static void processInspector(const Core::ECS::EntitySignature* pEntity);
 static void processRenderer();
 static void processResourceBrowser();
@@ -29,7 +29,7 @@ static void processConsole();
 
 static bool gEnabled = false;
 
-void Core::Editor::init(GLFWwindow* pWindow, int width, int height)
+void Core::Editor::init(GLFWwindow* pWindow, UInt32 width, UInt32 height)
 {
 	IMGUI_CHECKVERSION();
 	ImGui::CreateContext();
@@ -139,7 +139,7 @@ static void processSceneGraph()
 		{
 			char buf[50];
 			const auto& e = ECS::getEntitySignatures()[i];
-			sprintf(buf, "Entity %d", e.id);
+			sprintf(buf, "Entity %llu", e.id);
 			if (ImGui::Selectable(buf, selectedEntity == &e))
 			{
 				selectedEntity = &e;
@@ -165,7 +165,7 @@ static void processSceneGraph()
 }
 
 
-static void processComponent(unsigned int entity, Core::ComponentType type, Core::ComponentHeader* pHeader)
+static void processComponent(UInt64 entity, Core::ComponentType type, Core::ComponentHeader* pHeader)
 {
 	using namespace Core;
 	using namespace Core::Physics;
@@ -174,7 +174,7 @@ static void processComponent(unsigned int entity, Core::ComponentType type, Core
 	case ComponentType::NAME:
 	{
 		NameComponent* pName = (NameComponent*)pHeader;
-		ImGui::InputText("Name", pName->name, MAX_NAME_SIZE);
+		ImGui::InputText("Name", (char*)pName->name, MAX_NAME_SIZE);
 		break;
 	}
 	case ComponentType::RIGID_BODY:
@@ -275,7 +275,7 @@ static void processComponent(unsigned int entity, Core::ComponentType type, Core
 			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("RESOURCE_MODEL"))
 			{
 				pModel->pModel = Core::Resource::getModel((const char*)payload->Data);
-				strcpy(pModel->modelPath, (const char*)payload->Data);
+				strcpy((char*)pModel->modelPath, (const char*)payload->Data);
 			}
 			ImGui::EndDragDropTarget();
 		}
@@ -358,6 +358,7 @@ static void processInspector(const Core::ECS::EntitySignature* pEntity)
 static void processRenderer()
 {
 	static bool drawAABB = false;
+	static float renderScale = 1.0f;
 	ImGui::Begin("Renderer");
 	if (ImGui::TreeNode("Camera"))
 	{
@@ -370,7 +371,12 @@ static void processRenderer()
 	}
 	if (ImGui::Button("Toggle AABB"))
 	{
-		Core::Renderer::toggleRenderAABB();
+		Core::Messenger::recieveMessage(Core::MessageType::RENDERER_TOGGLE_AABB);
+	}
+	if (ImGui::SliderFloat("Render Scale", &renderScale, 0.0f, 2.0f))
+	{
+		Core::RendererSetScaleMessage message{ renderScale } ;
+		Core::Messenger::recieveMessage(Core::MessageType::RENDERER_SET_SCALE, &message);
 	}
 	
 

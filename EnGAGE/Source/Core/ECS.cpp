@@ -8,10 +8,10 @@
 namespace Core::ECS
 {
 	//Entity
-	static unsigned int gEntityCounter;
-	static unsigned int gLivingEntities;
+	static UInt64 gEntityCounter;
+	static UInt64 gLivingEntities;
 	static Arr<EntitySignature, MAX_ENTITIES> gEntitiesSignatures;
-	static Set<unsigned int> gEntitiesMarkedForRemoval;
+	static Set<UInt64> gEntitiesMarkedForRemoval;
 
 	//Component
 	static Map<ComponentType, ComponentArray> gComponentArrays;
@@ -19,10 +19,10 @@ namespace Core::ECS
 	//System
 	static Map<SystemType, System>  gSystems;
 
-	static EntitySignature* searchEntity(unsigned int id);
+	static EntitySignature* searchEntity(UInt64 id);
 	static void removeComponentInternal(ComponentArray& componentArray, EntitySignature* entity);
 	static void updateSystems(EntitySignature* entity);
-	static void* constructComponent(unsigned int entity, ComponentType type, const void* extraData);
+	static void* constructComponent(UInt64 entity, ComponentType type, const void* extraData);
 
 	void init()
 	{
@@ -30,39 +30,39 @@ namespace Core::ECS
 		gLivingEntities = 0;
 
 		//Init components
-		for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
+		for (UInt32 i = 0; i < (UInt32)ComponentType::COUNT; i++)
 		{
 			ComponentData data = getComponentData((ComponentType)i);
 			ComponentArray arr;
 			arr.size = data.size;
 			arr.count = 0;
-			arr.data = createScope<char[]>(MAX_COMPONENT_ARRAY_BUFFER_SIZE);
+			arr.data = createScope<Byte[]>(MAX_COMPONENT_ARRAY_BUFFER_SIZE);
 			gComponentArrays.insert({ (ComponentType)i, std::move(arr) });
 		}
 
 		//Renderer system
-		unsigned int signature = 0;
-		SET_BIT(signature, (unsigned int)ComponentType::TRANSFORM);
-		SET_BIT(signature, (unsigned int)ComponentType::MODEL_RENDERER);
+		UInt32 signature = 0;
+		SET_BIT(signature, (UInt32)ComponentType::TRANSFORM);
+		SET_BIT(signature, (UInt32)ComponentType::MODEL_RENDERER);
 		gSystems[SystemType::RENDERER].signature = signature;
 
 
 		signature = 0;
-		SET_BIT(signature, (unsigned int)ComponentType::SCRIPT);
+		SET_BIT(signature, (UInt32)ComponentType::SCRIPT);
 		gSystems[SystemType::SCRIPTING].signature = signature;
 
 		signature = 0;
-		SET_BIT(signature, (unsigned int)ComponentType::RIGID_BODY);
-		SET_BIT(signature, (unsigned int)ComponentType::TRANSFORM);
+		SET_BIT(signature, (UInt32)ComponentType::RIGID_BODY);
+		SET_BIT(signature, (UInt32)ComponentType::TRANSFORM);
 		gSystems[SystemType::PHYSICS].signature = signature;
 
 		signature = 0;
-		SET_BIT(signature, (unsigned int)ComponentType::DIRECTIONAL_LIGHT);
+		SET_BIT(signature, (UInt32)ComponentType::DIRECTIONAL_LIGHT);
 		gSystems[SystemType::DIRECTIONAL].signature = signature;
 
 		signature = 0;
-		SET_BIT(signature, (unsigned int)ComponentType::POINT_LIGHT);
-		SET_BIT(signature, (unsigned int)ComponentType::TRANSFORM);
+		SET_BIT(signature, (UInt32)ComponentType::POINT_LIGHT);
+		SET_BIT(signature, (UInt32)ComponentType::TRANSFORM);
 		gSystems[SystemType::POINT].signature = signature;
 
 	}
@@ -93,7 +93,7 @@ namespace Core::ECS
 		gEntitiesMarkedForRemoval.clear();
 	}
 
-	unsigned int createEntity()
+	UInt64 createEntity()
 	{
 		EN_ASSERT(gLivingEntities < MAX_ENTITIES, "MAX_ENTITIES = {}", MAX_ENTITIES);
 
@@ -105,12 +105,12 @@ namespace Core::ECS
 		gLivingEntities++;
 		return entity.id;
 	}
-	void removeEntity(unsigned int entity)
+	void removeEntity(UInt64 entity)
 	{
 		auto entitySignature = searchEntity(entity);
 
 		//Update component arrays
-		for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
+		for (UInt32 i = 0; i < (UInt32)ComponentType::COUNT; i++)
 		{
 			removeComponent(entity, (ComponentType)i);
 		}
@@ -121,7 +121,7 @@ namespace Core::ECS
 		updateSystems(entitySignature);
 
 		//Remove entity	
-		for (unsigned int i = 0; i < gLivingEntities; i++)
+		for (UInt64 i = 0; i < gLivingEntities; i++)
 		{
 			if (gEntitiesSignatures[i].id == entitySignature->id)
 			{
@@ -140,7 +140,7 @@ namespace Core::ECS
 		}
 	}
 
-	void markForRemove(unsigned int entity)
+	void markForRemove(UInt64 entity)
 	{
 		gEntitiesMarkedForRemoval.insert(entity);
 	}
@@ -150,21 +150,21 @@ namespace Core::ECS
 		return gEntitiesSignatures;
 	}
 
-	unsigned int getEntityCount()
+	UInt64 getEntityCount()
 	{
 		return gLivingEntities;
 	}
 
-	void* addComponent(unsigned int entity, ComponentType type)
+	void* addComponent(UInt64 entity, ComponentType type)
 	{
 		ComponentData data = getComponentData(type);
-		Scope<char[]> extraData = createScope<char[]>(data.size);
+		Scope<Byte[]> extraData = createScope<Byte[]>(data.size);
 		initComponent(entity, (ComponentHeader*)extraData.get(), type);
 
 		return constructComponent(entity, type, extraData.get());
 	}
 
-	void removeComponent(unsigned int entity, ComponentType type)
+	void removeComponent(UInt64 entity, ComponentType type)
 	{
 		auto entitySignature = searchEntity(entity);
 	
@@ -174,13 +174,13 @@ namespace Core::ECS
 		removeComponentInternal(gComponentArrays[type], entitySignature);
 
 		//Update entity's signature
-		UNSET_BIT(entitySignature->signature, (unsigned int)type);
+		UNSET_BIT(entitySignature->signature, (UInt32)type);
 
 		//Signal each systems
 		updateSystems(entitySignature);
 	}
 
-	void* getComponent(unsigned int entity, ComponentType type)
+	void* getComponent(UInt64 entity, ComponentType type)
 	{
 		ComponentArray& componentArray = gComponentArrays[type];
 
@@ -199,7 +199,7 @@ namespace Core::ECS
 		return gSystems[type];
 	}
 
-	unsigned int getComponentArrayMemorySize(ComponentType type)
+	UInt64 getComponentArrayMemorySize(ComponentType type)
 	{
 		ComponentArray* arr = &gComponentArrays[type];
 		return arr->size * arr->count;
@@ -207,10 +207,10 @@ namespace Core::ECS
 
 	
 
-	EntitySignature* searchEntity(unsigned int id)
+	EntitySignature* searchEntity(UInt64 id)
 	{
 		//Search for entity in entity arr
-		for (unsigned int i = 0; i < gLivingEntities; i++)
+		for (UInt64 i = 0; i < gLivingEntities; i++)
 		{
 			if (gEntitiesSignatures[i].id == id)
 			{
@@ -225,9 +225,9 @@ namespace Core::ECS
 	void removeComponentInternal(ComponentArray& componentArray, EntitySignature* entity)
 	{
 		ComponentHeader* header;
-		char* offset;
-		char* end;
-		for (unsigned int i = 0; i < componentArray.count; i++)
+		Byte* offset;
+		Byte* end;
+		for (UInt32 i = 0; i < componentArray.count; i++)
 		{
 			offset = componentArray.data.get() + componentArray.size * i;
 			header = (ComponentHeader*)offset;
@@ -246,7 +246,7 @@ namespace Core::ECS
 					memcpy(offset, end, componentArray.size);
 					componentArray.count--;
 
-					unsigned int entityOfRemovedIndex = ((ComponentHeader*)end)->entity;
+					UInt64 entityOfRemovedIndex = ((ComponentHeader*)end)->entity;
 					componentArray.entityToIndex[entityOfRemovedIndex] = i;
 					break;
 				}
@@ -270,7 +270,7 @@ namespace Core::ECS
 		}
 	}
 
-	static void* constructComponent(unsigned int entity, ComponentType type, const void* extraData)
+	static void* constructComponent(UInt64 entity, ComponentType type, const void* extraData)
 	{
 		auto entitySignature = searchEntity(entity);
 
@@ -281,9 +281,9 @@ namespace Core::ECS
 		pComponentArray = &gComponentArrays[type];
 
 		//Search array to check if this entity already has that component type
-		for (unsigned int i = 0; i < pComponentArray->count; i++)
+		for (UInt32 i = 0; i < pComponentArray->count; i++)
 		{
-			char* offset = pComponentArray->data.get() + pComponentArray->size * i;
+			Byte* offset = pComponentArray->data.get() + pComponentArray->size * i;
 			header = (ComponentHeader*)offset;
 			if (header->entity == entity)
 			{
@@ -294,7 +294,7 @@ namespace Core::ECS
 		ComponentData componentData = getComponentData(type);
 		EN_ASSERT((pComponentArray->count * pComponentArray->size + componentData.size) < MAX_COMPONENT_ARRAY_BUFFER_SIZE, "Component array is full");
 		//Copy data to end of array
-		char* lastMemLoc = pComponentArray->data.get() + pComponentArray->count * pComponentArray->size;
+		Byte* lastMemLoc = pComponentArray->data.get() + pComponentArray->count * pComponentArray->size;
 		memcpy(lastMemLoc, extraData, pComponentArray->size);
 		header = (ComponentHeader*)(lastMemLoc); //extract header
 		header->entity = entity; // now this component has this entity as parent
@@ -305,7 +305,7 @@ namespace Core::ECS
 
 
 		//Update entity's signature
-		SET_BIT(entitySignature->signature, (unsigned int)type);
+		SET_BIT(entitySignature->signature, (UInt32)type);
 
 		//Signal each systems
 		updateSystems(entitySignature);

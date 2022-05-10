@@ -30,7 +30,7 @@ namespace Core::GameEngine
 		ECS::init();
 
 		Renderer::init(width, height);
-		DebugRenderer::init(width, height);
+		DebugRenderer::init();
 		Physics::init();
 	}
 
@@ -83,7 +83,6 @@ namespace Core::GameEngine
 				Editor::onMessage(pMessage);
 				Input::onMessage(pMessage);
 				Renderer::onMessage(pMessage);
-				DebugRenderer::onMessage(pMessage);
 				Physics::onMessage(pMessage);
 
 				if (gRunning)

@@ -19,6 +19,8 @@ namespace Core
 		PHYSICS_INIT_COLLISION_SHAPE,
 		REMOVE_SCRIPT,
 		REMOVE_RIGID_BODY,
+		RENDERER_TOGGLE_AABB,
+		RENDERER_SET_SCALE,
 		COUNT
 	};
 
@@ -31,7 +33,7 @@ namespace Core
 	struct Message
 	{
 		MessageType type;
-		unsigned char message[Messenger::BUFFER_SIZE];
+		Byte message[Messenger::BUFFER_SIZE];
 	};
 
 	struct KeyPressedMessage
@@ -88,6 +90,11 @@ namespace Core
 	struct WindowRenamedMessage
 	{
 		char name[Messenger::BUFFER_SIZE];
+	};
+
+	struct RendererSetScaleMessage
+	{
+		float scale;
 	};
 	const MessageData& getMessageData(MessageType type);
 }

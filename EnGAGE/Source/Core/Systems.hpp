@@ -16,7 +16,7 @@ namespace Core
 	struct System
 	{
 		unsigned int signature : ECS::MAX_COMPONENTS;
-		Set<unsigned int> entities;
+		Set<UInt64> entities;
 	};
 
 }

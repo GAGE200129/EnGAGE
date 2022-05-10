@@ -7,68 +7,59 @@
 #include "Model.hpp"
 #include "Shaders.hpp"
 #include "DebugRenderer.hpp"
+#include "Math.hpp"
 #include <glad/glad.h>
 
 
 namespace Core::Renderer
 {
-	struct Plane
-	{
-		glm::vec3 normal;
-		float distance;
-	};
-	struct Frustum
-	{
-		Plane top, bottom, right, left, far, near;
-	};
-
-	void buildProjViewMatrix(const Camera& camera, unsigned int width, unsigned int height, glm::mat4x4& outProjMat, glm::mat4x4& outViewMat);
 	void processNode(const Model* model, const Node& node, glm::mat4x4 accumulatedTransform);
 
 	void initQuad();
 	void initShaders();
-	void initGBuffer(unsigned int currentWidth, unsigned int currentHeight);
-	void updateGBuffer(unsigned int width, unsigned int height);
+	void initGBuffer(UInt32 inWidth, UInt32 inHeight, F32 scale);
+	void updateGBuffer(UInt32 inWidth, UInt32 inHeight, F32 scale);
 
 	static Camera gCamera;
-	static unsigned int gCurrentWidth, gCurrentHeight;
-	static glm::vec3 gAmbient;
-	static unsigned int gQuadVAO;
-	static unsigned int gQuadVBO;
+	static Vec3 gAmbient = { 0.1f, 0.1f, 0.1f };
+	static UInt32 gQuadVAO;
+	static UInt32 gQuadVBO;
 
 	static Scope<Shader> gBufferShader;
-	static int projLoc, viewLoc, modelLoc;
+	static Int32 gProjViewLoc, gModelLoc;
 
 	static Scope<AmbientShader> gAmbientShader;
 	static Scope<DirectionalShader> gDirectionalShader;
 	static Scope<PointShader> gPointShader;
 	
-	static unsigned int gFBO, gRBO;
-	static unsigned int gPoisitonTex, gNormalTex, gColorTex;
+	static UInt32 gFBO, gRBO;
+	static UInt32 gPoisitonTex, gNormalTex, gColorTex;
 
 	static bool gRenderAABB = false;
+	static F32 gRenderScale = 1.0f;
 
-	void init(unsigned int currentWidth, unsigned int currentHeight)
-	{
-		gAmbient = { 0.1f, 0.1f, 0.1f };
-		gCurrentWidth = currentWidth;
-		gCurrentHeight = currentHeight;
-		
+	void init(UInt32 currentWidth, UInt32 currentHeight)
+	{	
 		initShaders();
-		initGBuffer(currentWidth, currentHeight);
+		initGBuffer(currentWidth, currentHeight, gRenderScale);
 		initQuad();	
 	}
 	void onMessage(const Message* pMessage)
 	{
-		if (pMessage->type == MessageType::WINDOW_RESIZED)
+		if (auto setScale = Messenger::messageCast<MessageType::RENDERER_SET_SCALE, RendererSetScaleMessage>(pMessage))
 		{
-			const int* data = reinterpret_cast<const int*>(pMessage->message);
-			int width = data[0];
-			int height = data[1];
-
-			gCurrentWidth = width;
-			gCurrentHeight = height;
-			updateGBuffer(width, height);
+			gRenderScale = setScale->scale;
+			if (gRenderScale < 0.0f) gRenderScale = 0.0f;
+			else if (gRenderScale > 2.0f) gRenderScale = 2.0f;
+			updateGBuffer(Window::getWidth(), Window::getHeight(), gRenderScale);
+		}
+		else if (auto windowResized = Messenger::messageCast<MessageType::WINDOW_RESIZED, WindowResizedMessage>(pMessage))
+		{
+			updateGBuffer(windowResized->width, windowResized->height, gRenderScale);
+		}
+		else if (pMessage->type == MessageType::RENDERER_TOGGLE_AABB)
+		{
+			gRenderAABB = !gRenderAABB;
 		}
 	}
 
@@ -89,20 +80,18 @@ namespace Core::Renderer
 
 	void render()
 	{
-		static glm::mat4x4 gProj;
-		static glm::mat4x4 gView;
 
 		glBindFramebuffer(GL_FRAMEBUFFER, gFBO);
 		glEnable(GL_DEPTH_TEST);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		glViewport(0, 0, gCurrentWidth, gCurrentHeight);
-		buildProjViewMatrix(gCamera, gCurrentWidth, gCurrentHeight, gProj, gView);
+		glViewport(0, 0, Window::getWidth() * gRenderScale, Window::getHeight() * gRenderScale);
+		
+		Mat4x4 gProjView = Math::calculateProjectionView();
 		gBufferShader->bind();
-		gBufferShader->uploadMat4x4(projLoc, gProj);
-		gBufferShader->uploadMat4x4(viewLoc, gView);
+		gBufferShader->uploadMat4x4(gProjViewLoc, gProjView);
 
 		System& system = ECS::getSystem(SystemType::RENDERER);
-		for (unsigned int e : system.entities)
+		for (auto e : system.entities)
 		{
 			TransformComponent* pTransform = (TransformComponent*)ECS::getComponent(e, ComponentType::TRANSFORM);
 			ModelRendererComponent* pModelComp = (ModelRendererComponent*)ECS::getComponent(e, ComponentType::MODEL_RENDERER);
@@ -120,7 +109,7 @@ namespace Core::Renderer
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClear(GL_COLOR_BUFFER_BIT);
-		glViewport(0, 0, gCurrentWidth, gCurrentHeight);
+		glViewport(0, 0, Window::getWidth(), Window::getHeight());
 		
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, gPoisitonTex);
@@ -143,7 +132,7 @@ namespace Core::Renderer
 
 		//Directional
 		System& directionalSystem = ECS::getSystem(SystemType::DIRECTIONAL);
-		for (unsigned int e : directionalSystem.entities)
+		for (auto e : directionalSystem.entities)
 		{
 			DirectionalLightComponent* pLight = (DirectionalLightComponent*)ECS::getComponent(e, ComponentType::DIRECTIONAL_LIGHT);
 			gDirectionalShader->bind();
@@ -154,7 +143,7 @@ namespace Core::Renderer
 
 		//Point
 		System& pointSystem = ECS::getSystem(SystemType::POINT);
-		for (unsigned int e : pointSystem.entities)
+		for (auto e : pointSystem.entities)
 		{
 			PointLightComponent* pLight = (PointLightComponent*)ECS::getComponent(e, ComponentType::POINT_LIGHT);
 			TransformComponent* pTransform = (TransformComponent*)ECS::getComponent(e, ComponentType::TRANSFORM);
@@ -176,19 +165,16 @@ namespace Core::Renderer
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glDisable(GL_BLEND);
 	}
-	void toggleRenderAABB()
-	{
-		gRenderAABB = !gRenderAABB;
-	}
-
 	Camera& getCamera()
 	{
 		return gCamera;
 	}
 
 
-	static void updateGBuffer(unsigned int width, unsigned int height)
+	static void updateGBuffer(UInt32 inWidth, UInt32 inHeight, F32 scale)
 	{
+		UInt32 width = inWidth * scale;
+		UInt32 height = inHeight * scale;
 		glBindFramebuffer(GL_FRAMEBUFFER, gFBO);
 		glBindTexture(GL_TEXTURE_2D, gPoisitonTex);
 		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
@@ -251,14 +237,14 @@ namespace Core::Renderer
 
 	}
 
-	static void initGBuffer(unsigned int currentWidth, unsigned int currentHeight)
+	static void initGBuffer(UInt32 inWidth, UInt32 inHeight, F32 scale)
 	{
 		glGenFramebuffers(1, &gFBO);
 		glGenRenderbuffers(1, &gRBO);
 		glGenTextures(1, &gPoisitonTex);
 		glGenTextures(1, &gNormalTex);
 		glGenTextures(1, &gColorTex);
-		updateGBuffer(currentWidth, currentHeight);
+		updateGBuffer(inWidth, inHeight, scale);
 	}
 
 	static void initShaders()
@@ -268,29 +254,14 @@ namespace Core::Renderer
 		gBufferShader->loadFragmentShader("Resources/Shaders/GBuffer_FS.glsl");
 		gBufferShader->compile();
 
-		projLoc = gBufferShader->registerUniform("uProj");
-		viewLoc = gBufferShader->registerUniform("uView");
-		modelLoc = gBufferShader->registerUniform("uModel");
+		gProjViewLoc = gBufferShader->registerUniform("uProjView");
+		gModelLoc = gBufferShader->registerUniform("uModel");
 
 		gAmbientShader = createScope<Core::AmbientShader>();
 		gDirectionalShader = createScope<Core::DirectionalShader>();
 		gPointShader = createScope<Core::PointShader>();
 	}
 
-	static void buildProjViewMatrix(const Camera& camera, unsigned int width, unsigned int height, glm::mat4x4& outProjMat, glm::mat4x4& outViewMat)
-	{
-		outViewMat = glm::rotate(glm::mat4(1.0f), -glm::radians(camera.pitch), { 1, 0, 0 });
-		outViewMat = glm::rotate(outViewMat, -glm::radians(camera.yaw), { 0, 1, 0 });
-		outViewMat = glm::translate(outViewMat, { -camera.x, -camera.y, -camera.z });
-
-		if (height == 0.0f)
-		{
-			return;
-		}
-		float aspectRatio = (float)width / (float)height;
-
-		outProjMat = glm::perspective(glm::radians(camera.fov), aspectRatio, camera.near, camera.far);
-	}
 
 	static void processNode(const Model* model, const Node& node, glm::mat4x4 accumulatedTransform)
 	{
@@ -309,7 +280,7 @@ namespace Core::Renderer
 			}
 			for (const auto& primitive : mesh.primitives)
 			{
-				gBufferShader->uploadMat4x4(modelLoc, accumulatedTransform);
+				gBufferShader->uploadMat4x4(gModelLoc, accumulatedTransform);
 				glBindVertexArray(primitive.vao);
 				glDrawElements(GL_TRIANGLES, primitive.vertexCoumt, primitive.eboDataType, nullptr);
 			}

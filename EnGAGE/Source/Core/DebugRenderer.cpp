@@ -1,8 +1,7 @@
 #include "pch.hpp"
 #include "DebugRenderer.hpp"
 #include "Shader.hpp"
-#include "Renderer.hpp"
-#include "Window.hpp"
+#include "Math.hpp"
 #include "ECS.hpp"
 
 #include <glad/glad.h>
@@ -12,9 +11,9 @@ namespace Core::DebugRenderer
 	class BoxShader : public Shader
 	{
 	private:
-		int mModelViewProjLoc;
-		int mColorLoc;
-		int mMinLoc, mMaxLoc;
+		Int32 mModelViewProjLoc;
+		Int32 mColorLoc;
+		Int32 mMinLoc, mMaxLoc;
 	public:
 		BoxShader()
 		{
@@ -28,18 +27,18 @@ namespace Core::DebugRenderer
 			mMinLoc = registerUniform("uMin");
 			mMaxLoc = registerUniform("uMax");
 		}
-		void uploadBox(const glm::vec3& min, const glm::vec3& max)
+		void uploadBox(const Vec3& min, const Vec3& max)
 		{
 			uploadVec3(mMinLoc, min);
 			uploadVec3(mMaxLoc, max);
 		}
 
-		void uploadColor(const glm::vec3& v)
+		void uploadColor(const Vec3& v)
 		{
 			uploadVec3(mColorLoc, v);
 		}
 
-		void uploadMVP(const glm::mat4x4& mat)
+		void uploadMVP(const Mat4x4& mat)
 		{
 			uploadMat4x4(mModelViewProjLoc, mat);
 		}
@@ -47,9 +46,9 @@ namespace Core::DebugRenderer
 	class LineShader : public Shader
 	{
 	private:
-		int mModelViewProjLoc;
-		int mColorLoc;
-		int mBeginLoc, mEndLoc;
+		Int32 mModelViewProjLoc;
+		Int32 mColorLoc;
+		Int32 mBeginLoc, mEndLoc;
 	public:
 		LineShader()
 		{
@@ -64,18 +63,18 @@ namespace Core::DebugRenderer
 			mEndLoc = registerUniform("uEnd");
 		}
 
-		void uploadLine(const glm::vec3& begin, const glm::vec3& end)
+		void uploadLine(const Vec3& begin, const Vec3& end)
 		{
 			uploadVec3(mBeginLoc, begin);
 			uploadVec3(mEndLoc, end);
 		}
 
-		void uploadColor(const glm::vec3& v)
+		void uploadColor(const Vec3& v)
 		{
 			uploadVec3(mColorLoc, v);
 		}
 
-		void uploadMVP(const glm::mat4x4& mat)
+		void uploadMVP(const Mat4x4& mat)
 		{
 			uploadMat4x4(mModelViewProjLoc, mat);
 		}
@@ -83,25 +82,21 @@ namespace Core::DebugRenderer
 
 	struct Line
 	{
-		glm::vec3 color, begin, end;
+		Vec3 color, begin, end;
 	};
 	struct Box
 	{
-		glm::vec3 color, min, max;
-		glm::mat4x4 modelTransform;
+		Vec3 color, min, max;
+		Mat4x4 modelTransform;
 	};
-	static unsigned int gScreenWidth, gScreenHeight;
-	static unsigned int gVAO, gVBO;
+	static UInt32 gVAO, gVBO;
 	static DynArr<Line> gLines;
 	static DynArr<Box> gBoxes;
 	static Scope<LineShader> gLineShader;
 	static Scope<BoxShader> gBoxShader;
 
-	void init(unsigned int width, unsigned int height)
+	void init()
 	{
-		gScreenWidth = width;
-		gScreenHeight = height;
-
 		float data[] = { 0, 0, 0 };
 
 		glGenVertexArrays(1, &gVAO);
@@ -119,40 +114,23 @@ namespace Core::DebugRenderer
 		gLineShader = createScope<LineShader>();
 		gBoxShader = createScope<BoxShader>();
 	}
-	void onMessage(const Message* pMessage)
-	{
-		if (auto windowResized = Messenger::messageCast<MessageType::WINDOW_RESIZED, WindowResizedMessage>(pMessage))
-		{
-			gScreenWidth = windowResized->width;
-			gScreenHeight = windowResized->height;
-		}
-	}
-	void addLine(const glm::vec3& color, const glm::vec3& begin, const glm::vec3& end)
+
+	void addLine(const Vec3& color, const Vec3& begin, const Vec3& end)
 	{
 		gLines.push_back({ color, begin, end });
 	}
 
-	void addBox(const glm::vec3& color, const glm::vec3& min, const glm::vec3& max, const glm::mat4x4& modelTransform)
+	void addBox(const Vec3& color, const Vec3& min, const Vec3& max, const Mat4x4& modelTransform)
 	{
 		gBoxes.push_back({ color, min, max , modelTransform });
 	}
 
 	void render()
 	{
-		if (gScreenHeight == 0) return;
-		const auto& camera = Renderer::getCamera();
-		const float aspect = (float)gScreenWidth / (float)gScreenHeight;
-
-		glm::mat4x4 proj = glm::perspective(glm::radians(camera.fov), aspect, camera.near, camera.far);
-
-		glm::mat4x4 view = glm::rotate(glm::mat4(1.0f), -glm::radians(camera.pitch), { 1, 0, 0 });
-		view = glm::rotate(view, -glm::radians(camera.yaw), { 0, 1, 0 });
-		view = glm::translate(view, { -camera.x, -camera.y, -camera.z });
-
-
+		Mat4x4 projView = Math::calculateProjectionView();
 		glBindVertexArray(gVAO);
 		gLineShader->bind();
-		gLineShader->uploadMVP(proj * view);	
+		gLineShader->uploadMVP(projView);
 		for (const auto& line : gLines)
 		{
 			gLineShader->uploadColor(line.color);
@@ -163,7 +141,7 @@ namespace Core::DebugRenderer
 		gBoxShader->bind();
 		for (const auto& box : gBoxes)
 		{
-			gBoxShader->uploadMVP(proj * view * box.modelTransform);
+			gBoxShader->uploadMVP(projView * box.modelTransform);
 			gBoxShader->uploadColor(box.color);
 			gBoxShader->uploadBox(box.min, box.max);
 			glDrawArrays(GL_POINTS, 0, 1);

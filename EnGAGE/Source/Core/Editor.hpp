@@ -3,13 +3,11 @@
 #include "Messenger.hpp"
 
 struct GLFWwindow;
-namespace Core
+namespace Core::Editor
 {
-	namespace Editor
-	{
-		void init(GLFWwindow* pWindow, int width, int height);
-		void shutdown();
-		void onMessage(const Message* pMessage);
-		void render();
-	}
+
+	void init(GLFWwindow* pWindow, UInt32 width, UInt32 height);
+	void shutdown();
+	void onMessage(const Message* pMessage);
+	void render();
 }
