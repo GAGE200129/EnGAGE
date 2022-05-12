@@ -5,7 +5,7 @@
 #include "Resource.hpp"
 #include "Renderer.hpp"
 #include "DebugRenderer.hpp"
-#include "Script.hpp"
+#include "Scripting.hpp"
 #include "GameEngine.hpp"
 #include "Scene.hpp"
 #include "Input.hpp"
@@ -20,7 +20,6 @@
 
 static void processGameEngine();
 static void processSceneGraph();
-static void processComponent(UInt64 entity, Core::ComponentType type, Core::ComponentHeader* pHeader);
 static void processInspector(const Core::ECS::EntitySignature* pEntity);
 static void processRenderer();
 static void processResourceBrowser();
@@ -104,7 +103,7 @@ static void processGameEngine()
 			unsigned int currentArrMemSize = ECS::getComponentArrayMemorySize((ComponentType)i);
 			unsigned int totalArrMemSize = ECS::MAX_COMPONENT_ARRAY_BUFFER_SIZE;
 			sprintf(buf, "%d/%d bytes", currentArrMemSize, totalArrMemSize);
-			ComponentData data = getComponentData((ComponentType)i);
+			ComponentHint data = getComponentHint((ComponentType)i);
 			ImGui::Text(data.name);
 			ImGui::ProgressBar((float)currentArrMemSize / (float)totalArrMemSize, ImVec2(0.0f, 0.0f), buf);
 			ImGui::Separator();
@@ -165,151 +164,6 @@ static void processSceneGraph()
 }
 
 
-static void processComponent(UInt64 entity, Core::ComponentType type, Core::ComponentHeader* pHeader)
-{
-	using namespace Core;
-	using namespace Core::Physics;
-	switch (type)
-	{
-	case ComponentType::NAME:
-	{
-		NameComponent* pName = (NameComponent*)pHeader;
-		ImGui::InputText("Name", (char*)pName->name, MAX_NAME_SIZE);
-		break;
-	}
-	case ComponentType::RIGID_BODY:
-	{
-		RigidBodyComponent* pComponent = (RigidBodyComponent*)pHeader;
-		btRigidBody* pRigidBody = pComponent->pRigidbody;
-
-		if (pComponent->collisionShapeType != (unsigned int)CollisionShapeType::EMPTY)
-		{
-			float mass = pRigidBody->getMass();
-			if (ImGui::DragFloat("Mass", &mass, 0.1f, 0.0f, 500.0f))
-			{
-				btVector3 inertia;
-				pRigidBody->getCollisionShape()->calculateLocalInertia(mass, inertia);
-				pRigidBody->setMassProps(mass, inertia);
-				pRigidBody->updateInertiaTensor();
-				pRigidBody->activate();
-
-				Core::PhysicsUpdateRigidBodyMessage message;
-				message.body = pRigidBody;
-				Core::Messenger::recieveMessage(Core::MessageType::PHYSICS_UPDATE_RIGID_BODY, &message);
-			}
-
-			btVector3 btVel = pRigidBody->getLinearVelocity();
-			float vel[] = { btVel.x(), btVel.y(), btVel.z() };
-			if (ImGui::DragFloat3("Velocity", vel, 0.1f))
-			{
-				pRigidBody->setLinearVelocity(btVector3(vel[0], vel[1], vel[2]));
-				pRigidBody->activate();
-			}
-		}
-		const char* currentColliderName = getCollisionShapeName((CollisionShapeType)pComponent->collisionShapeType);
-		if (ImGui::BeginCombo("Collision shape type", currentColliderName))
-		{
-			for (unsigned int i = 0; i < (unsigned int)CollisionShapeType::COUNT; i++)
-			{
-				const char* colliderName = getCollisionShapeName((CollisionShapeType)i);
-				if (ImGui::Selectable(colliderName))
-				{
-					pComponent->collisionShapeType = i;
-					initCollisionShapeRuntime(pRigidBody, (CollisionShapeType)i);
-				}
-			}
-			ImGui::EndCombo();
-		}
-
-		break;
-	}
-	case ComponentType::TRANSFORM:
-	{
-		TransformComponent* pTransform = (TransformComponent*)pHeader;
-		RigidBodyComponent* pRigidBody = (RigidBodyComponent * )ECS::getComponent(entity, ComponentType::RIGID_BODY);
-
-		if (ImGui::DragFloat3("Translation", &pTransform->x, 0.1f) && pRigidBody)
-		{
-			pRigidBody->pRigidbody->getWorldTransform().setOrigin(btVector3(pTransform->x, pTransform->y, pTransform->z));
-			Core::PhysicsUpdateRigidBodyMessage message;
-			message.body = pRigidBody->pRigidbody;
-			Core::Messenger::recieveMessage(Core::MessageType::PHYSICS_UPDATE_RIGID_BODY, &message);
-		}
-		if (ImGui::DragFloat4("Rotation", &pTransform->rw, 0.1f))
-		{
-			float lengthSquared = pTransform->rw * pTransform->rw +
-				pTransform->rx * pTransform->rx +
-				pTransform->ry * pTransform->ry +
-				pTransform->rz * pTransform->rz;
-			if (lengthSquared != 0.0f)
-			{
-				float length = glm::sqrt(lengthSquared);
-				pTransform->rw /= length;
-				pTransform->rx /= length;
-				pTransform->ry /= length;
-				pTransform->rz /= length;
-			}
-
-			if (pRigidBody)
-			{
-				pRigidBody->pRigidbody->getWorldTransform().setRotation(btQuaternion(pTransform->rx, pTransform->ry, pTransform->rz, pTransform->rw));
-				Core::PhysicsUpdateRigidBodyMessage message;
-				message.body = pRigidBody->pRigidbody;
-				Core::Messenger::recieveMessage(Core::MessageType::PHYSICS_UPDATE_RIGID_BODY, &message);
-			}
-		}
-
-		ImGui::DragFloat3("Scale", &pTransform->sx, 0.1f);
-
-		
-		break;
-	}
-	case ComponentType::MODEL_RENDERER:
-	{
-		ModelRendererComponent* pModel = (ModelRendererComponent*)pHeader;
-
-		ImGui::Text("Model: %p", pModel->pModel);
-
-		if (ImGui::BeginDragDropTarget())
-		{
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("RESOURCE_MODEL"))
-			{
-				pModel->pModel = Core::Resource::getModel((const char*)payload->Data);
-				strcpy((char*)pModel->modelPath, (const char*)payload->Data);
-			}
-			ImGui::EndDragDropTarget();
-		}
-		break;
-	}
-	case ComponentType::SCRIPT:
-	{
-		ScriptComponent* pScript = (ScriptComponent*)pHeader;
-
-		ImGui::Text("Script: %p", pScript->L);
-
-		if (ImGui::BeginDragDropTarget())
-		{
-			if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("RESOURCE_SCRIPT"))
-			{
-				Core::Script::loadFile(pScript->L, String((char*)payload->Data));
-			}
-			ImGui::EndDragDropTarget();
-		}
-		break;
-	}
-	case ComponentType::DIRECTIONAL_LIGHT:
-	{
-		DirectionalLightComponent* pLight = (DirectionalLightComponent*)pHeader;
-		ImGui::DragFloat3("Direction", &pLight->direction.x, 0.1f, -1, 1);
-		ImGui::DragFloat3("Color", &pLight->color.x, 0.1f, 0, 1);
-		ImGui::DragFloat("Intensity", &pLight->intensity, 0.1f, 0.0f, 1.0f);
-		break;
-	}
-
-	};
-
-}
-
 static void processInspector(const Core::ECS::EntitySignature* pEntity)
 {
 	using namespace Core::ECS;
@@ -324,7 +178,7 @@ static void processInspector(const Core::ECS::EntitySignature* pEntity)
 			ComponentHeader* pHeader = (ComponentHeader*)getComponent(pEntity->id, (ComponentType)i);
 			if (pHeader)
 			{
-				processComponent(pEntity->id, (ComponentType)i, pHeader);
+				pHeader->OnImGui(pHeader);
 
 				ImGui::PushID(i);
 				if (ImGui::Button("Remove"))
@@ -343,7 +197,7 @@ static void processInspector(const Core::ECS::EntitySignature* pEntity)
 		{
 			for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
 			{
-				ComponentData data = getComponentData((ComponentType)i);
+				ComponentHint data = getComponentHint((ComponentType)i);
 				if (ImGui::Selectable(data.name))
 				{
 					ECS::addComponent(pEntity->id, (ComponentType)i);
@@ -369,9 +223,9 @@ static void processRenderer()
 		ImGui::DragFloat("far", &Core::Renderer::getCamera().far, 0.1f);
 		ImGui::TreePop();
 	}
-	if (ImGui::Button("Toggle AABB"))
+	if (ImGui::Button("Toggle culling sphere"))
 	{
-		Core::Messenger::recieveMessage(Core::MessageType::RENDERER_TOGGLE_AABB);
+		Core::Messenger::recieveMessage(Core::MessageType::RENDERER_TOGGLE_CULLING_SPHERE);
 	}
 	if (ImGui::SliderFloat("Render Scale", &renderScale, 0.0f, 2.0f))
 	{

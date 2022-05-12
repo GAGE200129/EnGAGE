@@ -8,12 +8,16 @@
 #include "Shaders.hpp"
 #include "DebugRenderer.hpp"
 #include "Math.hpp"
+#include "Components/Transform.hpp"
+#include "Components/ModelRenderer.hpp"
+#include "Components/DirectionalLight.hpp"
+#include "Components/PointLight.hpp"
 #include <glad/glad.h>
 
 
 namespace Core::Renderer
 {
-	void processNode(const Model* model, const Node& node, glm::mat4x4 accumulatedTransform);
+	void processNode(const Math::Frustum& frustum, const Model* model, const Node& node, glm::mat4x4 accumulatedTransform);
 
 	void initQuad();
 	void initShaders();
@@ -35,7 +39,7 @@ namespace Core::Renderer
 	static UInt32 gFBO, gRBO;
 	static UInt32 gPoisitonTex, gNormalTex, gColorTex;
 
-	static bool gRenderAABB = false;
+	static bool gRenderCullingSphere = false;
 	static F32 gRenderScale = 1.0f;
 
 	void init(UInt32 currentWidth, UInt32 currentHeight)
@@ -57,9 +61,9 @@ namespace Core::Renderer
 		{
 			updateGBuffer(windowResized->width, windowResized->height, gRenderScale);
 		}
-		else if (pMessage->type == MessageType::RENDERER_TOGGLE_AABB)
+		else if (pMessage->type == MessageType::RENDERER_TOGGLE_CULLING_SPHERE)
 		{
-			gRenderAABB = !gRenderAABB;
+			gRenderCullingSphere = !gRenderCullingSphere;
 		}
 	}
 
@@ -89,12 +93,14 @@ namespace Core::Renderer
 		Mat4x4 gProjView = Math::calculateProjectionView();
 		gBufferShader->bind();
 		gBufferShader->uploadMat4x4(gProjViewLoc, gProjView);
+		Math::Frustum frustum = Math::createFrustum();
 
+		//Render all to Geometry buffer
 		System& system = ECS::getSystem(SystemType::RENDERER);
 		for (auto e : system.entities)
 		{
-			TransformComponent* pTransform = (TransformComponent*)ECS::getComponent(e, ComponentType::TRANSFORM);
-			ModelRendererComponent* pModelComp = (ModelRendererComponent*)ECS::getComponent(e, ComponentType::MODEL_RENDERER);
+			Transform::Component* pTransform = (Transform::Component*)ECS::getComponent(e, ComponentType::TRANSFORM);
+			ModelRenderer::Component* pModelComp = (ModelRenderer::Component*)ECS::getComponent(e, ComponentType::MODEL_RENDERER);
 			if (pModelComp->pModel)
 			{
 				const Model* pModel = pModelComp->pModel;
@@ -103,7 +109,7 @@ namespace Core::Renderer
 				modelMat *= glm::toMat4(glm::quat{ pTransform->rw, pTransform->rx, pTransform->ry, pTransform->rz });
 				modelMat = glm::scale(modelMat, { pTransform->sx, pTransform->sy, pTransform->sz });
 
-				processNode(pModel, pModel->nodes[pModel->rootNodeIndex], modelMat);
+				processNode(frustum, pModel, pModel->nodes[pModel->rootNodeIndex], modelMat);
 			}
 		}
 
@@ -130,23 +136,23 @@ namespace Core::Renderer
 		gAmbientShader->uploadAmbient(gAmbient);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		//Directional
+		//Directional pass
 		System& directionalSystem = ECS::getSystem(SystemType::DIRECTIONAL);
 		for (auto e : directionalSystem.entities)
 		{
-			DirectionalLightComponent* pLight = (DirectionalLightComponent*)ECS::getComponent(e, ComponentType::DIRECTIONAL_LIGHT);
+			DirectionalLight::Component* pLight = (DirectionalLight::Component*)ECS::getComponent(e, ComponentType::DIRECTIONAL_LIGHT);
 			gDirectionalShader->bind();
 			gDirectionalShader->uploadParams(pLight->direction, pLight->color, pLight->intensity, { gCamera.x, gCamera.y, gCamera.z });
 			
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}
 
-		//Point
+		//Point pass
 		System& pointSystem = ECS::getSystem(SystemType::POINT);
 		for (auto e : pointSystem.entities)
 		{
-			PointLightComponent* pLight = (PointLightComponent*)ECS::getComponent(e, ComponentType::POINT_LIGHT);
-			TransformComponent* pTransform = (TransformComponent*)ECS::getComponent(e, ComponentType::TRANSFORM);
+			PointLight::Component* pLight = (PointLight::Component*)ECS::getComponent(e, ComponentType::POINT_LIGHT);
+			Transform::Component* pTransform = (Transform::Component*)ECS::getComponent(e, ComponentType::TRANSFORM);
 		
 			gPointShader->bind();
 			gPointShader->uploadParams(pLight->color, 
@@ -263,7 +269,7 @@ namespace Core::Renderer
 	}
 
 
-	static void processNode(const Model* model, const Node& node, glm::mat4x4 accumulatedTransform)
+	static void processNode(const Math::Frustum& frustum, const Model* model, const Node& node, glm::mat4x4 accumulatedTransform)
 	{
 		accumulatedTransform = glm::translate(accumulatedTransform, node.position);
 		accumulatedTransform *= glm::toMat4(node.rotation);
@@ -274,20 +280,52 @@ namespace Core::Renderer
 		{
 			const Core::Mesh& mesh = model->meshes[node.meshIndex];
 
-			if (gRenderAABB)
+			
+			auto isOnFrustum = [](const Math::Frustum& frustum, const glm::vec3& point, const float radius) -> bool
 			{
-				DebugRenderer::addBox({ 1, 1, 0 }, mesh.min, mesh.max, accumulatedTransform);
+				auto isOnOrForwardPlan = [&point, &radius](const Vec4& plan) -> bool
+				{
+					const float distanceToPoint = glm::dot(Vec3(plan), point) + plan.w + radius;
+					return (distanceToPoint > 0);
+				};
+				return (isOnOrForwardPlan(frustum.leftFace) &&
+					isOnOrForwardPlan(frustum.rightFace) &&
+					isOnOrForwardPlan(frustum.farFace) &&
+					isOnOrForwardPlan(frustum.nearFace) &&
+					isOnOrForwardPlan(frustum.topFace) &&
+					isOnOrForwardPlan(frustum.bottomFace));
+			};
+
+			Vec3 position;
+			position.x = accumulatedTransform[3][0];
+			position.y = accumulatedTransform[3][1];
+			position.z = accumulatedTransform[3][2];
+
+			Vec3 scale;
+			scale.x = glm::length(Vec3(accumulatedTransform[0]));
+			scale.y = glm::length(Vec3(accumulatedTransform[1]));
+			scale.z = glm::length(Vec3(accumulatedTransform[2]));
+			float scaleFactor = glm::max(scale.z, glm::max(scale.x, scale.y));
+
+			if (gRenderCullingSphere)
+			{
+				DebugRenderer::addSphere({ 1, 1, 0 }, mesh.boundingSphereRadius * scaleFactor, position);
 			}
-			for (const auto& primitive : mesh.primitives)
+
+			//Frustum culling
+			if (isOnFrustum(frustum, position, mesh.boundingSphereRadius * scaleFactor))
 			{
-				gBufferShader->uploadMat4x4(gModelLoc, accumulatedTransform);
-				glBindVertexArray(primitive.vao);
-				glDrawElements(GL_TRIANGLES, primitive.vertexCoumt, primitive.eboDataType, nullptr);
+				for (const auto& primitive : mesh.primitives)
+				{
+					gBufferShader->uploadMat4x4(gModelLoc, accumulatedTransform);
+					glBindVertexArray(primitive.vao);
+					glDrawElements(GL_TRIANGLES, primitive.vertexCoumt, primitive.eboDataType, nullptr);
+				}
 			}
 		}
 		for (const auto& child : node.children)
 		{
-			processNode(model, model->nodes[child], accumulatedTransform);
+			processNode(frustum, model, model->nodes[child], accumulatedTransform);
 		}
 	}
 }

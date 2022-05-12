@@ -5,11 +5,17 @@
 #include "InputCodes.hpp"
 #include "Renderer.hpp"
 #include "Resource.hpp"
-#include "Script.hpp"
+#include "Scripting.hpp"
 #include "Scene.hpp"
 #include "Messenger.hpp"
 #include "Physics.hpp"
 #include "Input.hpp"
+#include "Components/RigidBody.hpp"
+#include "Components/Transform.hpp"
+#include "Components/ModelRenderer.hpp"
+#include "Components/Script.hpp"
+#include "Components/DirectionalLight.hpp"
+#include "Components/PointLight.hpp"
 
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 
@@ -49,6 +55,33 @@ namespace Core
 		EN_ASSERT(type == expectedType, "In file: {}, calling lua's host function: {}, line: {}, Invalid argument {}, expected: {}, got: {}", fileName, functionName, line, index, expectedArgumentType, argumentType);
 	}
 
+	int setPointLight(lua_State* L)
+	{
+		CHECK_NUM_ARGS(L, 8);
+		CHECK_ARG(L, 1, LUA_TLIGHTUSERDATA);
+		CHECK_ARG(L, 2, LUA_TNUMBER);
+		CHECK_ARG(L, 3, LUA_TNUMBER);
+		CHECK_ARG(L, 4, LUA_TNUMBER);
+		CHECK_ARG(L, 5, LUA_TNUMBER);
+		CHECK_ARG(L, 6, LUA_TNUMBER);
+		CHECK_ARG(L, 7, LUA_TNUMBER);
+		CHECK_ARG(L, 8, LUA_TNUMBER);
+
+		ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
+		EN_ASSERT(header->type == ComponentType::POINT_LIGHT, "Invalid component type");
+		PointLight::Component* component = (PointLight::Component*)header;
+		component->color.x = (float)lua_tonumber(L, 2);
+		component->color.y = (float)lua_tonumber(L, 3);
+		component->color.z = (float)lua_tonumber(L, 4);
+		component->intensity = (float)lua_tonumber(L, 5);
+
+		component->constant = (float)lua_tonumber(L, 5);
+		component->linear = (float)lua_tonumber(L, 6);
+		component->exponent = (float)lua_tonumber(L, 7);
+
+
+		return 0;
+	}
 
 	int setDirectionalLight(lua_State* L)
 	{
@@ -64,7 +97,7 @@ namespace Core
 
 		ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
 		EN_ASSERT(header->type == ComponentType::DIRECTIONAL_LIGHT, "Invalid component type");
-		DirectionalLightComponent* component = (DirectionalLightComponent*)header;
+		DirectionalLight::Component* component = (DirectionalLight::Component*)header;
 		component->direction.x = (float)lua_tonumber(L, 2);
 		component->direction.y = (float)lua_tonumber(L, 3);
 		component->direction.z = (float)lua_tonumber(L, 4);
@@ -209,7 +242,7 @@ namespace Core
 
 		ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
 		EN_ASSERT(header->type == ComponentType::TRANSFORM, "Invalid component type");
-		TransformComponent* transform = (TransformComponent*)header;
+		Transform::Component* transform = (Transform::Component*)header;
 		transform->x = (float)lua_tonumber(L, 2);
 		transform->y = (float)lua_tonumber(L, 3);
 		transform->z = (float)lua_tonumber(L, 4);
@@ -227,7 +260,7 @@ namespace Core
 
 		ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
 		EN_ASSERT(header->type == ComponentType::TRANSFORM, "Invalid component type");
-		TransformComponent* transform = (TransformComponent*)header;
+		Transform::Component* transform = (Transform::Component*)header;
 		transform->rw = (float)lua_tonumber(L, 2);
 		transform->rx = (float)lua_tonumber(L, 3);
 		transform->ry = (float)lua_tonumber(L, 4);
@@ -245,7 +278,7 @@ namespace Core
 
 		ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
 		EN_ASSERT(header->type == ComponentType::TRANSFORM, "Invalid component type");
-		TransformComponent* transform = (TransformComponent*)header;
+		Transform::Component* transform = (Transform::Component*)header;
 		transform->sx = (float)lua_tonumber(L, 2);
 		transform->sy = (float)lua_tonumber(L, 3);
 		transform->sz = (float)lua_tonumber(L, 4);
@@ -266,7 +299,7 @@ namespace Core
 		const char* modelName = lua_tostring(L, 2);
 		EN_ASSERT(modelName != nullptr, "modelName is null");
 
-		ModelRendererComponent* pModelRenderer = (ModelRendererComponent*)header;
+		ModelRenderer::Component* pModelRenderer = (ModelRenderer::Component*)header;
 		pModelRenderer->pModel = Resource::getModel(modelName);
 		strcpy((char*)pModelRenderer->modelPath, modelName);
 		return 0;
@@ -280,7 +313,7 @@ namespace Core
 		ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
 		EN_ASSERT(header->type == ComponentType::RIGID_BODY, "Invalid component type");
 
-		RigidBodyComponent* pComponent = (RigidBodyComponent*)header;
+		RigidBody::Component* pComponent = (RigidBody::Component*)header;
 		btRigidBody* pRigidBody = (btRigidBody*)pComponent->pRigidbody;
 		pRigidBody->setMassProps((float)lua_tonumber(L, 2), pRigidBody->getLocalInertia());
 		pComponent->collisionShapeType = (unsigned int)lua_tointeger(L, 3);
@@ -313,8 +346,8 @@ namespace Core
 		const char* scriptPath = lua_tostring(L, 2);
 		EN_ASSERT(scriptPath != nullptr, "scriptPath is null");
 
-		ScriptComponent* sciptComponent = (ScriptComponent*)header;
-		Script::loadFile(sciptComponent->L, scriptPath);
+		Script::Component* sciptComponent = (Script::Component*)header;
+		Scripting::loadFile(sciptComponent->L, scriptPath);
 		strcpy((char*)sciptComponent->scriptPath, scriptPath);
 		return 0;
 	}
@@ -368,6 +401,7 @@ namespace Core
 			lua_register(L, "_setScale", setScale);
 			lua_register(L, "_setModel", setModel);
 			lua_register(L, "_setDirectionalLight", setDirectionalLight);
+			lua_register(L, "_setPointLight", setPointLight);
 			lua_register(L, "_setRigidBody", setRigidBody);
 			lua_register(L, "_getComponent", getComponent);
 			lua_register(L, "_toggleCursor", toggleCursor);
@@ -389,7 +423,7 @@ namespace Core
 			//Add globals
 			for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
 			{
-				const ComponentData& data = getComponentData((ComponentType)i);
+				ComponentHint data = getComponentHint((ComponentType)i);
 				lua_pushinteger(L, i);
 				lua_setglobal(L, data.name);
 			}

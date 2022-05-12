@@ -3,17 +3,18 @@
 #include "ECS.hpp"
 
 #include "ECS.hpp"
+#include "Components/Transform.hpp"
 
 class CustomMotionState : public btMotionState
 {
-	Core::TransformComponent* mGraphicsTransform;
+	Core::Transform::Component* mGraphicsTransform;
 public:
-	CustomMotionState(Core::TransformComponent* graphicsTransform):
+	CustomMotionState(Core::Transform::Component* graphicsTransform):
 		mGraphicsTransform(graphicsTransform)
 	{
 	}
 
-	inline void setGraphicsTransform(Core::TransformComponent* graphicsTransform)
+	inline void setGraphicsTransform(Core::Transform::Component* graphicsTransform)
 	{
 		mGraphicsTransform = graphicsTransform;
 	}
@@ -217,7 +218,7 @@ namespace Core::Physics
 
 	btRigidBody* newRigidBody(unsigned int entityID)
 	{
-		TransformComponent* component = (TransformComponent*)ECS::getComponent(entityID, ComponentType::TRANSFORM);
+		Transform::Component* component = (Transform::Component*)ECS::getComponent(entityID, ComponentType::TRANSFORM);
 
 		btMotionState* pMotionState = new CustomMotionState(component);
 		btEmptyShape* pShape = new btEmptyShape();

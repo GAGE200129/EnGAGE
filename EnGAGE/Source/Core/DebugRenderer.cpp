@@ -8,6 +8,41 @@
 
 namespace Core::DebugRenderer
 {
+
+	class SphereShader : public Shader
+	{
+	private:
+		Int32 mModelViewProjLoc;
+		Int32 mColorLoc;
+		Int32 mRadiusLoc;
+	public:
+		SphereShader()
+		{
+			loadVertexShader("Resources/Shaders/Debug_VS.glsl");
+			loadGeometryShader("Resources/Shaders/Sphere_GS.glsl");
+			loadFragmentShader("Resources/Shaders/Debug_FS.glsl");
+			compile();
+
+			mModelViewProjLoc = registerUniform("uMVP");
+			mColorLoc = registerUniform("uColor");
+			mRadiusLoc = registerUniform("uRadius");
+		}
+		void uploadSphere(float radius)
+		{
+			uploadFloat(mRadiusLoc, radius);
+		}
+
+		void uploadColor(const Vec3& v)
+		{
+			uploadVec3(mColorLoc, v);
+		}
+
+		void uploadMVP(const Mat4x4& mat)
+		{
+			uploadMat4x4(mModelViewProjLoc, mat);
+		}
+	};
+
 	class BoxShader : public Shader
 	{
 	private:
@@ -89,11 +124,19 @@ namespace Core::DebugRenderer
 		Vec3 color, min, max;
 		Mat4x4 modelTransform;
 	};
+	struct Sphere
+	{
+		Vec3 color;
+		float radius;
+		Vec3 position;
+	};
 	static UInt32 gVAO, gVBO;
 	static DynArr<Line> gLines;
 	static DynArr<Box> gBoxes;
+	static DynArr<Sphere> gSpheres;
 	static Scope<LineShader> gLineShader;
 	static Scope<BoxShader> gBoxShader;
+	static Scope<SphereShader> gSphereShader;
 
 	void init()
 	{
@@ -113,6 +156,7 @@ namespace Core::DebugRenderer
 
 		gLineShader = createScope<LineShader>();
 		gBoxShader = createScope<BoxShader>();
+		gSphereShader = createScope<SphereShader>();
 	}
 
 	void addLine(const Vec3& color, const Vec3& begin, const Vec3& end)
@@ -123,6 +167,10 @@ namespace Core::DebugRenderer
 	void addBox(const Vec3& color, const Vec3& min, const Vec3& max, const Mat4x4& modelTransform)
 	{
 		gBoxes.push_back({ color, min, max , modelTransform });
+	}
+	void addSphere(const Vec3& color, float radius, const Vec3& position)
+	{
+		gSpheres.push_back({ color, radius, position });
 	}
 
 	void render()
@@ -141,15 +189,27 @@ namespace Core::DebugRenderer
 		gBoxShader->bind();
 		for (const auto& box : gBoxes)
 		{
-			gBoxShader->uploadMVP(projView * box.modelTransform);
+			Mat4x4 boxPosition = glm::translate(Mat4x4(1.0f), {box.modelTransform[3][0], box.modelTransform[3][1], box.modelTransform[3][2]});
+			Vec3 scale = { glm::length(Vec3(box.modelTransform[0])), glm::length(Vec3(box.modelTransform[1])), glm::length(Vec3(box.modelTransform[2])) };
+			gBoxShader->uploadMVP(projView * boxPosition * glm::scale(Mat4x4(1.0f), scale));
 			gBoxShader->uploadColor(box.color);
 			gBoxShader->uploadBox(box.min, box.max);
+			glDrawArrays(GL_POINTS, 0, 1);
+		}
+
+		gSphereShader->bind();
+		for (const auto& sphere : gSpheres)
+		{
+			gSphereShader->uploadMVP(projView * glm::translate(Mat4x4(1.0f), sphere.position));
+			gSphereShader->uploadColor(sphere.color);
+			gSphereShader->uploadSphere(sphere.radius);
 			glDrawArrays(GL_POINTS, 0, 1);
 		}
 		glBindVertexArray(0);
 
 		gLines.clear();
 		gBoxes.clear();
+		gSpheres.clear();
 	}
 
 	void shutdown()
@@ -158,6 +218,7 @@ namespace Core::DebugRenderer
 		glDeleteBuffers(1, &gVBO);
 		gLineShader->cleanup();
 		gBoxShader->cleanup();
+		gSphereShader->cleanup();
 	}
 
 }

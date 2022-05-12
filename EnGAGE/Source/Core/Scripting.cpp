@@ -1,9 +1,10 @@
 #include "pch.hpp"
-#include "Script.hpp"
+#include "Scripting.hpp"
 
 #include "ECS.hpp"
 #include "LuaHostFunctions.hpp"
 #include "Messenger.hpp"
+#include "Components/Script.hpp"
 
 extern "C"
 {
@@ -18,21 +19,18 @@ static bool checkLua(lua_State* L, int r);
 static DynArr<lua_State*> gScripts;
 
 
-void Core::Script::onMessage(const Message* pMessage)
+void Core::Scripting::onMessage(const Message* pMessage)
 {
-	switch (pMessage->type)
+
+	if (auto message = Messenger::messageCast<MessageType::REMOVE_SCRIPT, RemoveScriptMessage>(pMessage))
 	{
-	case MessageType::REMOVE_SCRIPT:
-	{
-		removeScript((lua_State*)pMessage->message);
-		break;
-	}
+		removeScript(message->L);
 	}
 
 	System& system = ECS::getSystem(SystemType::SCRIPTING);
 	for (unsigned int entity : system.entities)
 	{
-		ScriptComponent* pScriptComponent = (ScriptComponent*)ECS::getComponent(entity, ComponentType::SCRIPT);
+		Script::Component* pScriptComponent = (Script::Component*)ECS::getComponent(entity, ComponentType::SCRIPT);
 		lua_State* L = pScriptComponent->L;
 		lua_getglobal(L, "onMessage");
 		if (lua_isfunction(L, -1))
@@ -47,12 +45,12 @@ void Core::Script::onMessage(const Message* pMessage)
 	}
 }
 
-void Core::Script::update(float delta)
+void Core::Scripting::update(float delta)
 {
 	System& system = ECS::getSystem(SystemType::SCRIPTING);
 	for (unsigned int entity : system.entities)
 	{
-		ScriptComponent* pScriptComponent = (ScriptComponent*)ECS::getComponent(entity, ComponentType::SCRIPT);
+		Script::Component* pScriptComponent = (Script::Component*)ECS::getComponent(entity, ComponentType::SCRIPT);
 		lua_State* L = pScriptComponent->L;
 
 		lua_getglobal(L, "update");
@@ -66,7 +64,7 @@ void Core::Script::update(float delta)
 	}
 }
 
-void Core::Script::shutdown()
+void Core::Scripting::shutdown()
 {
 	for (const auto& L : gScripts)
 	{
@@ -76,7 +74,7 @@ void Core::Script::shutdown()
 	gScripts.clear();
 }
 
-lua_State* Core::Script::newScript()
+lua_State* Core::Scripting::newScript()
 {
 	lua_State* L = luaL_newstate();
 	luaL_openlibs(L);
@@ -88,7 +86,7 @@ lua_State* Core::Script::newScript()
 	return L;
 }
 
-void Core::Script::loadFile(lua_State* L, const String path)
+void Core::Scripting::loadFile(lua_State* L, const String path)
 {
 	EN_ASSERT(L != nullptr, "L ptr is null");
 
@@ -100,7 +98,7 @@ void Core::Script::loadFile(lua_State* L, const String path)
 	checkLua(L, luaL_dofile(L, path.c_str()));
 }
 
-void Core::Script::removeScript(lua_State* L)
+void Core::Scripting::removeScript(lua_State* L)
 {
 	gScripts.erase(std::remove(gScripts.begin(), gScripts.end(), L), gScripts.end());
 	lua_close(L);
@@ -116,5 +114,4 @@ static bool checkLua(lua_State* L, int r)
 
 	return true;
 }
-
 

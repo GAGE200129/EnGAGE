@@ -5,6 +5,11 @@
 #include "ECS.hpp"
 #include "GameEngine.hpp"
 #include "Physics.hpp"
+#include "Components/RigidBody.hpp"
+#include "Components/Transform.hpp"
+#include "Components/ModelRenderer.hpp"
+#include "Components/Script.hpp"
+#include "Components/DirectionalLight.hpp"
 
 extern "C"
 {
@@ -87,55 +92,7 @@ String& Core::Scene::getLoadedSceneName()
 void writeComponent(std::ofstream& out, const String& entity, Core::ComponentType componentType, Core::ComponentHeader* header)
 {
 	using namespace Core;
-	auto data = getComponentData(componentType);
-	switch (componentType)
-	{
-	case ComponentType::NAME:
-		break;
-	case ComponentType::TRANSFORM:	
-	{
-		String componentName = entity + "_transform";
-		out << componentName << " = _addComponent(" << entity << ", " << data.name << ")\n";
-		TransformComponent* component = (TransformComponent*)header;
-		out << "_setPosition(" << componentName << ", " << component->x << ", " << component->y << ", " << component->z << ")\n";
-		out << "_setRotation(" << componentName << ", " << component->rw << ", " << component->rx << ", " << component->ry << ", " << component->rz << ")\n";
-		out << "_setScale(" << componentName << ", " << component->sx << ", " << component->sy << ", " << component->sz << ")\n";
-		break;
-	}
-	case ComponentType::MODEL_RENDERER:
-	{
-		ModelRendererComponent* component = (ModelRendererComponent*)header;
-		out << "_setModel(" << "_addComponent(" << entity << ", " << data.name << ")" << ", \"" << component->modelPath << "\")\n";
-		break;
-	}
-	case ComponentType::SCRIPT:
-	{
-		ScriptComponent* component = (ScriptComponent*)header;
-		out << "_setScript(" << "_addComponent(" << entity << ", " << data.name << ")" << ", \"" << component->scriptPath << "\")\n";
-		break;
-	}
-	case ComponentType::RIGID_BODY:
-	{
-		String componentName = entity + "_rigidBody";
-		out << componentName << " = _addComponent(" << entity << ", " << data.name << ")\n";
-		RigidBodyComponent* component = (RigidBodyComponent*)header;
-		/*out << "_setRigidBody(" << componentName << ", "
-			<< component->velocity.x << ", " << component->velocity.y << ", " << component->velocity.z << ", "
-			<< component->force.x << ", " << component->force.y << ", " << component->force.z << ", "
-			<< component->mass
-			<< ")\n";*/
-		break;
-	}
-	case ComponentType::DIRECTIONAL_LIGHT:
-	{
-		DirectionalLightComponent* component = (DirectionalLightComponent*)header;
+	header->OnSeralize(header, out, entity);
 
-		out << "_setDirectionalLight(_addComponent(" << entity << ", " << data.name << "), " <<
-			component->direction.x << ", " << component->direction.y << ", " << component->direction.z << ", " <<
-			component->color.x << ", " << component->color.y << ", " << component->color.z << ", " <<
-			component->intensity << ")\n";
-		break;
-	}
-	}
 }
 

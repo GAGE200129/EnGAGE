@@ -32,7 +32,7 @@ namespace Core::ECS
 		//Init components
 		for (UInt32 i = 0; i < (UInt32)ComponentType::COUNT; i++)
 		{
-			ComponentData data = getComponentData((ComponentType)i);
+			ComponentHint data = getComponentHint((ComponentType)i);
 			ComponentArray arr;
 			arr.size = data.size;
 			arr.count = 0;
@@ -157,9 +157,12 @@ namespace Core::ECS
 
 	void* addComponent(UInt64 entity, ComponentType type)
 	{
-		ComponentData data = getComponentData(type);
+		ComponentHint data = getComponentHint(type);
 		Scope<Byte[]> extraData = createScope<Byte[]>(data.size);
-		initComponent(entity, (ComponentHeader*)extraData.get(), type);
+		ComponentHeader* pHeader = (ComponentHeader*)extraData.get();
+		pHeader->entity = entity;
+		pHeader->type = type;
+		initComponent((ComponentHeader*)extraData.get(), type);
 
 		return constructComponent(entity, type, extraData.get());
 	}
@@ -168,7 +171,10 @@ namespace Core::ECS
 	{
 		auto entitySignature = searchEntity(entity);
 	
-		destroyComponent((ComponentHeader*)ECS::getComponent(entity, type), type);
+		auto* component = (ComponentHeader*)ECS::getComponent(entity, type);
+		auto destroyFn = component->Destroy;
+		if (destroyFn) 
+			destroyFn(component);
 
 		//Update component arrays
 		removeComponentInternal(gComponentArrays[type], entitySignature);
@@ -291,7 +297,7 @@ namespace Core::ECS
 				return nullptr;
 			}
 		}
-		ComponentData componentData = getComponentData(type);
+		ComponentHint componentData = getComponentHint(type);
 		EN_ASSERT((pComponentArray->count * pComponentArray->size + componentData.size) < MAX_COMPONENT_ARRAY_BUFFER_SIZE, "Component array is full");
 		//Copy data to end of array
 		Byte* lastMemLoc = pComponentArray->data.get() + pComponentArray->count * pComponentArray->size;

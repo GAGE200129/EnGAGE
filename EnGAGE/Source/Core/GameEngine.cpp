@@ -9,7 +9,7 @@
 #include "Editor.hpp"
 #include "Renderer.hpp"
 #include "DebugRenderer.hpp"
-#include "Script.hpp"
+#include "Scripting.hpp"
 #include "Physics.hpp"
 #include "Scene.hpp"
 #include "Messenger.hpp"
@@ -59,7 +59,7 @@ namespace Core::GameEngine
 				if (gRunning)
 				{
 					//Update
-					Thread luaThread(Script::update, float(secsPerUpdate));
+					Thread luaThread(Scripting::update, float(secsPerUpdate));
 					Thread physicsThread(Physics::update, float(secsPerUpdate));
 
 					luaThread.join();
@@ -86,7 +86,7 @@ namespace Core::GameEngine
 				Physics::onMessage(pMessage);
 
 				if (gRunning)
-					Script::onMessage(pMessage);
+					Scripting::onMessage(pMessage);
 #ifdef EN_DEBUG
 				if (auto keyPressedMessage = Messenger::messageCast<MessageType::KEY_PRESSED, KeyPressedMessage>(pMessage))
 				{
@@ -122,7 +122,7 @@ namespace Core::GameEngine
 	{
 		Physics::clearAllRigidBodies();
 		ECS::shutdown();
-		Script::shutdown();
+		Scripting::shutdown();
 		Resource::shutdown();
 	}
 }

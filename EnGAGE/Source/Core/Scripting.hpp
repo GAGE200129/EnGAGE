@@ -3,7 +3,7 @@
 #include "MessageTypes.hpp"
 
 struct lua_State;
-namespace Core::Script
+namespace Core::Scripting
 {
 	void onMessage(const Message* pMessage);
 	void update(float delta);

@@ -7,7 +7,7 @@ local yaw = 0.0
 local roll = 0.0
 local fov = 60.0
 local near = 1.0
-local far = 1000.0
+local far = 100.0
 
 local flycam_speed = 5.0
 local mouse_sensitivity = 0.3
