@@ -223,10 +223,12 @@ static void processRenderer()
 		ImGui::DragFloat("far", &Core::Renderer::getCamera().far, 0.1f);
 		ImGui::TreePop();
 	}
+	ImGui::Separator();
 	if (ImGui::Button("Toggle culling sphere"))
 	{
 		Core::Messenger::recieveMessage(Core::MessageType::RENDERER_TOGGLE_CULLING_SPHERE);
 	}
+	ImGui::Separator();
 	if (ImGui::SliderFloat("Render Scale", &renderScale, 0.0f, 2.0f))
 	{
 		Core::RendererSetScaleMessage message{ renderScale } ;

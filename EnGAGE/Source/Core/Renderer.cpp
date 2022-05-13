@@ -5,13 +5,15 @@
 #include "Shader.hpp"
 #include "Window.hpp"
 #include "Model.hpp"
-#include "Shaders.hpp"
 #include "DebugRenderer.hpp"
 #include "Math.hpp"
 #include "Components/Transform.hpp"
 #include "Components/ModelRenderer.hpp"
 #include "Components/DirectionalLight.hpp"
 #include "Components/PointLight.hpp"
+#include "Renderer/AmbientRenderer.hpp"
+#include "Renderer/DirectionalRenderer.hpp"
+#include "Renderer/PointRenderer.hpp"
 #include <glad/glad.h>
 
 
@@ -25,16 +27,15 @@ namespace Core::Renderer
 	void updateGBuffer(UInt32 inWidth, UInt32 inHeight, F32 scale);
 
 	static Camera gCamera;
-	static Vec3 gAmbient = { 0.1f, 0.1f, 0.1f };
 	static UInt32 gQuadVAO;
 	static UInt32 gQuadVBO;
 
 	static Scope<Shader> gBufferShader;
 	static Int32 gProjViewLoc, gModelLoc;
 
-	static Scope<AmbientShader> gAmbientShader;
-	static Scope<DirectionalShader> gDirectionalShader;
-	static Scope<PointShader> gPointShader;
+	static AmbientRenderer* gAmbientRenderer;
+	static DirectionalRenderer* gDirectionalRenderer;
+	static PointRenderer* gPointRenderer;
 	
 	static UInt32 gFBO, gRBO;
 	static UInt32 gPoisitonTex, gNormalTex, gColorTex;
@@ -44,6 +45,9 @@ namespace Core::Renderer
 
 	void init(UInt32 currentWidth, UInt32 currentHeight)
 	{	
+		gAmbientRenderer = new AmbientRenderer();
+		gDirectionalRenderer = new DirectionalRenderer();
+		gPointRenderer = new PointRenderer();
 		initShaders();
 		initGBuffer(currentWidth, currentHeight, gRenderScale);
 		initQuad();	
@@ -70,9 +74,9 @@ namespace Core::Renderer
 	void shutdown()
 	{
 		gBufferShader->cleanup();
-		gAmbientShader->cleanup();
-		gDirectionalShader->cleanup();
-		gPointShader->cleanup();
+		delete gAmbientRenderer;
+		delete gDirectionalRenderer;
+		delete gPointRenderer;
 		glDeleteFramebuffers(1, &gFBO);
 		glDeleteRenderbuffers(1, &gRBO);
 		glDeleteTextures(1, &gPoisitonTex);
@@ -132,19 +136,15 @@ namespace Core::Renderer
 		glBindVertexArray(gQuadVAO);
 
 		//Ambient pass
-		gAmbientShader->bind();
-		gAmbientShader->uploadAmbient(gAmbient);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		gAmbientRenderer->render();
 
 		//Directional pass
 		System& directionalSystem = ECS::getSystem(SystemType::DIRECTIONAL);
 		for (auto e : directionalSystem.entities)
 		{
 			DirectionalLight::Component* pLight = (DirectionalLight::Component*)ECS::getComponent(e, ComponentType::DIRECTIONAL_LIGHT);
-			gDirectionalShader->bind();
-			gDirectionalShader->uploadParams(pLight->direction, pLight->color, pLight->intensity, { gCamera.x, gCamera.y, gCamera.z });
-			
-			glDrawArrays(GL_TRIANGLES, 0, 6);
+					
+			gDirectionalRenderer->render(pLight->direction, pLight->color, pLight->intensity, { gCamera.x, gCamera.y, gCamera.z });
 		}
 
 		//Point pass
@@ -154,23 +154,20 @@ namespace Core::Renderer
 			PointLight::Component* pLight = (PointLight::Component*)ECS::getComponent(e, ComponentType::POINT_LIGHT);
 			Transform::Component* pTransform = (Transform::Component*)ECS::getComponent(e, ComponentType::TRANSFORM);
 		
-			gPointShader->bind();
-			gPointShader->uploadParams(pLight->color, 
+			gPointRenderer->render(pLight->color,
 				{ pTransform->x, pTransform->y, pTransform->z },
-				pLight->intensity, 
+				pLight->intensity,
 				pLight->constant,
 				pLight->linear,
-				pLight->exponent, 
+				pLight->exponent,
 				{ gCamera.x, gCamera.y, gCamera.z });
-			glDrawArrays(GL_TRIANGLES, 0, 6);
+			
 		}
-
-		
-
 		glBindVertexArray(0);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glDisable(GL_BLEND);
 	}
+
 	Camera& getCamera()
 	{
 		return gCamera;
@@ -262,10 +259,6 @@ namespace Core::Renderer
 
 		gProjViewLoc = gBufferShader->registerUniform("uProjView");
 		gModelLoc = gBufferShader->registerUniform("uModel");
-
-		gAmbientShader = createScope<Core::AmbientShader>();
-		gDirectionalShader = createScope<Core::DirectionalShader>();
-		gPointShader = createScope<Core::PointShader>();
 	}
 
 

@@ -18,18 +18,91 @@ namespace Core::Math
 		view = glm::translate(view, { -camera.x, -camera.y, -camera.z });
 		return proj * view;
 	}
+	Mat4x4 calDirectionalProjView(const Vec3& direction)
+	{
+		const auto& camera = Renderer::getCamera();
+		FrustumPoints points = createFrustumPoints(camera.near, camera.far / 16.0f);
+		Vec3 center = glm::vec3(0, 0, 0);
+		for (const auto& v : points.points)
+		{
+			center += v;
+		}
+		center /= 8;
+
+		const auto lightView = glm::lookAt(center + direction, center, Vec3(0.0f, 1.0f, 0.0f));
+		float minX = std::numeric_limits<float>::max();
+		float maxX = std::numeric_limits<float>::min();
+		float minY = std::numeric_limits<float>::max();
+		float maxY = std::numeric_limits<float>::min();
+		float minZ = std::numeric_limits<float>::max();
+		float maxZ = std::numeric_limits<float>::min();
+		for (const auto& v : points.points)
+		{
+			const auto trf = lightView * Vec4(v, 1);
+			minX = std::min(minX, trf.x);
+			maxX = std::max(maxX, trf.x);
+			minY = std::min(minY, trf.y);
+			maxY = std::max(maxY, trf.y);
+			minZ = std::min(minZ, trf.z);
+			maxZ = std::max(maxZ, trf.z);
+		}
+
+		constexpr float zMult = 10.0f;
+		if (minZ < 0)
+		{
+			minZ *= zMult;
+		}
+		else
+		{
+			minZ /= zMult;
+		}
+		if (maxZ < 0)
+		{
+			maxZ /= zMult;
+		}
+		else
+		{
+			maxZ *= zMult;
+		}
+		const glm::mat4 lightProjection = glm::ortho(minX, maxX, minY, maxY, minZ, maxZ);
+
+		return lightProjection * lightView;
+	}
 	Frustum createFrustum()
 	{
-		Frustum     frustum = { {}, {}, {}, {}, {} };
+		Frustum frustum;
+		
+		//Build frustum planes
+
+		auto buildPlaneFrom3Points = [](const Vec3& p1, const Vec3& p2, const Vec3& p3) -> Vec4
+		{
+			Vec3 p21 = p2 - p1;
+			Vec3 p23 = p2 - p3;
+			Vec3 normal = glm::normalize(glm::cross(p21, p23));
+			float distance = -glm::dot(normal, p1);
+			return {normal, distance};
+		};
+		const auto& camera = Renderer::getCamera();
+		FrustumPoints points = createFrustumPoints(camera.near, camera.far);
+		frustum.nearFace = Vec4(points.d, -glm::dot(points.d, points.nc));
+		frustum.farFace = Vec4(-points.d, -glm::dot(-points.d, points.fc));
+		frustum.rightFace = buildPlaneFrom3Points(points.ftr, points.ntr, points.fbr);
+		frustum.leftFace = buildPlaneFrom3Points(points.ntl, points.ftl, points.fbl);
+		frustum.topFace = buildPlaneFrom3Points(points.ntr, points.ftr, points.ftl);
+		frustum.bottomFace = buildPlaneFrom3Points(points.fbl, points.fbr, points.nbr);
+		return frustum;
+	}
+	FrustumPoints createFrustumPoints(const F32 near, const F32 far)
+	{
 		const auto& camera = Renderer::getCamera();
 
 		//Get width and height of near and far plane
 		const F32 aspect = (F32)Window::getWidth() / (F32)Window::getHeight();
 		const float halfFov = glm::radians(camera.fov * 0.5f);
-		const float Hnear = camera.near * glm::tan(halfFov) * 2.0f;
+		const float Hnear = near * glm::tan(halfFov) * 2.0f;
 		const float Wnear = Hnear * aspect;
 
-		const float Hfar = camera.far * glm::tan(halfFov) * 2.0f; 
+		const float Hfar = far * glm::tan(halfFov) * 2.0f;
 		const float Wfar = Hfar * aspect;;
 
 		const float farDist = camera.far;
@@ -41,48 +114,24 @@ namespace Core::Math
 		Mat4x4 rotation = glm::rotate(Mat4x4(1.0f), glm::radians(camera.yaw), { 0, 1, 0 });
 		rotation = glm::rotate(rotation, glm::radians(camera.pitch), { 1, 0, 0 });
 
+		FrustumPoints points;
 		//Rotate global unit vector
-		Vec3 d = glm::normalize(Vec3(rotation * Vec4{ 0, 0, -1, 0 }));
-		Vec3 right = glm::normalize(glm::cross(d, Vec3{ 0, 1, 0 }));
-		Vec3 up = glm::normalize(glm::cross(right, d));
-		Vec3 p = { camera.x, camera.y, camera.z };
+		points.d = glm::normalize(Vec3(rotation * Vec4{ 0, 0, -1, 0 }));
+		points.right = glm::normalize(glm::cross(points.d, Vec3{ 0, 1, 0 }));
+		points.up = glm::normalize(glm::cross(points.right, points.d));
+		points.p = { camera.x, camera.y, camera.z };
 
 		//Compute all frustum points
-		
-		Vec3 fc = p + d * camera.far;
-
-		Vec3 ftl = fc + (up * Hfar / 2.0f) - (right * Wfar / 2.0f);
-		Vec3 ftr = fc + (up * Hfar / 2.0f) + (right * Wfar / 2.0f);
-		Vec3 fbl = fc - (up * Hfar / 2.0f) - (right * Wfar / 2.0f);
-		Vec3 fbr = fc - (up * Hfar / 2.0f) + (right * Wfar / 2.0f);
-		Vec3 nc = p + d * nearDist;
-		Vec3 ntl = nc + (up * Hnear / 2.0f) - (right * Wnear / 2.0f);
-		Vec3 ntr = nc + (up * Hnear / 2.0f) + (right * Wnear / 2.0f);
-		Vec3 nbl = nc - (up * Hnear / 2.0f) - (right * Wnear / 2.0f);
-		Vec3 nbr = nc - (up * Hnear / 2.0f) + (right * Wnear / 2.0f);
-
-		//Build frustum planes
-
-		auto buildPlaneFrom3Points = [](const Vec3& p1, const Vec3& p2, const Vec3& p3) -> Vec4
-		{
-			Vec3 p21 = p2 - p1;
-			Vec3 p23 = p2 - p3;
-			Vec3 normal = glm::normalize(glm::cross(p21, p23));
-			float distance = -glm::dot(normal, p1);
-			return {normal, distance};
-		};
-
-		frustum.nearFace = Vec4(d, -glm::dot(d, nc));
-		frustum.farFace = Vec4(-d, -glm::dot(-d, fc));
-		frustum.rightFace = buildPlaneFrom3Points(ftr, ntr, fbr);
-		frustum.leftFace = buildPlaneFrom3Points(ntl, ftl, fbl);
-		frustum.topFace = buildPlaneFrom3Points(ntr, ftr, ftl);
-		frustum.bottomFace = buildPlaneFrom3Points(fbl, fbr, nbr);
-
-		//EN_INFO("{} {} {} {} ", frustum.nearFace.x, frustum.nearFace.y, frustum.nearFace.z, frustum.nearFace.w);
-
-
-
-		return frustum;
+		points.fc = points.p + points.d * camera.far;
+		points.nc = points.p + points.d * nearDist;
+		points.ftl = points.fc + (points.up * Hfar / 2.0f) - (points.right * Wfar / 2.0f);
+		points.ftr = points.fc + (points.up * Hfar / 2.0f) + (points.right * Wfar / 2.0f);
+		points.fbl = points.fc - (points.up * Hfar / 2.0f) - (points.right * Wfar / 2.0f);
+		points.fbr = points.fc - (points.up * Hfar / 2.0f) + (points.right * Wfar / 2.0f);
+		points.ntl = points.nc + (points.up * Hnear / 2.0f) - (points.right * Wnear / 2.0f);
+		points.ntr = points.nc + (points.up * Hnear / 2.0f) + (points.right * Wnear / 2.0f);
+		points.nbl = points.nc - (points.up * Hnear / 2.0f) - (points.right * Wnear / 2.0f);
+		points.nbr = points.nc - (points.up * Hnear / 2.0f) + (points.right * Wnear / 2.0f);
+		return points;
 	}
 }
