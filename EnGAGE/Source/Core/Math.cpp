@@ -6,9 +6,8 @@
 
 namespace Core::Math
 {
-	Mat4x4 calculateProjectionView()
+	Mat4x4 calculateProjectionView(const Camera& camera)
 	{
-		const auto& camera = Renderer::getCamera();
 		const F32 aspect = (F32)Window::getWidth() / (F32)Window::getHeight();
 
 		Mat4x4 proj = glm::perspective(glm::radians(camera.fov), aspect, camera.near, camera.far);

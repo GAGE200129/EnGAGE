@@ -3,6 +3,7 @@
 #include "Shader.hpp"
 #include "Math.hpp"
 #include "ECS.hpp"
+#include "Renderer.hpp"
 
 #include <glad/glad.h>
 
@@ -173,9 +174,9 @@ namespace Core::DebugRenderer
 		gSpheres.push_back({ color, radius, position });
 	}
 
-	void render()
+	void render(const Camera& camera)
 	{
-		Mat4x4 projView = Math::calculateProjectionView();
+		Mat4x4 projView = Math::calculateProjectionView(camera);
 		glBindVertexArray(gVAO);
 		gLineShader->bind();
 		gLineShader->uploadMVP(projView);

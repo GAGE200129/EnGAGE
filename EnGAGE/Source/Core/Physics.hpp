@@ -1,5 +1,6 @@
 #pragma once
 #include "Messenger.hpp"
+#include "Vertex.hpp"
 
 class btRigidBody;
 namespace Core::Physics
@@ -16,12 +17,13 @@ namespace Core::Physics
 	const char* getCollisionShapeName(CollisionShapeType type);
 
 	void init();
-	void clearAllRigidBodies();
+	void clear();
 	void shutdown();
 	void onMessage(const Message* pMessage);
 	void updateRigidBody(btRigidBody* rigidBody);
 	btRigidBody* newRigidBody(unsigned int entityID);
 	void update(float delta);
+	void updateMap(const DynArr<Vertex>& vertices);
  
 	void initCollisionShapeRuntime(btRigidBody* rigidBody, CollisionShapeType type, void* data = nullptr);
 

@@ -9,10 +9,10 @@ uniform vec3 uEnd;
 
 void main()
 {
-    gl_Position =  gl_in[0].gl_Position + uMVP * vec4(uBegin, 0.0); 
+    gl_Position =  uMVP * vec4(uBegin, 1.0); 
     EmitVertex();
 
-    gl_Position = gl_in[0].gl_Position + uMVP * vec4(uEnd, 0.0);
+    gl_Position =  uMVP * vec4(uEnd, 1.0);
     EmitVertex();
     
     EndPrimitive();

@@ -19,24 +19,56 @@
 
 namespace Core::Renderer
 {
-	void processNode(const Math::Frustum& frustum, const Model* model, const Node& node, glm::mat4x4 accumulatedTransform);
+	class GBufferShader : public Shader
+	{
+	public:
+		GBufferShader()
+		{
+			loadVertexShader("Resources/Shaders/GBuffer_VS.glsl");
+			loadFragmentShader("Resources/Shaders/GBuffer_FS.glsl");
+			compile();
 
-	void initQuad();
-	void initShaders();
-	void initGBuffer(UInt32 inWidth, UInt32 inHeight, F32 scale);
+			mProjViewLoc = registerUniform("uProjView");
+			mModelLoc = registerUniform("uModel");
+		}
+		~GBufferShader()
+		{
+			cleanup();
+		}
+
+		void uploadProjView(const Mat4x4& mat)
+		{
+			uploadMat4x4(mProjViewLoc, mat);
+		}
+		void uploadModel(const Mat4x4& mat)
+		{
+			uploadMat4x4(mModelLoc, mat);
+		}
+	private:
+		Int32 mProjViewLoc, mModelLoc;
+	};
+	struct MeshData
+	{
+		UInt32 vao;
+		UInt64 vertexCount;
+		UInt32 eboDataType;
+		Mat4x4 worldTransform;
+		bool cull;
+		float boundingSphereRadius;
+	};
+
+	void initQuad();;
 	void updateGBuffer(UInt32 inWidth, UInt32 inHeight, F32 scale);
 
-	static Camera gCamera;
 	static UInt32 gQuadVAO;
 	static UInt32 gQuadVBO;
+	static DynArr<MeshData> gMeshData;
 
-	static Scope<Shader> gBufferShader;
-	static Int32 gProjViewLoc, gModelLoc;
-
+	static GBufferShader* gBufferShader;
 	static AmbientRenderer* gAmbientRenderer;
 	static DirectionalRenderer* gDirectionalRenderer;
 	static PointRenderer* gPointRenderer;
-	
+
 	static UInt32 gFBO, gRBO;
 	static UInt32 gPoisitonTex, gNormalTex, gColorTex;
 
@@ -44,13 +76,18 @@ namespace Core::Renderer
 	static F32 gRenderScale = 1.0f;
 
 	void init(UInt32 currentWidth, UInt32 currentHeight)
-	{	
+	{
+		gBufferShader = new GBufferShader();
 		gAmbientRenderer = new AmbientRenderer();
 		gDirectionalRenderer = new DirectionalRenderer();
 		gPointRenderer = new PointRenderer();
-		initShaders();
-		initGBuffer(currentWidth, currentHeight, gRenderScale);
-		initQuad();	
+		glGenFramebuffers(1, &gFBO);
+		glGenRenderbuffers(1, &gRBO);
+		glGenTextures(1, &gPoisitonTex);
+		glGenTextures(1, &gNormalTex);
+		glGenTextures(1, &gColorTex);
+		updateGBuffer(currentWidth, currentHeight, gRenderScale);
+		initQuad();
 	}
 	void onMessage(const Message* pMessage)
 	{
@@ -73,7 +110,7 @@ namespace Core::Renderer
 
 	void shutdown()
 	{
-		gBufferShader->cleanup();
+		delete gBufferShader;
 		delete gAmbientRenderer;
 		delete gDirectionalRenderer;
 		delete gPointRenderer;
@@ -86,41 +123,77 @@ namespace Core::Renderer
 		glDeleteBuffers(1, &gQuadVBO);
 	}
 
-	void render()
+	void submitMesh(UInt32 vao, UInt64 vertexCount, UInt32 eboDataType, const Mat4x4& worldTransform, bool cull, float sphereRadius)
 	{
+		gMeshData.push_back({ vao, vertexCount, eboDataType, worldTransform, cull, sphereRadius });
+	}
 
+	void render(const Camera& camera)
+	{
 		glBindFramebuffer(GL_FRAMEBUFFER, gFBO);
 		glEnable(GL_DEPTH_TEST);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 		glViewport(0, 0, Window::getWidth() * gRenderScale, Window::getHeight() * gRenderScale);
-		
-		Mat4x4 gProjView = Math::calculateProjectionView();
-		gBufferShader->bind();
-		gBufferShader->uploadMat4x4(gProjViewLoc, gProjView);
-		Math::Frustum frustum = Math::createFrustum();
 
 		//Render all to Geometry buffer
-		System& system = ECS::getSystem(SystemType::RENDERER);
-		for (auto e : system.entities)
-		{
-			Transform::Component* pTransform = (Transform::Component*)ECS::getComponent(e, ComponentType::TRANSFORM);
-			ModelRenderer::Component* pModelComp = (ModelRenderer::Component*)ECS::getComponent(e, ComponentType::MODEL_RENDERER);
-			if (pModelComp->pModel)
-			{
-				const Model* pModel = pModelComp->pModel;
-				glm::mat4x4 modelMat;
-				modelMat = glm::translate(glm::mat4(1.0f), { pTransform->x, pTransform->y, pTransform->z });
-				modelMat *= glm::toMat4(glm::quat{ pTransform->rw, pTransform->rx, pTransform->ry, pTransform->rz });
-				modelMat = glm::scale(modelMat, { pTransform->sx, pTransform->sy, pTransform->sz });
+		Mat4x4 gProjView = Math::calculateProjectionView(camera);
+		gBufferShader->bind();
+		gBufferShader->uploadProjView(gProjView);
+		Math::Frustum frustum = Math::createFrustum();
 
-				processNode(frustum, pModel, pModel->nodes[pModel->rootNodeIndex], modelMat);
+		for (const auto& mesh : gMeshData)
+		{
+			auto isOnFrustum = [](const Math::Frustum& frustum, const glm::vec3& point, const float radius) -> bool
+			{
+				auto isOnOrForwardPlan = [&point, &radius](const Vec4& plan) -> bool
+				{
+					const float distanceToPoint = glm::dot(Vec3(plan), point) + plan.w + radius;
+					return (distanceToPoint > 0);
+				};
+				return (isOnOrForwardPlan(frustum.leftFace) &&
+					isOnOrForwardPlan(frustum.rightFace) &&
+					isOnOrForwardPlan(frustum.farFace) &&
+					isOnOrForwardPlan(frustum.nearFace) &&
+					isOnOrForwardPlan(frustum.topFace) &&
+					isOnOrForwardPlan(frustum.bottomFace));
+			};
+
+			Vec3 position;
+			position.x = mesh.worldTransform[3][0];
+			position.y = mesh.worldTransform[3][1];
+			position.z = mesh.worldTransform[3][2];
+			Vec3 scale;
+			scale.x = glm::length(Vec3(mesh.worldTransform[0]));
+			scale.y = glm::length(Vec3(mesh.worldTransform[1]));
+			scale.z = glm::length(Vec3(mesh.worldTransform[2]));
+			float scaleFactor = glm::max(scale.z, glm::max(scale.x, scale.y));
+
+			if (mesh.cull && gRenderCullingSphere)
+			{
+				DebugRenderer::addSphere({ 1, 1, 0 }, mesh.boundingSphereRadius * scaleFactor, position);
+			}
+
+			//Frustum culling
+			if (mesh.cull && isOnFrustum(frustum, position, mesh.boundingSphereRadius))
+			{
+
+				gBufferShader->uploadModel(mesh.worldTransform);
+				glBindVertexArray(mesh.vao);
+				glDrawElements(GL_TRIANGLES, mesh.vertexCount, mesh.eboDataType, nullptr);
+
+			}
+			else
+			{
+				gBufferShader->uploadModel(mesh.worldTransform);
+				glBindVertexArray(mesh.vao);
+				glDrawElements(GL_TRIANGLES, mesh.vertexCount, mesh.eboDataType, nullptr);
 			}
 		}
 
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		glClear(GL_COLOR_BUFFER_BIT);
 		glViewport(0, 0, Window::getWidth(), Window::getHeight());
-		
+
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, gPoisitonTex);
 		glActiveTexture(GL_TEXTURE1);
@@ -143,8 +216,8 @@ namespace Core::Renderer
 		for (auto e : directionalSystem.entities)
 		{
 			DirectionalLight::Component* pLight = (DirectionalLight::Component*)ECS::getComponent(e, ComponentType::DIRECTIONAL_LIGHT);
-					
-			gDirectionalRenderer->render(pLight->direction, pLight->color, pLight->intensity, { gCamera.x, gCamera.y, gCamera.z });
+
+			gDirectionalRenderer->render(pLight->direction, pLight->color, pLight->intensity, { camera.x, camera.y, camera.z });
 		}
 
 		//Point pass
@@ -153,26 +226,22 @@ namespace Core::Renderer
 		{
 			PointLight::Component* pLight = (PointLight::Component*)ECS::getComponent(e, ComponentType::POINT_LIGHT);
 			Transform::Component* pTransform = (Transform::Component*)ECS::getComponent(e, ComponentType::TRANSFORM);
-		
+
 			gPointRenderer->render(pLight->color,
 				{ pTransform->x, pTransform->y, pTransform->z },
 				pLight->intensity,
 				pLight->constant,
 				pLight->linear,
 				pLight->exponent,
-				{ gCamera.x, gCamera.y, gCamera.z });
-			
+				{ camera.x, camera.y, camera.z });
+
 		}
 		glBindVertexArray(0);
 		glBindTexture(GL_TEXTURE_2D, 0);
 		glDisable(GL_BLEND);
-	}
 
-	Camera& getCamera()
-	{
-		return gCamera;
+		gMeshData.clear();
 	}
-
 
 	static void updateGBuffer(UInt32 inWidth, UInt32 inHeight, F32 scale)
 	{
@@ -213,7 +282,7 @@ namespace Core::Renderer
 	{
 		constexpr float data[] =
 		{
-			 -1.0f, -1.0f, 0.0f, 0.0f, 
+			 -1.0f, -1.0f, 0.0f, 0.0f,
 			1.0f, -1.0f, 1.0f, 0.0f,
 			-1.0f,  1.0f, 0.0f, 1.0f,
 			-1.0f,  1.0f, 0.0f, 1.0f,
@@ -238,88 +307,6 @@ namespace Core::Renderer
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindVertexArray(0);
 
-	}
-
-	static void initGBuffer(UInt32 inWidth, UInt32 inHeight, F32 scale)
-	{
-		glGenFramebuffers(1, &gFBO);
-		glGenRenderbuffers(1, &gRBO);
-		glGenTextures(1, &gPoisitonTex);
-		glGenTextures(1, &gNormalTex);
-		glGenTextures(1, &gColorTex);
-		updateGBuffer(inWidth, inHeight, scale);
-	}
-
-	static void initShaders()
-	{
-		gBufferShader = createScope<Core::Shader>();
-		gBufferShader->loadVertexShader("Resources/Shaders/GBuffer_VS.glsl");
-		gBufferShader->loadFragmentShader("Resources/Shaders/GBuffer_FS.glsl");
-		gBufferShader->compile();
-
-		gProjViewLoc = gBufferShader->registerUniform("uProjView");
-		gModelLoc = gBufferShader->registerUniform("uModel");
-	}
-
-
-	static void processNode(const Math::Frustum& frustum, const Model* model, const Node& node, glm::mat4x4 accumulatedTransform)
-	{
-		accumulatedTransform = glm::translate(accumulatedTransform, node.position);
-		accumulatedTransform *= glm::toMat4(node.rotation);
-		accumulatedTransform = glm::scale(accumulatedTransform, node.scale);
-
-
-		if (node.meshIndex != -1)
-		{
-			const Core::Mesh& mesh = model->meshes[node.meshIndex];
-
-			
-			auto isOnFrustum = [](const Math::Frustum& frustum, const glm::vec3& point, const float radius) -> bool
-			{
-				auto isOnOrForwardPlan = [&point, &radius](const Vec4& plan) -> bool
-				{
-					const float distanceToPoint = glm::dot(Vec3(plan), point) + plan.w + radius;
-					return (distanceToPoint > 0);
-				};
-				return (isOnOrForwardPlan(frustum.leftFace) &&
-					isOnOrForwardPlan(frustum.rightFace) &&
-					isOnOrForwardPlan(frustum.farFace) &&
-					isOnOrForwardPlan(frustum.nearFace) &&
-					isOnOrForwardPlan(frustum.topFace) &&
-					isOnOrForwardPlan(frustum.bottomFace));
-			};
-
-			Vec3 position;
-			position.x = accumulatedTransform[3][0];
-			position.y = accumulatedTransform[3][1];
-			position.z = accumulatedTransform[3][2];
-
-			Vec3 scale;
-			scale.x = glm::length(Vec3(accumulatedTransform[0]));
-			scale.y = glm::length(Vec3(accumulatedTransform[1]));
-			scale.z = glm::length(Vec3(accumulatedTransform[2]));
-			float scaleFactor = glm::max(scale.z, glm::max(scale.x, scale.y));
-
-			if (gRenderCullingSphere)
-			{
-				DebugRenderer::addSphere({ 1, 1, 0 }, mesh.boundingSphereRadius * scaleFactor, position);
-			}
-
-			//Frustum culling
-			if (isOnFrustum(frustum, position, mesh.boundingSphereRadius * scaleFactor))
-			{
-				for (const auto& primitive : mesh.primitives)
-				{
-					gBufferShader->uploadMat4x4(gModelLoc, accumulatedTransform);
-					glBindVertexArray(primitive.vao);
-					glDrawElements(GL_TRIANGLES, primitive.vertexCoumt, primitive.eboDataType, nullptr);
-				}
-			}
-		}
-		for (const auto& child : node.children)
-		{
-			processNode(frustum, model, model->nodes[child], accumulatedTransform);
-		}
 	}
 }
 

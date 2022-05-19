@@ -1,6 +1,8 @@
 #include "pch.hpp"
 #include "Resource.hpp"
 
+#include "Vertex.hpp"
+
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -8,12 +10,6 @@
 #include <tiny_gltf.h>
 #include <glad/glad.h>
 
-struct Vertex
-{
-	float x, y, z;
-	float nX, nY, nZ;
-	float tU, tV;
-};
 
 
 static Scope<Core::Model> loadModel(const String& filePath);
@@ -50,7 +46,7 @@ namespace Core::Resource
 		return gModels.back().get();
 	}
 
-	void shutdown()
+	void clear()
 	{
 		for (const auto& model : gModels)
 		{
@@ -215,7 +211,7 @@ static Core::Mesh parseMesh(const tinygltf::Model& model, const tinygltf::Mesh& 
 	{
 		Core::Primitive primitive;
 
-		DynArr<Vertex> vertices;
+		DynArr<Core::Vertex> vertices;
 		DynArr<char> positionBuffer, normalBuffer, textureBuffer, indicesBuffer;
 		unsigned int componentType, type, count;
 		extractAccessor(model, model.accessors[gltfPrimitive.attributes.at("POSITION")], positionBuffer, componentType, type, count);
@@ -229,7 +225,7 @@ static Core::Mesh parseMesh(const tinygltf::Model& model, const tinygltf::Mesh& 
 		vertices.reserve(count);
 		for (unsigned int i = 0; i < count; i++)
 		{
-			Vertex v;
+			Core::Vertex v;
 			unsigned int positonSize = sizeof(float) * 3;
 			unsigned int normalSize = sizeof(float) * 3;
 			unsigned int texCoordSize = sizeof(float) * 2;
@@ -253,14 +249,14 @@ static Core::Mesh parseMesh(const tinygltf::Model& model, const tinygltf::Mesh& 
 
 		glBindVertexArray(primitive.vao);
 		glBindBuffer(GL_ARRAY_BUFFER, primitive.vbo);
-		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Core::Vertex), vertices.data(), GL_STATIC_DRAW);
 
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
 		glEnableVertexAttribArray(2);
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)(sizeof(float) * 3));
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)(sizeof(float) * 6));
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Core::Vertex), 0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Core::Vertex), (const void*)(sizeof(float) * 3));
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Core::Vertex), (const void*)(sizeof(float) * 6));
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, primitive.ebo);

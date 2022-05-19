@@ -64,7 +64,7 @@ void Core::Scripting::update(float delta)
 	}
 }
 
-void Core::Scripting::shutdown()
+void Core::Scripting::clear()
 {
 	for (const auto& L : gScripts)
 	{

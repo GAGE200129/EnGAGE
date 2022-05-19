@@ -20,7 +20,7 @@ namespace Core
 
 
 		void init();
-		void shutdown();
+		void clear();
 		void updateRemovedEntities();
 		UInt64 createEntity();
 		void removeEntity(UInt64 entity);

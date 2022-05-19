@@ -10,6 +10,7 @@
 #include "Messenger.hpp"
 #include "Physics.hpp"
 #include "Input.hpp"
+#include "GameEngine.hpp"
 #include "Components/RigidBody.hpp"
 #include "Components/Transform.hpp"
 #include "Components/ModelRenderer.hpp"
@@ -353,8 +354,8 @@ namespace Core
 	}
 	int updateCamera(lua_State* L)
 	{
-		EN_ASSERT(lua_gettop(L) == 9, "Invalid argument");
-		auto& camera = Core::Renderer::getCamera();
+		CHECK_NUM_ARGS(L, 8);
+		auto& camera = Core::GameEngine::getMainCamera();
 		camera.x = (float)lua_tonumber(L, 1);
 		camera.y = (float)lua_tonumber(L, 2);
 		camera.z = (float)lua_tonumber(L, 3);

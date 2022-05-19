@@ -67,7 +67,7 @@ namespace Core::ECS
 
 	}
 
-	void shutdown()
+	void clear()
 	{
 		gEntityCounter = 0;
 		gLivingEntities = 0;

@@ -52,13 +52,15 @@ public:
 
 namespace Core::Physics
 {
-	static glm::vec3 gGravity = { 0, -9.8f, 0 };
+	static glm::vec3 gGravity = { 0, 0, 0 };
 	static btDispatcher* gDispatcher;
 	static btCollisionConfiguration* gConfig;
 	static btBroadphaseInterface* gBroadphase;
 	static btConstraintSolver* gSolver;
 	static btDynamicsWorld* gWorld;
 	static DynArr<btRigidBody*> gRigidBodies;
+	static btCollisionObject* gMapObject;
+	static btTriangleMesh* gMapMesh;
 
 	static void recalculateIntertia(btCollisionShape* pShape, btRigidBody* pBody)
 	{
@@ -150,9 +152,14 @@ namespace Core::Physics
 		gWorld = new btDiscreteDynamicsWorld(gDispatcher, gBroadphase, gSolver, gConfig);
 		gWorld->setGravity(btVector3(gGravity.x, gGravity.y, gGravity.z));
 
+		gMapObject = new btCollisionObject();
+		gMapObject->setCollisionShape(new btEmptyShape());
+		gWorld->addCollisionObject(gMapObject);
+		gMapMesh = nullptr;
 	}
 
-	void clearAllRigidBodies()
+
+	void clear()
 	{
 		for (auto& body : gRigidBodies)
 		{
@@ -164,14 +171,21 @@ namespace Core::Physics
 		gRigidBodies.clear();
 	}
 
+	
+
 	void shutdown()
-	{
-		clearAllRigidBodies();
+	{	
+		clear();
+		delete gWorld;
 		delete gConfig;
 		delete gDispatcher;
-		delete gBroadphase;
 		delete gSolver;
-		delete gWorld;
+		delete gBroadphase;
+	
+		if (gMapMesh)
+			delete gMapMesh;
+		delete gMapObject->getCollisionShape();
+		delete gMapObject;
 	}
 
 	void onMessage(const Message* pMessage)
@@ -202,7 +216,8 @@ namespace Core::Physics
 		else if (auto message = Messenger::messageCast<MessageType::PHYSICS_UPDATE_RIGID_BODY, PhysicsUpdateRigidBodyMessage>(pMessage))
 		{
 			updateRigidBody(message->body);
-		} else if (auto message = Messenger::messageCast<MessageType::PHYSICS_INIT_COLLISION_SHAPE, PhysicsInitCollisionShapeMessage>(pMessage))
+		} 
+		else if (auto message = Messenger::messageCast<MessageType::PHYSICS_INIT_COLLISION_SHAPE, PhysicsInitCollisionShapeMessage>(pMessage))
 		{
 			initCollisionShapeRuntime(message->body, (CollisionShapeType)message->type, (void*)message->arguments);
 		}
@@ -237,6 +252,45 @@ namespace Core::Physics
 	void update(float delta)
 	{
 		gWorld->stepSimulation(delta);		
+	}
+	void updateMap(const DynArr<Vertex>& vertices)
+	{
+		EN_ASSERT(vertices.size() % 3 == 0, "Missing vertex");
+
+		if (vertices.size() == 0)
+		{
+			gWorld->removeCollisionObject(gMapObject);
+			return;
+		}
+
+		//Delete old stuffs
+		if (gMapMesh) delete gMapMesh;
+		delete gMapObject->getCollisionShape();
+		gWorld->removeCollisionObject(gMapObject);
+
+		gMapMesh = new btTriangleMesh(true, false);
+		//Build new mesh
+		btVector3 triangle[3];
+		for (UInt64 i = 0; i < (vertices.size() - 3); i += 3)
+		{
+			const auto& vertex1 = vertices[i + 0];
+			const auto& vertex2 = vertices[i + 1];
+			const auto& vertex3 = vertices[i + 2];
+			triangle[0].setValue(vertex1.x, vertex1.y, vertex1.z);
+			triangle[1].setValue(vertex2.x, vertex2.y, vertex2.z);
+			triangle[2].setValue(vertex3.x, vertex3.y, vertex3.z);
+
+			gMapMesh->addTriangle(triangle[0], triangle[1], triangle[2], true);
+		}
+		gMapObject->setCollisionShape(new btBvhTriangleMeshShape(gMapMesh, true));
+
+		gWorld->addCollisionObject(gMapObject);
+
+		for (UInt64 i = 0; i < gWorld->getNumCollisionObjects(); i++)
+		{
+			auto ob = gWorld->getCollisionObjectArray()[i];
+			ob->activate();
+		}
 	}
 	void initCollisionShapeRuntime(btRigidBody* rigidBody, CollisionShapeType type, void* data)
 	{

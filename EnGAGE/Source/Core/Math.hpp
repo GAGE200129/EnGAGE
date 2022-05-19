@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Camera.hpp"
+
 namespace Core::Math
 {
 	union FrustumPoints
@@ -21,7 +23,7 @@ namespace Core::Math
 		Vec4 nearFace;
 	};
 
-	Mat4x4 calculateProjectionView();
+	Mat4x4 calculateProjectionView(const Camera& camera);
 	Mat4x4 calDirectionalProjView(const Vec3& direction);
 	FrustumPoints createFrustumPoints(const F32 near, const F32 far);
 	Frustum createFrustum();

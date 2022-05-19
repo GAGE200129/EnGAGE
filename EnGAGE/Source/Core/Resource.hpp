@@ -6,7 +6,7 @@ namespace Core
 {
 	namespace Resource
 	{
-		void shutdown();
+		void clear();
 		const Model* getModel(const String& filePath);
 	}
 }
