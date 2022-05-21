@@ -57,7 +57,7 @@ namespace Core
 		return glGetUniformLocation(mProgramID, name.c_str());
 	}
 
-	void Shader::uploadMat4x4(int loc, const glm::mat4x4& mat)
+	void Shader::uploadMat4x4(int loc, const glm::mat4x4& mat) const
 	{
 		glUniformMatrix4fv(loc, 1, GL_FALSE, &mat[0][0]);
 	}

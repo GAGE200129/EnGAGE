@@ -1,7 +1,6 @@
 #include "pch.hpp"
 #include "Math.hpp"
 
-#include "Renderer.hpp"
 #include "Window.hpp"
 
 namespace Core::Math
@@ -17,10 +16,9 @@ namespace Core::Math
 		view = glm::translate(view, { -camera.x, -camera.y, -camera.z });
 		return proj * view;
 	}
-	Mat4x4 calDirectionalProjView(const Vec3& direction)
+	Mat4x4 calDirectionalProjView(const Camera& camera, const Vec3& direction)
 	{
-		const auto& camera = Renderer::getCamera();
-		FrustumPoints points = createFrustumPoints(camera.near, camera.far / 16.0f);
+		FrustumPoints points = createFrustumPoints(camera, camera.near, camera.far / 16.0f);
 		Vec3 center = glm::vec3(0, 0, 0);
 		for (const auto& v : points.points)
 		{
@@ -67,7 +65,7 @@ namespace Core::Math
 
 		return lightProjection * lightView;
 	}
-	Frustum createFrustum()
+	Frustum createFrustum(const Camera& camera)
 	{
 		Frustum frustum;
 		
@@ -81,8 +79,7 @@ namespace Core::Math
 			float distance = -glm::dot(normal, p1);
 			return {normal, distance};
 		};
-		const auto& camera = Renderer::getCamera();
-		FrustumPoints points = createFrustumPoints(camera.near, camera.far);
+		FrustumPoints points = createFrustumPoints(camera, camera.near, camera.far);
 		frustum.nearFace = Vec4(points.d, -glm::dot(points.d, points.nc));
 		frustum.farFace = Vec4(-points.d, -glm::dot(-points.d, points.fc));
 		frustum.rightFace = buildPlaneFrom3Points(points.ftr, points.ntr, points.fbr);
@@ -91,10 +88,8 @@ namespace Core::Math
 		frustum.bottomFace = buildPlaneFrom3Points(points.fbl, points.fbr, points.nbr);
 		return frustum;
 	}
-	FrustumPoints createFrustumPoints(const F32 near, const F32 far)
+	FrustumPoints createFrustumPoints(const Camera& camera, const F32 near, const F32 far)
 	{
-		const auto& camera = Renderer::getCamera();
-
 		//Get width and height of near and far plane
 		const F32 aspect = (F32)Window::getWidth() / (F32)Window::getHeight();
 		const float halfFov = glm::radians(camera.fov * 0.5f);

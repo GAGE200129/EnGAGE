@@ -3,8 +3,8 @@
 
 #include "ECS.hpp"
 #include "Resource.hpp"
-#include "Renderer.hpp"
-#include "DebugRenderer.hpp"
+#include "Renderer/Renderer.hpp"
+#include "Renderer/DebugRenderer.hpp"
 #include "Scripting.hpp"
 #include "GameEngine.hpp"
 #include "Scene.hpp"
@@ -14,6 +14,7 @@
 #include "Window.hpp"
 #include "Scene.hpp"
 #include "Math.hpp"
+#include "DebugCamera.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -22,6 +23,236 @@
 
 namespace Core::Editor
 {
+	enum class Mode
+	{
+		ENTITY,
+		MAP
+	};
+	void processGameEngine();
+	void processInspector(const ECS::EntitySignature* pEntity);
+	void processSceneGraph();
+	void processRenderer();
+	void processResourceBrowser();
+	void processMenuBar();
+	void processConsole();
+	void processMap();
+	void renderWorldGrid();
+	void renderMainCameraFrustum();
+	void getCursorRay(Vec3& outPosition, Vec3& outRay);
+	
+
+
+	//static void placeWall(bool& placing, const Message* pMessage)
+	//{
+	//	if (auto keyPressedMessage = Messenger::messageCast<MessageType::KEY_PRESSED, KeyPressedMessage>(pMessage))
+	//	{
+	//		//Place wall
+	//		if (keyPressedMessage->keyCode == InputCodes::KEY_F3)
+	//		{
+	//			placing = true;
+	//		}
+	//	}
+
+	//	const ButtonPressedMessage* buttonPressed;
+	//	if (placing && (buttonPressed = Messenger::messageCast<MessageType::BUTTON_PRESSED, ButtonPressedMessage>(pMessage)))
+	//	{
+	//		//Place wall
+	//		if (buttonPressed->buttonCode == 0)
+	//		{
+	//			Vec3 position, ray;
+	//			getCursorRay(position, ray);
+
+	//			float t = -position.y / ray.y;
+
+	//			Vec3I planeCursor = position + t * ray;
+	//			Scene::addWall(planeCursor, planeCursor + Vec3I{0, 1, 0}, planeCursor + Vec3I{ 1, 1, 0 }, planeCursor + Vec3I{ 1, 0, 0 });
+	//		}
+
+	//		//Cancel
+	//		if (buttonPressed->buttonCode == 1)
+	//		{
+	//			placing = false;
+	//		}
+	//	}
+	//}
+
+	static bool gEnabled = false;
+	static bool gPrevCursorState = false;
+	static DebugCamera gDebugCamera(GameEngine::getDebugCamera());
+	static Mode gCurrentMode = Mode::ENTITY;
+	
+
+	void init(GLFWwindow* pWindow, UInt32 width, UInt32 height)
+	{
+		IMGUI_CHECKVERSION();
+		ImGui::CreateContext();
+		ImGuiIO& io = ImGui::GetIO(); (void)io;
+		ImGui::StyleColorsDark();
+		ImGui_ImplGlfw_InitForOpenGL(pWindow, true);
+		ImGui_ImplOpenGL3_Init("#version 330 core");
+
+		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+	}
+
+	void shutdown()
+	{
+		ImGui_ImplOpenGL3_Shutdown();
+		ImGui_ImplGlfw_Shutdown();
+		ImGui::DestroyContext();
+	}
+
+	void onMessage(const Message* pMessage)
+	{
+		if (pMessage->type == MessageType::EDITOR_TOGGLE)
+		{
+			gEnabled = !gEnabled;
+			if (gEnabled)
+			{
+				gPrevCursorState = Input::cursorLocked();
+				Input::enableCursor();
+			}
+			else // Restore cursor mode
+			{
+				if (gPrevCursorState) Input::disableCursor();
+				else Input::enableCursor();
+			}
+		}
+
+		if (!gEnabled)
+			return;
+
+		if (auto keyPressedMessage = Messenger::messageCast<MessageType::KEY_PRESSED, KeyPressedMessage>(pMessage))
+		{
+			auto key = keyPressedMessage->keyCode;
+			//Toggle editor mode
+			if (key == InputCodes::KEY_TAB)
+			{
+				if (gCurrentMode == Mode::ENTITY) gCurrentMode = Mode::MAP;
+				else if (gCurrentMode == Mode::MAP) gCurrentMode = Mode::ENTITY;
+			}
+		}
+		else if (auto buttonPressed = Messenger::messageCast<MessageType::BUTTON_PRESSED, ButtonPressedMessage>(pMessage))
+		{
+			
+		}
+
+		gDebugCamera.onMessage(ImGui::GetIO().WantCaptureMouse, pMessage);
+	}
+
+	void update(F32 delta)
+	{
+		gDebugCamera.update(delta);
+	}
+
+	void render()
+	{
+#ifdef EN_DEBUG
+		if (!gEnabled) return;
+
+		ImGui_ImplOpenGL3_NewFrame();
+		ImGui_ImplGlfw_NewFrame();
+		ImGui::NewFrame();
+		ImGui::DockSpaceOverViewport(0, ImGuiDockNodeFlags_PassthruCentralNode);
+
+		processGameEngine();
+		processRenderer();
+		processResourceBrowser();
+		processMenuBar();
+		processConsole();
+		if (gCurrentMode == Mode::ENTITY)
+		{
+			renderMainCameraFrustum();
+			processSceneGraph();
+		}
+		else if (gCurrentMode == Mode::MAP)
+		{
+			processMap();
+			renderWorldGrid();
+		}
+		ImGui::Render();
+		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+#endif
+	}
+
+	bool isEnabled()
+	{
+		return gEnabled;
+	}
+
+
+	static void getCursorRay(Vec3& outPosition, Vec3& outRay)
+	{
+		auto& camera = GameEngine::getDebugCamera();
+
+		outPosition.x = camera.x;
+		outPosition.y = camera.y;
+		outPosition.z = camera.z;
+
+		auto x = ((Input::getX() / Window::getWidth()) - 0.5f) * 2;
+		auto y = -((Input::getY() / Window::getHeight()) - 0.5f) * 2;
+		auto projViewInverse = glm::inverse(Math::calculateProjectionView(camera));
+		Vec4 rayStart = projViewInverse * Vec4(x, y, 0, 1);
+		rayStart *= 1.0f / rayStart.w;
+
+		Vec4 rayEnd = projViewInverse * Vec4(x, y, 1, 1);
+		rayEnd *= 1.0f / rayEnd.w;
+
+		outRay = glm::normalize(Vec3(rayEnd) - Vec3(rayStart));
+	}
+
+	static void renderMainCameraFrustum()
+	{
+		static constexpr Vec3 frustumColor = { 1, 1, 1 };
+		const auto& camera = GameEngine::getMainCamera();
+
+		auto frustum = Math::createFrustumPoints(camera, camera.near, camera.far);
+
+		DebugRenderer::addLine(frustumColor, frustum.nbl, frustum.nbr);
+		DebugRenderer::addLine(frustumColor, frustum.ntl, frustum.ntr);
+		DebugRenderer::addLine(frustumColor, frustum.ntl, frustum.nbl);
+		DebugRenderer::addLine(frustumColor, frustum.ntr, frustum.nbr);
+
+		DebugRenderer::addLine(frustumColor, frustum.fbl, frustum.fbr);
+		DebugRenderer::addLine(frustumColor, frustum.ftl, frustum.ftr);
+		DebugRenderer::addLine(frustumColor, frustum.ftl, frustum.fbl);
+		DebugRenderer::addLine(frustumColor, frustum.ftr, frustum.fbr);
+
+		DebugRenderer::addLine(frustumColor, frustum.ntl, frustum.ftl);
+		DebugRenderer::addLine(frustumColor, frustum.ntr, frustum.ftr);
+		DebugRenderer::addLine(frustumColor, frustum.nbl, frustum.fbl);
+		DebugRenderer::addLine(frustumColor, frustum.nbr, frustum.fbr);
+	}
+	static void renderWorldGrid()
+	{
+		constexpr Vec3 gridColor = { 0.3, 0.1, 0.1 };
+		constexpr Int8 gridSize = 10;
+		const auto& camera = GameEngine::getDebugCamera();
+		const Vec3I camPos = { camera.x, camera.y, camera.z };
+
+
+		for (Int8 i = -gridSize; i <= gridSize; i++)
+		{
+			DebugRenderer::addLine(gridColor, { i + camPos.x, 0, gridSize + camPos.z }, { i + camPos.x, 0, -gridSize + camPos.z });
+		}
+		for (Int8 i = -gridSize; i <= gridSize; i++)
+		{
+			DebugRenderer::addLine(gridColor, { gridSize + camPos.x, 0, i + camPos.z }, { -gridSize + camPos.x, 0, i + camPos.z });
+		}
+
+
+	}
+
+	static void processMap()
+	{
+		ImGui::Begin("Map editor");
+		if (ImGui::Button("New plane"))
+		{
+			
+		}
+
+		ImGui::End();
+	}
+
 	static void processGameEngine()
 	{
 		ImGui::Begin("GameEngine");
@@ -62,109 +293,6 @@ namespace Core::Editor
 		}
 		ImGui::End();
 
-	}
-
-	static void processInspector(const ECS::EntitySignature* pEntity)
-	{
-		using namespace ECS;
-		ImGui::Begin("Inspector");
-		//Process component
-		if (pEntity) {
-			for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
-			{
-				ComponentHeader* pHeader = (ComponentHeader*)getComponent(pEntity->id, (ComponentType)i);
-				if (pHeader)
-				{
-					pHeader->OnImGui(pHeader);
-
-					ImGui::PushID(i);
-					if (ImGui::Button("Remove"))
-					{
-						removeComponent(pEntity->id, (ComponentType)i);
-					}
-					ImGui::PopID();
-					ImGui::Separator();
-				}
-			}
-
-			if (ImGui::Button("New"))
-				ImGui::OpenPopup("NewComponent");
-
-			if (ImGui::BeginPopup("NewComponent"))
-			{
-				for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
-				{
-					ComponentHint data = getComponentHint((ComponentType)i);
-					if (ImGui::Selectable(data.name))
-					{
-						ECS::addComponent(pEntity->id, (ComponentType)i);
-					}
-				}
-				ImGui::EndPopup();
-			}
-		}
-		ImGui::End();
-	}
-
-	static void processSceneGraph()
-	{
-
-		static const ECS::EntitySignature* selectedEntity = nullptr;
-
-		ImGui::Begin("SceneGraph");
-
-		if (ImGui::BeginListBox("Entities"))
-		{
-			for (unsigned int i = 0; i < ECS::getEntityCount(); i++)
-			{
-				char buf[50];
-				const auto& e = ECS::getEntitySignatures()[i];
-				sprintf(buf, "Entity %llu", e.id);
-				if (ImGui::Selectable(buf, selectedEntity == &e))
-				{
-					selectedEntity = &e;
-				}
-			}
-
-			ImGui::EndListBox();
-		}
-
-		if (ImGui::Button("New"))
-		{
-			ECS::createEntity();
-		}
-		ImGui::SameLine();
-		if (ImGui::Button("Delete") && selectedEntity)
-		{
-			ECS::removeEntity(selectedEntity->id);
-			selectedEntity = nullptr;
-		}
-		ImGui::End();
-
-		processInspector(selectedEntity);
-	}
-
-
-
-
-	static void processRenderer()
-	{
-		static bool drawAABB = false;
-		static float renderScale = 1.0f;
-		ImGui::Begin("Renderer");
-		if (ImGui::Button("Toggle culling sphere"))
-		{
-			Core::Messenger::recieveMessage(Core::MessageType::RENDERER_TOGGLE_CULLING_SPHERE);
-		}
-		ImGui::Separator();
-		if (ImGui::SliderFloat("Render Scale", &renderScale, 0.0f, 2.0f))
-		{
-			Core::RendererSetScaleMessage message{ renderScale };
-			Core::Messenger::recieveMessage(Core::MessageType::RENDERER_SET_SCALE, &message);
-		}
-
-
-		ImGui::End();
 	}
 
 	static void processResourceBrowser()
@@ -214,6 +342,44 @@ namespace Core::Editor
 		}
 
 		ImGui::End();
+	}
+
+	static void processSceneGraph()
+	{
+
+		static const ECS::EntitySignature* selectedEntity = nullptr;
+
+		ImGui::Begin("SceneGraph");
+
+		if (ImGui::BeginListBox("Entities"))
+		{
+			for (unsigned int i = 0; i < ECS::getEntityCount(); i++)
+			{
+				char buf[50];
+				const auto& e = ECS::getEntitySignatures()[i];
+				sprintf(buf, "Entity %llu", e.id);
+				if (ImGui::Selectable(buf, selectedEntity == &e))
+				{
+					selectedEntity = &e;
+				}
+			}
+
+			ImGui::EndListBox();
+		}
+
+		if (ImGui::Button("New"))
+		{
+			ECS::createEntity();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("Delete") && selectedEntity)
+		{
+			ECS::removeEntity(selectedEntity->id);
+			selectedEntity = nullptr;
+		}
+		ImGui::End();
+
+		processInspector(selectedEntity);
 	}
 
 	static void processMenuBar()
@@ -270,6 +436,26 @@ namespace Core::Editor
 		}
 	}
 
+	static void processRenderer()
+	{
+		static bool drawAABB = false;
+		static float renderScale = 1.0f;
+		ImGui::Begin("Renderer");
+		if (ImGui::Button("Toggle culling sphere"))
+		{
+			Core::Messenger::recieveMessage(Core::MessageType::RENDERER_TOGGLE_CULLING_SPHERE);
+		}
+		ImGui::Separator();
+		if (ImGui::SliderFloat("Render Scale", &renderScale, 0.0f, 2.0f))
+		{
+			Core::RendererSetScaleMessage message{ renderScale };
+			Core::Messenger::recieveMessage(Core::MessageType::RENDERER_SET_SCALE, &message);
+		}
+
+
+		ImGui::End();
+	}
+
 	static void processConsole()
 	{
 		ImGui::Begin("Console");
@@ -312,141 +498,45 @@ namespace Core::Editor
 		ImGui::End();
 	}
 
-	/*static void renderWorldGrid()
+	static void processInspector(const ECS::EntitySignature* pEntity)
 	{
-		constexpr Vec3 gridColor = { 0.3, 0.1, 0.1 };
-		constexpr Int8 gridSize = 10;
-		const auto& camera = Renderer::getCamera();
-		const Vec3I camPos = { camera.x, camera.y, camera.z };
-
-		for (Int8 i = -gridSize; i <= gridSize; i++)
-		{
-			DebugRenderer::addLine(gridColor, { i + camPos.x, 0, gridSize + camPos.z }, { i + camPos.x, 0, -gridSize + camPos.z });
-		}
-		for (Int8 i = -gridSize; i <= gridSize; i++)
-		{
-			DebugRenderer::addLine(gridColor, { gridSize + camPos.x, 0, i + camPos.z }, { -gridSize + camPos.x, 0, i + camPos.z });
-		}
-
-	}
-
-	
-
-	static void getCursorRay(Vec3& outPosition, Vec3& outRay)
-	{
-		auto& camera = Renderer::getCamera();
-
-		outPosition.x = camera.x;
-		outPosition.y = camera.y;
-		outPosition.z = camera.z;
-
-		auto x = ((Input::getX() / Window::getWidth()) - 0.5f) * 2;
-		auto y = -((Input::getY() / Window::getHeight()) - 0.5f) * 2;
-		auto projViewInverse = glm::inverse(Math::calculateProjectionView(camera));
-		Vec4 rayStart = projViewInverse * Vec4(x, y, 0, 1);
-		rayStart *= 1.0f / rayStart.w;
-
-		Vec4 rayEnd = projViewInverse * Vec4(x, y, 1, 1);
-		rayEnd *= 1.0f / rayEnd.w;
-
-		outRay = glm::normalize(Vec3(rayEnd) - Vec3(rayStart));
-	}
-
-
-	static void placeWall(bool& placing, const Message* pMessage)
-	{
-		if (auto keyPressedMessage = Messenger::messageCast<MessageType::KEY_PRESSED, KeyPressedMessage>(pMessage))
-		{
-			//Place wall
-			if (keyPressedMessage->keyCode == InputCodes::KEY_F3)
+		using namespace ECS;
+		ImGui::Begin("Inspector");
+		//Process component
+		if (pEntity) {
+			for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
 			{
-				placing = true;
-			}
-		}
+				ComponentHeader* pHeader = (ComponentHeader*)getComponent(pEntity->id, (ComponentType)i);
+				if (pHeader)
+				{
+					pHeader->OnImGui(pHeader);
 
-		const ButtonPressedMessage* buttonPressed;
-		if (placing && (buttonPressed = Messenger::messageCast<MessageType::BUTTON_PRESSED, ButtonPressedMessage>(pMessage)))
-		{
-			//Place wall
-			if (buttonPressed->buttonCode == 0)
-			{
-				Vec3 position, ray;
-				getCursorRay(position, ray);
-
-				float t = -position.y / ray.y;
-
-				Vec3I planeCursor = position + t * ray;
-				Scene::addWall(planeCursor, planeCursor + Vec3I{0, 1, 0}, planeCursor + Vec3I{ 1, 1, 0 }, planeCursor + Vec3I{ 1, 0, 0 });
+					ImGui::PushID(i);
+					if (ImGui::Button("Remove"))
+					{
+						removeComponent(pEntity->id, (ComponentType)i);
+					}
+					ImGui::PopID();
+					ImGui::Separator();
+				}
 			}
 
-			//Cancel
-			if (buttonPressed->buttonCode == 1)
+			if (ImGui::Button("New"))
+				ImGui::OpenPopup("NewComponent");
+
+			if (ImGui::BeginPopup("NewComponent"))
 			{
-				placing = false;
+				for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
+				{
+					ComponentHint data = getComponentHint((ComponentType)i);
+					if (ImGui::Selectable(data.name))
+					{
+						ECS::addComponent(pEntity->id, (ComponentType)i);
+					}
+				}
+				ImGui::EndPopup();
 			}
 		}
-	}*/
-
-	static bool gEnabled = false;
-	static bool gPlacing = false;
-
-	void init(GLFWwindow* pWindow, UInt32 width, UInt32 height)
-	{
-		IMGUI_CHECKVERSION();
-		ImGui::CreateContext();
-		ImGuiIO& io = ImGui::GetIO(); (void)io;
-		ImGui::StyleColorsDark();
-		ImGui_ImplGlfw_InitForOpenGL(pWindow, true);
-		ImGui_ImplOpenGL3_Init("#version 330 core");
-
-		io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+		ImGui::End();
 	}
-
-	void shutdown()
-	{
-		ImGui_ImplOpenGL3_Shutdown();
-		ImGui_ImplGlfw_Shutdown();
-		ImGui::DestroyContext();
-	}
-
-	void onMessage(const Message* pMessage)
-	{
-		if (auto keyPressedMessage = Messenger::messageCast<MessageType::KEY_PRESSED, KeyPressedMessage>(pMessage))
-		{
-			//Enable editor
-			if (keyPressedMessage->keyCode == InputCodes::KEY_F1)
-			{
-				gEnabled = !gEnabled;
-			}
-		}
-	}
-
-	void render()
-	{
-#ifdef EN_DEBUG
-		if (gEnabled)
-		{
-			ImGui_ImplOpenGL3_NewFrame();
-			ImGui_ImplGlfw_NewFrame();
-			ImGui::NewFrame();
-			ImGui::DockSpaceOverViewport(0, ImGuiDockNodeFlags_PassthruCentralNode);
-
-			processGameEngine();
-			processSceneGraph();
-			processRenderer();
-			processResourceBrowser();
-			processMenuBar();
-			processConsole();
-
-			ImGui::Render();
-			ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-		}
-#endif
-	}
-
-	bool isEnabled()
-	{
-		return gEnabled;
-	}
-
 }

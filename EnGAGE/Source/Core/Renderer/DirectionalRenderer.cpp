@@ -1,6 +1,9 @@
 #include "pch.hpp"
 #include "DirectionalRenderer.hpp"
 
+#include "Core/ECS.hpp"
+#include "Core/Components/DirectionalLight.hpp"
+
 #include <glad/glad.h>
 
 Core::DirectionalShader::DirectionalShader()
@@ -38,10 +41,15 @@ Core::DirectionalRenderer::~DirectionalRenderer()
 	mShader.cleanup();
 }
 
-void Core::DirectionalRenderer::render(const Vec3& dir, const Vec3& color, float intensity, const Vec3& camPos)
+void Core::DirectionalRenderer::render(const GBuffer& gBuffer, const Camera& camera)
 {
-
 	mShader.bind();
-	mShader.uploadParams(dir, color, intensity, camPos);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
+	System& directionalSystem = ECS::getSystem(SystemType::DIRECTIONAL);
+	for (auto e : directionalSystem.entities)
+	{
+		DirectionalLight::Component* pLight = (DirectionalLight::Component*)ECS::getComponent(e, ComponentType::DIRECTIONAL_LIGHT);	
+		mShader.uploadParams(pLight->direction, pLight->color, pLight->intensity, { camera.x, camera.y, camera.z });
+		gBuffer.renderQuad();
+	}
+	
 }

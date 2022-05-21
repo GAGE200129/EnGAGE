@@ -12,8 +12,6 @@ local far = 100.0
 local flycam_speed = 5.0
 local mouse_sensitivity = 0.3
 
-local move_forward = 0
-
 local direction = {x = 0, y = 0, z = 0}
 local forward = false
 local backward = false

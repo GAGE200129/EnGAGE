@@ -34,9 +34,9 @@ Core::AmbientRenderer::~AmbientRenderer()
 }
 
 
-void Core::AmbientRenderer::render()
+void Core::AmbientRenderer::render(const GBuffer& buffer)
 {
 	mShader.bind();
 	mShader.uploadAmbient(mAmbientColor);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
+	buffer.renderQuad();
 }

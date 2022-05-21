@@ -24,7 +24,7 @@ namespace Core
 		void loadFragmentShader(const String& filePath);
 		void compile();
 		int registerUniform(const String& name);
-		void uploadMat4x4(int loc, const glm::mat4x4& mat);
+		void uploadMat4x4(int loc, const glm::mat4x4& mat) const;
 		void uploadInt(int loc, int v);
 		void uploadFloat(int loc, float v);
 		void uploadVec3(int loc, const glm::vec3& v);

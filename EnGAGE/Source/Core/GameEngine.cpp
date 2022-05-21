@@ -7,8 +7,8 @@
 #include "Resource.hpp"
 #include "ECS.hpp"
 #include "Editor.hpp"
-#include "Renderer.hpp"
-#include "DebugRenderer.hpp"
+#include "Renderer/Renderer.hpp"
+#include "Renderer/DebugRenderer.hpp"
 #include "Scripting.hpp"
 #include "Physics.hpp"
 #include "Scene.hpp"
@@ -18,6 +18,20 @@ namespace Core::GameEngine
 {
 	Camera gMainCamera;
 	Camera gDebugCamera;
+	Camera* gCurrentCamera = nullptr;
+	
+	static void onFunctionKeys(const Message* pMessage)
+	{
+		if (auto keyPressedMessage = Messenger::messageCast<MessageType::KEY_PRESSED, KeyPressedMessage>(pMessage))
+		{
+			auto key = keyPressedMessage->keyCode;
+			//Enable editor
+			if (key == InputCodes::KEY_F1)
+			{
+				Messenger::queueMessage(MessageType::EDITOR_TOGGLE);
+			}
+		}
+	}
 
 	void init(unsigned int width, unsigned int height, unsigned int fullScreenWidth, unsigned int fullScreenHeight, const String& title)
 	{
@@ -32,7 +46,6 @@ namespace Core::GameEngine
 		Renderer::init(width, height);
 		DebugRenderer::init();
 		Physics::init();
-		Scene::init();
 	}
 
 	void run()
@@ -66,6 +79,10 @@ namespace Core::GameEngine
 					luaThread.join();
 					physicsThread.join();
 				}
+				else
+				{
+					Editor::update(F32(secsPerUpdate));
+				}
 			}
 
 			//Process messages
@@ -73,33 +90,40 @@ namespace Core::GameEngine
 			Messenger::flushQueued();
 			while (const Message* pMessage = Messenger::queryMessage())
 			{
+				onFunctionKeys(pMessage);
 				Window::onMessage(pMessage);
 				Editor::onMessage(pMessage);
 				Input::onMessage(pMessage);
 				Renderer::onMessage(pMessage);
 				Physics::onMessage(pMessage);
-				Scripting::onMessage(pMessage);
+
+				if (!Editor::isEnabled())
+				{
+					Scripting::onMessage(pMessage);
+				}
 			}
 
 			//Render
-			Scene::render();
-			if (!Editor::isEnabled())
+
+			if (Editor::isEnabled())
 			{
-				Renderer::render(gMainCamera);
+				gCurrentCamera = &gDebugCamera;
 			}
 			else
 			{
-				Renderer::render(gDebugCamera);
+				gCurrentCamera = &gMainCamera;
 			}
+
+			Renderer::render(*gCurrentCamera);
 			Editor::render();
-			DebugRenderer::render();
+			DebugRenderer::render(*gCurrentCamera);
+			
 			Window::swapBuffers();
 
 			ECS::updateRemovedEntities();
 			Scene::checkForSceneSwitch();
 		}
 		clearResources();
-		Scene::shutdown();
 		Editor::shutdown();
 		Renderer::shutdown();
 		DebugRenderer::shutdown();

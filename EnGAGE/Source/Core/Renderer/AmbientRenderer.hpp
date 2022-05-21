@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Shader.hpp"
+#include "GBuffer.hpp"
 
 namespace Core
 {
@@ -20,7 +21,7 @@ namespace Core
 		AmbientRenderer();
 		~AmbientRenderer();
 
-		void render();
+		void render(const GBuffer& buffer);
 	private:
 		AmbientShader mShader;
 		Vec3 mAmbientColor;

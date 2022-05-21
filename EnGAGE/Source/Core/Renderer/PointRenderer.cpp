@@ -1,7 +1,11 @@
 #include "pch.hpp"
 #include "PointRenderer.hpp"
 
-#include <glad/glad.h>
+
+#include "Core/ECS.hpp"
+#include "Core/Components/PointLight.hpp"
+#include "Core/Components/Transform.hpp"
+
 
 Core::PointShader::PointShader()
 {
@@ -43,9 +47,24 @@ Core::PointRenderer::~PointRenderer()
 	mShader.cleanup();
 }
 
-void Core::PointRenderer::render(const glm::vec3& color, const glm::vec3& position, float intensity, float constant, float linear, float exponent, const glm::vec3& camPos)
+void Core::PointRenderer::render(const GBuffer& gBuffer, const Camera& camera)
 {
 	mShader.bind();
-	mShader.uploadParams(color, position, intensity, constant, linear, exponent, camPos);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
+	System& pointSystem = ECS::getSystem(SystemType::POINT);
+	for (auto e : pointSystem.entities)
+	{
+		PointLight::Component* pLight = (PointLight::Component*)ECS::getComponent(e, ComponentType::POINT_LIGHT);
+		Transform::Component* pTransform = (Transform::Component*)ECS::getComponent(e, ComponentType::TRANSFORM);
+
+		
+		mShader.uploadParams(pLight->color,
+			{ pTransform->x, pTransform->y, pTransform->z },
+			pLight->intensity,
+			pLight->constant,
+			pLight->linear,
+			pLight->exponent,
+			{ camera.x, camera.y, camera.z });
+		gBuffer.renderQuad();
+	}
+
 }

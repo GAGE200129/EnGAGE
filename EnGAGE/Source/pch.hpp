@@ -61,6 +61,7 @@ using F32 = float;
 using F64 = double;
 using CStr = const char*;
 using Vec3 = glm::vec3;
+using Vec2 = glm::vec2;
 using Vec3I = glm::ivec3;
 using Vec4 = glm::vec4;
 using Mat4x4 = glm::mat4x4;

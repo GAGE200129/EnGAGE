@@ -1,9 +1,9 @@
 #include "pch.hpp"
 #include "DebugRenderer.hpp"
-#include "Shader.hpp"
-#include "Math.hpp"
-#include "ECS.hpp"
-#include "Renderer.hpp"
+#include "Core/Shader.hpp"
+#include "Core/Math.hpp"
+#include "Core/ECS.hpp"
+#include "Core/Renderer/Renderer.hpp"
 
 #include <glad/glad.h>
 

@@ -1,6 +1,8 @@
 #pragma once
 
 #include "Core/Shader.hpp"
+#include "GBuffer.hpp"
+#include "Core/Camera.hpp"
 
 namespace Core
 {
@@ -19,7 +21,7 @@ namespace Core
 	public:
 		DirectionalRenderer();
 		~DirectionalRenderer();
-		void render(const Vec3& dir, const Vec3& color, float intensity, const Vec3& camPos);
+		void render(const GBuffer& gBuffer, const Camera& camera);
 	private:
 		DirectionalShader mShader;
 	};

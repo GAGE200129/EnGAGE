@@ -3,7 +3,7 @@
 
 #include "ECS.hpp"
 #include "InputCodes.hpp"
-#include "Renderer.hpp"
+#include "Renderer/Renderer.hpp"
 #include "Resource.hpp"
 #include "Scripting.hpp"
 #include "Scene.hpp"
@@ -354,7 +354,7 @@ namespace Core
 	}
 	int updateCamera(lua_State* L)
 	{
-		CHECK_NUM_ARGS(L, 8);
+		CHECK_NUM_ARGS(L, 9);
 		auto& camera = Core::GameEngine::getMainCamera();
 		camera.x = (float)lua_tonumber(L, 1);
 		camera.y = (float)lua_tonumber(L, 2);
