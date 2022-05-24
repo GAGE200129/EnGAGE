@@ -8,8 +8,11 @@ namespace Core::Math
 	Mat4x4 calculateProjectionView(const Camera& camera)
 	{
 		const F32 aspect = (F32)Window::getWidth() / (F32)Window::getHeight();
-
-		Mat4x4 proj = glm::perspective(glm::radians(camera.fov), aspect, camera.near, camera.far);
+		Mat4x4 proj;
+		if (camera.mode == Camera::Mode::PERSPECTIVE)
+			proj = glm::perspective(glm::radians(camera.fov), aspect, camera.near, camera.far);
+		else if (camera.mode == Camera::Mode::ORTHOGRAPHIC)
+			proj = glm::ortho(camera.minX, camera.maxX, camera.minY, camera.maxY, camera.minZ, camera.maxZ);
 
 		Mat4x4 view = glm::rotate(Mat4x4(1.0f), -glm::radians(camera.pitch), { 1, 0, 0 });
 		view = glm::rotate(view, -glm::radians(camera.yaw), { 0, 1, 0 });

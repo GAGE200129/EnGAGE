@@ -124,5 +124,5 @@ function update(delta, entity)
 		z = z + direction.z * delta * flycam_speed
 	
 	end
-	_updateCamera(x, y, z, pitch, yaw, roll, fov, near, far)
+	_updateCameraPerspective(x, y, z, pitch, yaw, roll, fov, near, far)
 end

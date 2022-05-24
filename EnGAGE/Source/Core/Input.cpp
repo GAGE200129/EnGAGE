@@ -19,6 +19,17 @@ namespace Core::Input
 	{
 		sWindow = rawWindow;
 
+		glfwSetScrollCallback(rawWindow, [](GLFWwindow* window, double xoffset, double yoffset)
+			{
+				if (yoffset > 0)
+				{
+					Messenger::recieveMessage(MessageType::SCROLL_UP);
+				}
+				else if (yoffset < 0)
+				{
+					Messenger::recieveMessage(MessageType::SCROLL_DOWN);
+				}
+			});
 		glfwSetCursorPosCallback(rawWindow, [](GLFWwindow* window, double xpos, double ypos)
 			{
 				CursorMovedMessage cursorMessage;
@@ -34,6 +45,7 @@ namespace Core::Input
 				sPrevCursorX = sCursorX;
 				sPrevCursorY = sCursorY;
 
+				
 				Messenger::recieveMessage(MessageType::CURSOR_MOVED , &cursorMessage);
 			});
 

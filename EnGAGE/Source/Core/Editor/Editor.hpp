@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Messenger.hpp"
+#include "Core/Messenger.hpp"
 
 struct GLFWwindow;
 namespace Core::Editor

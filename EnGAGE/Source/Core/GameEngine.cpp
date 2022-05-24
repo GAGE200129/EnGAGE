@@ -6,7 +6,7 @@
 #include "Log.hpp"
 #include "Resource.hpp"
 #include "ECS.hpp"
-#include "Editor.hpp"
+#include "Editor/Editor.hpp"
 #include "Renderer/Renderer.hpp"
 #include "Renderer/DebugRenderer.hpp"
 #include "Scripting.hpp"
@@ -55,7 +55,6 @@ namespace Core::GameEngine
 		const double secsPerUpdate = 1.0 / (double)TPS;
 		double prevTime = Window::getCurrentTime();
 		double steps = 0.0;
-		double timer = 0.0f;
 		while (!Window::closeRequested())
 		{
 

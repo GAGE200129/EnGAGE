@@ -7,6 +7,8 @@ namespace Core
 {
 	enum class MessageType : unsigned int
 	{
+		SCROLL_UP,
+		SCROLL_DOWN,
 		KEY_PRESSED,
 		KEY_RELEASED,
 		BUTTON_PRESSED,

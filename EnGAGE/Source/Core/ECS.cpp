@@ -194,10 +194,7 @@ namespace Core::ECS
 		{
 			return componentArray.data.get() + componentArray.size * componentArray.entityToIndex.at(entity);
 		}
-
-
 		return nullptr;
-
 	}
 
 	System& getSystem(SystemType type)

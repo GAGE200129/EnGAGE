@@ -1,20 +1,19 @@
 #include "pch.hpp"
 #include "Editor.hpp"
 
-#include "ECS.hpp"
-#include "Resource.hpp"
-#include "Renderer/Renderer.hpp"
-#include "Renderer/DebugRenderer.hpp"
-#include "Scripting.hpp"
-#include "GameEngine.hpp"
-#include "Scene.hpp"
-#include "Input.hpp"
-#include "Physics.hpp"
-#include "Messenger.hpp"
-#include "Window.hpp"
-#include "Scene.hpp"
-#include "Math.hpp"
-#include "DebugCamera.hpp"
+#include "Core/ECS.hpp"
+#include "Core/Resource.hpp"
+#include "Core/Renderer/Renderer.hpp"
+#include "Core/Renderer/DebugRenderer.hpp"
+#include "Core/Scripting.hpp"
+#include "Core/GameEngine.hpp"
+#include "Core/Scene.hpp"
+#include "Core/Input.hpp"
+#include "Core/Physics.hpp"
+#include "Core/Messenger.hpp"
+#include "Core/Window.hpp"
+#include "Core/Scene.hpp"
+#include "Core/Math.hpp"
 
 #include <imgui.h>
 #include <imgui_impl_glfw.h>
@@ -28,6 +27,37 @@ namespace Core::Editor
 		ENTITY,
 		MAP
 	};
+
+	struct DebugCamera
+	{
+		static constexpr F32 MOUSE_SENSITIVITY = 0.3f;
+		static constexpr F32 CAM_NEAR = 1.0f;
+		static constexpr F32 CAM_FAR = 1000.0f;
+		static constexpr F32 CAM_FOV = 70.0f;
+		static constexpr F32 CAM_SPEED = 7;
+
+		enum class OrthoMode
+		{
+			NONE,
+			FRONT,
+			BACK,
+			LEFT,
+			RIGHT,
+			UP,
+			DOWN
+		};
+
+		bool rotateCamera = false;
+		Vec3 direction = { 0, 0, 0 };
+		bool forward = false;
+		bool backward = false;
+		bool left = false;
+		bool right = false;
+		bool up = false;
+		bool down = false;
+		F32 orthoScale = 10;
+		OrthoMode orthoMode = OrthoMode::NONE;
+	};
 	void processGameEngine();
 	void processInspector(const ECS::EntitySignature* pEntity);
 	void processSceneGraph();
@@ -39,48 +69,11 @@ namespace Core::Editor
 	void renderWorldGrid();
 	void renderMainCameraFrustum();
 	void getCursorRay(Vec3& outPosition, Vec3& outRay);
-	
-
-
-	//static void placeWall(bool& placing, const Message* pMessage)
-	//{
-	//	if (auto keyPressedMessage = Messenger::messageCast<MessageType::KEY_PRESSED, KeyPressedMessage>(pMessage))
-	//	{
-	//		//Place wall
-	//		if (keyPressedMessage->keyCode == InputCodes::KEY_F3)
-	//		{
-	//			placing = true;
-	//		}
-	//	}
-
-	//	const ButtonPressedMessage* buttonPressed;
-	//	if (placing && (buttonPressed = Messenger::messageCast<MessageType::BUTTON_PRESSED, ButtonPressedMessage>(pMessage)))
-	//	{
-	//		//Place wall
-	//		if (buttonPressed->buttonCode == 0)
-	//		{
-	//			Vec3 position, ray;
-	//			getCursorRay(position, ray);
-
-	//			float t = -position.y / ray.y;
-
-	//			Vec3I planeCursor = position + t * ray;
-	//			Scene::addWall(planeCursor, planeCursor + Vec3I{0, 1, 0}, planeCursor + Vec3I{ 1, 1, 0 }, planeCursor + Vec3I{ 1, 0, 0 });
-	//		}
-
-	//		//Cancel
-	//		if (buttonPressed->buttonCode == 1)
-	//		{
-	//			placing = false;
-	//		}
-	//	}
-	//}
 
 	static bool gEnabled = false;
 	static bool gPrevCursorState = false;
-	static DebugCamera gDebugCamera(GameEngine::getDebugCamera());
 	static Mode gCurrentMode = Mode::ENTITY;
-	
+	static DebugCamera gDebugCamState;
 
 	void init(GLFWwindow* pWindow, UInt32 width, UInt32 height)
 	{
@@ -121,7 +114,44 @@ namespace Core::Editor
 		if (!gEnabled)
 			return;
 
-		if (auto keyPressedMessage = Messenger::messageCast<MessageType::KEY_PRESSED, KeyPressedMessage>(pMessage))
+		if (pMessage->type == MessageType::SCROLL_UP)
+		{
+			gDebugCamState.orthoScale -= 5;
+		}
+		else if (pMessage->type == MessageType::SCROLL_DOWN)
+		{
+			gDebugCamState.orthoScale += 5;
+		}
+		else if (auto buttonClicked = Messenger::messageCast<MessageType::BUTTON_PRESSED, ButtonPressedMessage>(pMessage))
+		{
+			if (buttonClicked->buttonCode == 1)
+			{
+				gDebugCamState.rotateCamera = true;
+			}
+		}
+		else if (auto buttonReleased = Messenger::messageCast<MessageType::BUTTON_RELEASED, ButtonReleasedMessage>(pMessage))
+		{
+			if (buttonReleased->buttonCode == 1)
+			{
+				gDebugCamState.rotateCamera = false;
+			}
+		}
+		else if (auto cursorMoved = Messenger::messageCast<MessageType::CURSOR_MOVED, CursorMovedMessage>(pMessage))
+		{
+			if (gDebugCamState.rotateCamera && !ImGui::GetIO().WantCaptureMouse)
+			{
+				auto& camera = GameEngine::getDebugCamera();
+				camera.yaw -= cursorMoved->dx *  DebugCamera::MOUSE_SENSITIVITY;
+				camera.pitch -= cursorMoved->dy * DebugCamera::MOUSE_SENSITIVITY;
+
+				if (camera.pitch > 90.0f) camera.pitch = 90.0;
+				else if (camera.pitch < -90.0f) camera.pitch = -90.0f;
+
+				if (camera.yaw > 360.0f) camera.yaw = -360.0f;
+				else if (camera.yaw < -360.0f) camera.yaw = 360.0f;
+			}
+		}
+		else if (auto keyPressedMessage = Messenger::messageCast<MessageType::KEY_PRESSED, KeyPressedMessage>(pMessage))
 		{
 			auto key = keyPressedMessage->keyCode;
 			//Toggle editor mode
@@ -129,19 +159,157 @@ namespace Core::Editor
 			{
 				if (gCurrentMode == Mode::ENTITY) gCurrentMode = Mode::MAP;
 				else if (gCurrentMode == Mode::MAP) gCurrentMode = Mode::ENTITY;
-			}
-		}
-		else if (auto buttonPressed = Messenger::messageCast<MessageType::BUTTON_PRESSED, ButtonPressedMessage>(pMessage))
-		{
-			
-		}
+			} 
 
-		gDebugCamera.onMessage(ImGui::GetIO().WantCaptureMouse, pMessage);
+			//Toggle ortho perspective
+			else if (key == InputCodes::KEY_GRAVE_ACCENT)
+				gDebugCamState.orthoMode = DebugCamera::OrthoMode::NONE;
+			else if(key == InputCodes::KEY_1)
+				gDebugCamState.orthoMode = DebugCamera::OrthoMode::FRONT;	
+			else if (key == InputCodes::KEY_2)
+				gDebugCamState.orthoMode = DebugCamera::OrthoMode::BACK;
+			else if (key == InputCodes::KEY_3)
+				gDebugCamState.orthoMode = DebugCamera::OrthoMode::LEFT;
+			else if (key == InputCodes::KEY_4)
+				gDebugCamState.orthoMode = DebugCamera::OrthoMode::RIGHT;
+			else if (key == InputCodes::KEY_5)
+				gDebugCamState.orthoMode = DebugCamera::OrthoMode::UP;
+			else if (key == InputCodes::KEY_6)
+				gDebugCamState.orthoMode = DebugCamera::OrthoMode::DOWN;
+			else if (key == InputCodes::KEY_W)
+				gDebugCamState.forward = true;
+			else if (key == InputCodes::KEY_S)
+				gDebugCamState.backward = true;
+			else if (key == InputCodes::KEY_D)
+				gDebugCamState.right = true;
+			else if (key == InputCodes::KEY_A)
+				gDebugCamState.left = true;
+			else if (key == InputCodes::KEY_SPACE)
+				gDebugCamState.up = true;
+			else if (key == InputCodes::KEY_LEFT_SHIFT)
+				gDebugCamState.down = true;
+
+		}
+		else if (auto keyReleased = Messenger::messageCast<MessageType::KEY_RELEASED, KeyReleasedMessage>(pMessage))
+		{
+			auto key = keyReleased->keyCode;
+
+			if (key == InputCodes::KEY_W)
+				gDebugCamState.forward = false;
+			if (key == InputCodes::KEY_S)
+				gDebugCamState.backward = false;
+			if (key == InputCodes::KEY_D)
+				gDebugCamState.right = false;
+			if (key == InputCodes::KEY_A)
+				gDebugCamState.left = false;
+			if (key == InputCodes::KEY_SPACE)
+				gDebugCamState.up = false;
+			if (key == InputCodes::KEY_LEFT_SHIFT)
+				gDebugCamState.down = false;
+		}
 	}
 
 	void update(F32 delta)
 	{
-		gDebugCamera.update(delta);
+		auto& camera = GameEngine::getDebugCamera();
+		camera.fov = DebugCamera::CAM_FOV;
+		camera.near = DebugCamera::CAM_NEAR;
+		camera.far = DebugCamera::CAM_FAR;
+		gDebugCamState.direction = { 0, 0, 0 };
+
+		F32 sinYaw = glm::sin(glm::radians(camera.yaw));
+		F32 sin90Yaw = glm::sin(glm::radians(camera.yaw + 90.0f));
+		F32 cosYaw = glm::cos(glm::radians(camera.yaw));
+		F32 cos90Yaw = glm::cos(glm::radians(camera.yaw + 90.0f));
+
+		if (gDebugCamState.forward)
+		{
+			gDebugCamState.direction.x -= sinYaw;
+			gDebugCamState.direction.z -= cosYaw;
+		}
+
+		if (gDebugCamState.backward)
+		{
+			gDebugCamState.direction.x += sinYaw;
+			gDebugCamState.direction.z += cosYaw;
+		}
+
+		if (gDebugCamState.right)
+		{
+			gDebugCamState.direction .x += sin90Yaw;
+			gDebugCamState.direction .z += cos90Yaw;
+		}
+
+		if (gDebugCamState.left)
+		{
+			gDebugCamState.direction.x -= sin90Yaw;
+			gDebugCamState.direction.z -= cos90Yaw;
+		}
+
+		if (gDebugCamState.up)
+		{
+			gDebugCamState.direction.y += 1;
+		}
+
+		if (gDebugCamState.down)
+		{
+			gDebugCamState.direction.y -= 1;
+		}
+
+
+		if (glm::length2(gDebugCamState.direction) != 0.0f)
+		{
+			gDebugCamState.direction = glm::normalize(gDebugCamState.direction);
+		}
+
+		camera.x += gDebugCamState.direction.x * delta * DebugCamera::CAM_SPEED;
+		camera.y += gDebugCamState.direction.y * delta * DebugCamera::CAM_SPEED;
+		camera.z += gDebugCamState.direction.z * delta * DebugCamera::CAM_SPEED;
+
+		camera.mode = Camera::Mode::PERSPECTIVE;
+		if (gDebugCamState.orthoMode != DebugCamera::OrthoMode::NONE)
+		{
+			if (gDebugCamState.orthoScale < 1) gDebugCamState.orthoScale = 1;
+
+			F32 aspectRatio = (F32)Window::getHeight() / (F32)Window::getWidth();
+			camera.mode = Camera::Mode::ORTHOGRAPHIC;
+			camera.minX = -gDebugCamState.orthoScale;
+			camera.maxX = gDebugCamState.orthoScale;
+			camera.minY = -gDebugCamState.orthoScale * aspectRatio;
+			camera.maxY = gDebugCamState.orthoScale * aspectRatio;
+			camera.minZ = -gDebugCamState.orthoScale - 100;
+			camera.maxZ = gDebugCamState.orthoScale + 100;
+			if (gDebugCamState.orthoMode == DebugCamera::OrthoMode::FRONT)
+			{
+				camera.pitch = 0;
+				camera.yaw = 180;
+			}
+			else if (gDebugCamState.orthoMode == DebugCamera::OrthoMode::BACK)
+			{
+				camera.pitch = 0;
+				camera.yaw = 0;
+			}
+			else if (gDebugCamState.orthoMode == DebugCamera::OrthoMode::LEFT)
+			{
+				camera.pitch = 0;
+				camera.yaw = -90;
+			}
+			else if (gDebugCamState.orthoMode == DebugCamera::OrthoMode::RIGHT)
+			{
+				camera.pitch = 0;
+				camera.yaw = 90;
+			}
+			else if (gDebugCamState.orthoMode == DebugCamera::OrthoMode::UP)
+			{
+				camera.pitch = 90.0f;
+				camera.yaw = 180.0f;
+			}
+			else if (gDebugCamState.orthoMode == DebugCamera::OrthoMode::DOWN)
+			{
+				camera.pitch = -90.0f;
+				camera.yaw = 0;
+			}
+		}
 	}
 
 	void render()

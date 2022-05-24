@@ -352,10 +352,11 @@ namespace Core
 		strcpy((char*)sciptComponent->scriptPath, scriptPath);
 		return 0;
 	}
-	int updateCamera(lua_State* L)
+	int updateCameraPerspective(lua_State* L)
 	{
 		CHECK_NUM_ARGS(L, 9);
 		auto& camera = Core::GameEngine::getMainCamera();
+		camera.mode = Camera::Mode::PERSPECTIVE;
 		camera.x = (float)lua_tonumber(L, 1);
 		camera.y = (float)lua_tonumber(L, 2);
 		camera.z = (float)lua_tonumber(L, 3);
@@ -407,7 +408,7 @@ namespace Core
 			lua_register(L, "_getComponent", getComponent);
 			lua_register(L, "_toggleCursor", toggleCursor);
 			lua_register(L, "_isCursorLocked", isCursorLocked);
-			lua_register(L, "_updateCamera", updateCamera);
+			lua_register(L, "_updateCameraPerspective", updateCameraPerspective);
 			lua_register(L, "_getInt", getInt);
 			lua_register(L, "_getFloat", getFloat);
 			lua_register(L, "_sendMessage", sendMessage);

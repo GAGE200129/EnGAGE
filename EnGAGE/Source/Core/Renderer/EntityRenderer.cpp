@@ -59,7 +59,7 @@ namespace Core
 					}
 
 					//Frustum culling
-					if (isOnFrustum(frustum, position, mesh.boundingSphereRadius))
+					if (camera.mode == Camera::Mode::ORTHOGRAPHIC || isOnFrustum(frustum, position, mesh.boundingSphereRadius))
 					{
 
 						gBuffer.uploadModel(accumulatedTransform);

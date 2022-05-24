@@ -6,6 +6,8 @@
 namespace Core
 {
 	template<MessageType> MessageData MessageDataEnum;
+	template<> MessageData MessageDataEnum<MessageType::SCROLL_UP				> = { "SCROLL_UP", 0 };
+	template<> MessageData MessageDataEnum<MessageType::SCROLL_DOWN				> = { "SCROLL_DOWN", 0 };
 	template<> MessageData MessageDataEnum<MessageType::KEY_PRESSED				   > = {"KEY_PRESSED", sizeof(KeyPressedMessage)};
 	template<> MessageData MessageDataEnum<MessageType::KEY_RELEASED			   > = {"KEY_RELEASED", sizeof(KeyReleasedMessage)};
 	template<> MessageData MessageDataEnum<MessageType::BUTTON_PRESSED			   > = {"BUTTON_PRESSED", sizeof(ButtonPressedMessage)};
@@ -28,6 +30,8 @@ namespace Core
 	{
 		switch (type)
 		{
+			TO_SWITCH(SCROLL_UP);
+			TO_SWITCH(SCROLL_DOWN);
 			TO_SWITCH(KEY_PRESSED);
 			TO_SWITCH(KEY_RELEASED);
 			TO_SWITCH(BUTTON_PRESSED);
