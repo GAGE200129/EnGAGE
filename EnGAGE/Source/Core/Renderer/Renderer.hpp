@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Messenger.hpp"
+#include "Core/Messenger/Messenger.hpp"
 #include "Core/Camera.hpp"
 
 namespace Core::Renderer
@@ -9,4 +9,7 @@ namespace Core::Renderer
 	void onMessage(const Message* pMessage);
 	void shutdown();
 	void render(const Camera& camera);
+
+	bool& isRenderCullingSphere();
+	void setRenderScale(F32 scale);
 }

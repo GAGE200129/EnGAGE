@@ -13,16 +13,7 @@ namespace Core
 	template<> MessageData MessageDataEnum<MessageType::BUTTON_PRESSED			   > = {"BUTTON_PRESSED", sizeof(ButtonPressedMessage)};
 	template<> MessageData MessageDataEnum<MessageType::BUTTON_RELEASED			   > = {"BUTTON_RELEASED", sizeof(ButtonReleasedMessage)};
 	template<> MessageData MessageDataEnum<MessageType::CURSOR_MOVED			   > = {"CURSOR_MOVED", sizeof(CursorMovedMessage)};
-	template<> MessageData MessageDataEnum<MessageType::TOGGLE_CURSOR			   > = {"TOGGLE_CURSOR", 0};
 	template<> MessageData MessageDataEnum<MessageType::WINDOW_RESIZED			   > = {"WINDOW_RESIZED", sizeof(WindowResizedMessage)};
-	template<> MessageData MessageDataEnum<MessageType::WINDOW_RENAMED			   > = {"WINDOW_RENAMED", sizeof(WindowRenamedMessage)};
-	template<> MessageData MessageDataEnum<MessageType::PHYSICS_UPDATE_RIGID_BODY  > = {"PHYSICS_UPDATE_RIGID_BODY", sizeof(PhysicsUpdateRigidBodyMessage)};
-	template<> MessageData MessageDataEnum<MessageType::PHYSICS_INIT_COLLISION_SHAPE> = {"PHYSICS_INIT_COLLISION_SHAPE", sizeof(PhysicsInitCollisionShapeMessage)};
-	template<> MessageData MessageDataEnum<MessageType::REMOVE_SCRIPT			   > = {"REMOVE_SCRIPT", sizeof(RemoveScriptMessage)};
-	template<> MessageData MessageDataEnum<MessageType::REMOVE_RIGID_BODY		   > = {"REMOVE_RIGID_BODY", sizeof(RemoveRigidBodyMessage)};
-	template<> MessageData MessageDataEnum<MessageType::RENDERER_TOGGLE_CULLING_SPHERE> = {"RENDERER_TOGGLE_CULLING_SPHERE", 0};
-	template<> MessageData MessageDataEnum<MessageType::RENDERER_SET_SCALE		   > = {"RENDERER_SET_SCALE", sizeof(RendererSetScaleMessage)};
-	template<> MessageData MessageDataEnum<MessageType::EDITOR_TOGGLE		   > = {"EDITOR_TOGGLE", sizeof(RendererSetScaleMessage)};
 	template<> MessageData MessageDataEnum<MessageType::COUNT> = {"INVALID", 0};
 
 
@@ -37,16 +28,7 @@ namespace Core
 			TO_SWITCH(BUTTON_PRESSED);
 			TO_SWITCH(BUTTON_RELEASED);
 			TO_SWITCH(CURSOR_MOVED);
-			TO_SWITCH(TOGGLE_CURSOR);
 			TO_SWITCH(WINDOW_RESIZED);
-			TO_SWITCH(WINDOW_RENAMED);
-			TO_SWITCH(PHYSICS_UPDATE_RIGID_BODY);
-			TO_SWITCH(PHYSICS_INIT_COLLISION_SHAPE);
-			TO_SWITCH(REMOVE_SCRIPT);
-			TO_SWITCH(REMOVE_RIGID_BODY);
-			TO_SWITCH(RENDERER_TOGGLE_CULLING_SPHERE);
-			TO_SWITCH(RENDERER_SET_SCALE);
-			TO_SWITCH(EDITOR_TOGGLE);
 		}
 		EN_ASSERT(false, "Unknown message type: {}", (unsigned int)type);
 		return MessageDataEnum<MessageType::COUNT>;

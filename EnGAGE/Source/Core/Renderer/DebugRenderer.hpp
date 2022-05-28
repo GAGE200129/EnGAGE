@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Messenger.hpp"
+#include "Core/Messenger/Messenger.hpp"
 #include "Core/Camera.hpp"
 
 namespace Core::DebugRenderer

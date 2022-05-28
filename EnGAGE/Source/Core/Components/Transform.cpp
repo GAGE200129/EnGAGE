@@ -3,19 +3,37 @@
 
 #include "RigidBody.hpp"
 #include "Core/ECS.hpp"
+#include "Core/Math.hpp"
+#include "Core/GameEngine.hpp"
+#include "Core/Physics.hpp"
+#include "Core/Messenger/Messenger.hpp"
+
+#include <ImGuizmo.h>
+#include <glm/gtc/type_ptr.hpp>
 
 void Core::Transform::OnImGui(ComponentHeader* pHeader)
 {
+	static Int32 currentGizmoOperation = ImGuizmo::ROTATE;
+	static Int32 currentGizmoMode = ImGuizmo::WORLD;
+
 	Component* pTransform = (Component*)pHeader;
 	RigidBody::Component* pRigidBody = (RigidBody::Component*)ECS::getComponent(pHeader->entity, ComponentType::RIGID_BODY);
 
+	ImGui::RadioButton("Translate", &currentGizmoOperation, ImGuizmo::TRANSLATE); ImGui::SameLine();
+	ImGui::RadioButton("Rotate", &currentGizmoOperation, ImGuizmo::ROTATE); ImGui::SameLine();
+	ImGui::RadioButton("Scale", &currentGizmoOperation, ImGuizmo::SCALE);
+
+	//Translate
 	if (ImGui::DragFloat3("Translation", &pTransform->x, 0.1f) && pRigidBody)
 	{
-		pRigidBody->pRigidbody->getWorldTransform().setOrigin(btVector3(pTransform->x, pTransform->y, pTransform->z));
-		Core::PhysicsUpdateRigidBodyMessage message;
-		message.body = pRigidBody->pRigidbody;
-		Core::Messenger::recieveMessage(Core::MessageType::PHYSICS_UPDATE_RIGID_BODY, &message);
+		if (pRigidBody)
+		{
+			pRigidBody->pRigidbody->getWorldTransform().setOrigin(btVector3(pTransform->x, pTransform->y, pTransform->z));
+			Physics::updateRigidBody(pRigidBody->pRigidbody);
+		}
 	}
+
+	//Rotate
 	if (ImGui::DragFloat4("Rotation", &pTransform->rw, 0.1f))
 	{
 		float lengthSquared = pTransform->rw * pTransform->rw +
@@ -34,13 +52,48 @@ void Core::Transform::OnImGui(ComponentHeader* pHeader)
 		if (pRigidBody)
 		{
 			pRigidBody->pRigidbody->getWorldTransform().setRotation(btQuaternion(pTransform->rx, pTransform->ry, pTransform->rz, pTransform->rw));
-			Core::PhysicsUpdateRigidBodyMessage message;
-			message.body = pRigidBody->pRigidbody;
-			Core::Messenger::recieveMessage(Core::MessageType::PHYSICS_UPDATE_RIGID_BODY, &message);
+			Physics::updateRigidBody(pRigidBody->pRigidbody);
 		}
 	}
-
+	//Scale
 	ImGui::DragFloat3("Scale", &pTransform->sx, 0.1f);
+
+
+	auto& camera = GameEngine::getDebugCamera();
+	auto proj = Math::calculateProj(camera);
+	auto view = Math::calculateView(camera);
+
+	Mat4x4 modelMat;
+	modelMat = glm::translate(glm::mat4(1.0f), { pTransform->x, pTransform->y, pTransform->z });
+	modelMat *= glm::toMat4(glm::quat{ pTransform->rw, pTransform->rx, pTransform->ry, pTransform->rz });
+	modelMat = glm::scale(modelMat, { pTransform->sx, pTransform->sy, pTransform->sz });
+	if (ImGuizmo::Manipulate(
+		glm::value_ptr(view),
+		glm::value_ptr(proj),
+		(ImGuizmo::OPERATION)currentGizmoOperation, (ImGuizmo::MODE)currentGizmoMode,
+		glm::value_ptr(modelMat), NULL, NULL))
+	{
+		float matrixTranslation[3], matrixRotation[3], matrixScale[3];
+		ImGuizmo::DecomposeMatrixToComponents(glm::value_ptr(modelMat), matrixTranslation, matrixRotation, matrixScale);
+		pTransform->x = matrixTranslation[0];
+		pTransform->y = matrixTranslation[1];
+		pTransform->z = matrixTranslation[2];
+		glm::quat rotation(glm::radians(Vec3{ matrixRotation[0], matrixRotation[1], matrixRotation[2] }));
+		pTransform->rx = rotation.x;
+		pTransform->ry = rotation.y;
+		pTransform->rz = rotation.z;
+		pTransform->rw = rotation.w;
+		pTransform->sx = matrixScale[0];
+		pTransform->sy = matrixScale[1];
+		pTransform->sz = matrixScale[2];
+
+		if (pRigidBody)
+		{
+			pRigidBody->pRigidbody->getWorldTransform().setRotation(btQuaternion(pTransform->rx, pTransform->ry, pTransform->rz, pTransform->rw));
+			pRigidBody->pRigidbody->getWorldTransform().setOrigin(btVector3(pTransform->x, pTransform->y, pTransform->z));
+			Physics::updateRigidBody(pRigidBody->pRigidbody);
+		}
+	}
 }
 
 void Core::Transform::OnSeralize(ComponentHeader* pComponent, std::ofstream& out, const String& entity)

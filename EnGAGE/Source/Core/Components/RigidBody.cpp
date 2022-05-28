@@ -20,9 +20,7 @@ void Core::RigidBody::OnImGui(ComponentHeader* pHeader)
 			pRigidBody->updateInertiaTensor();
 			pRigidBody->activate();
 
-			Core::PhysicsUpdateRigidBodyMessage message;
-			message.body = pRigidBody;
-			Core::Messenger::recieveMessage(Core::MessageType::PHYSICS_UPDATE_RIGID_BODY, &message);
+			Physics::updateRigidBody(pRigidBody);
 		}
 
 		btVector3 btVel = pRigidBody->getLinearVelocity();
@@ -54,7 +52,7 @@ void Core::RigidBody::OnSeralize(ComponentHeader* pComponent, std::ofstream& out
 	String componentName = entity + "_rigidBody";
 	out << componentName << " = _addComponent(" << entity << ", " << getHint().name << ")\n";
 	RigidBody::Component* component = (RigidBody::Component*)pComponent;
-	out << "_setRigidBody(" << componentName << ", " << component->pRigidbody->getMass() << ", " << (UInt32)component->collisionShapeType << ", ";
+	out << "_setRigidBody(" << componentName << ", " << component->pRigidbody->getMass() << ")\n";
 
 	auto rigidBody = component->pRigidbody;
 	switch ((Physics::CollisionShapeType)component->collisionShapeType)
@@ -63,22 +61,14 @@ void Core::RigidBody::OnSeralize(ComponentHeader* pComponent, std::ofstream& out
 	{
 		btBoxShape* shape = (btBoxShape*)(rigidBody->getCollisionShape());
 		btVector3 halfExtend = shape->getHalfExtentsWithoutMargin();
-		out << halfExtend.x() << ", " << halfExtend.y() << ", " << halfExtend.z() << ")\n";
+		out  << "_setColShapeBox(" << componentName  << ", " << halfExtend.x() << ", " << halfExtend.y() << ", " << halfExtend.z() << ")\n";
 		break;
 	}
 	case Physics::CollisionShapeType::SPHERE:
 	{
 		btSphereShape* shape = (btSphereShape*)(rigidBody->getCollisionShape());
 		float radius = shape->getRadius();
-		out << radius << ")\n";
-		break;
-	}
-	case Physics::CollisionShapeType::PLANE:
-	{
-		btStaticPlaneShape* shape = (btStaticPlaneShape*)(rigidBody->getCollisionShape());
-		auto normal = shape->getPlaneNormal();
-		auto distance = shape->getPlaneConstant();
-		out << normal.x() << ", " << normal.y() << ", " << normal.z() << ", " << distance << ")\n";
+		out  <<  "_setColShapeSphere(" << componentName << ", " << radius << ")\n";
 		break;
 	}
 	}
@@ -89,9 +79,7 @@ void Core::RigidBody::Destroy(ComponentHeader* pHeader)
 	RigidBody::Component* component = (RigidBody::Component*)pHeader;
 	if (component)
 	{
-		RemoveRigidBodyMessage message;
-		message.body = component->pRigidbody;
-		Messenger::recieveMessage(MessageType::REMOVE_RIGID_BODY, &message);
+		Physics::removeRigidBody(component->pRigidbody);
 	}
 }
 

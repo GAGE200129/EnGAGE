@@ -22,7 +22,8 @@ namespace Core::Math
 		Vec4 farFace;
 		Vec4 nearFace;
 	};
-
+	Mat4x4 calculateProj(const Camera& camera);
+	Mat4x4 calculateView(const Camera& camera);
 	Mat4x4 calculateProjectionView(const Camera& camera);
 	Mat4x4 calDirectionalProjView(const Camera& camera, const Vec3& direction);
 	FrustumPoints createFrustumPoints(const Camera& camera, const F32 near, const F32 far);

@@ -5,7 +5,7 @@
 
 namespace Core::Math
 {
-	Mat4x4 calculateProjectionView(const Camera& camera)
+	Mat4x4 calculateProj(const Camera& camera)
 	{
 		const F32 aspect = (F32)Window::getWidth() / (F32)Window::getHeight();
 		Mat4x4 proj;
@@ -13,11 +13,18 @@ namespace Core::Math
 			proj = glm::perspective(glm::radians(camera.fov), aspect, camera.near, camera.far);
 		else if (camera.mode == Camera::Mode::ORTHOGRAPHIC)
 			proj = glm::ortho(camera.minX, camera.maxX, camera.minY, camera.maxY, camera.minZ, camera.maxZ);
-
+		return proj;
+	}
+	Mat4x4 calculateView(const Camera& camera)
+	{
 		Mat4x4 view = glm::rotate(Mat4x4(1.0f), -glm::radians(camera.pitch), { 1, 0, 0 });
 		view = glm::rotate(view, -glm::radians(camera.yaw), { 0, 1, 0 });
 		view = glm::translate(view, { -camera.x, -camera.y, -camera.z });
-		return proj * view;
+		return view;
+	}
+	Mat4x4 calculateProjectionView(const Camera& camera)
+	{
+		return calculateProj(camera) * calculateView(camera);
 	}
 	Mat4x4 calDirectionalProjView(const Camera& camera, const Vec3& direction)
 	{

@@ -172,9 +172,12 @@ namespace Core::ECS
 		auto entitySignature = searchEntity(entity);
 	
 		auto* component = (ComponentHeader*)ECS::getComponent(entity, type);
-		auto destroyFn = component->Destroy;
-		if (destroyFn) 
-			destroyFn(component);
+		if (component)
+		{
+			auto destroyFn = component->Destroy;
+			if(destroyFn)
+				destroyFn(component);
+		}
 
 		//Update component arrays
 		removeComponentInternal(gComponentArrays[type], entitySignature);
@@ -290,7 +293,7 @@ namespace Core::ECS
 			header = (ComponentHeader*)offset;
 			if (header->entity == entity)
 			{
-				EN_WARN("Each entity can only have 1 component");
+				EN_WARN("Each entity can only have 1 type of component");
 				return nullptr;
 			}
 		}

@@ -12,6 +12,10 @@
 
 namespace Core
 {
+	EntityRenderer::~EntityRenderer()
+	{
+		mShader.cleanup();
+	}
 	void EntityRenderer::render(GBuffer& gBuffer, const Camera& camera, bool renderCullingSphere)
 	{
 		auto isOnFrustum = [](const Math::Frustum& frustum, const glm::vec3& point, const float radius) -> bool
@@ -62,7 +66,7 @@ namespace Core
 					if (camera.mode == Camera::Mode::ORTHOGRAPHIC || isOnFrustum(frustum, position, mesh.boundingSphereRadius))
 					{
 
-						gBuffer.uploadModel(accumulatedTransform);
+						mShader.uploadModel(accumulatedTransform);
 						glBindVertexArray(primitive.vao);
 						glDrawElements(GL_TRIANGLES, primitive.vertexCoumt, primitive.eboDataType, nullptr);
 
@@ -76,7 +80,8 @@ namespace Core
 		};
 
 		//Render all to Geometry buffer
-		
+		mShader.bind();
+		mShader.uploadProjView(Math::calculateProjectionView(camera));
 		Math::Frustum frustum = Math::createFrustum(camera);
 		System& system = ECS::getSystem(SystemType::RENDERER);
 		for (auto e : system.entities)
@@ -86,7 +91,7 @@ namespace Core
 			if (pModelComp->pModel)
 			{
 				const Model* pModel = pModelComp->pModel;
-				glm::mat4x4 modelMat;
+				Mat4x4 modelMat;
 				modelMat = glm::translate(glm::mat4(1.0f), { pTransform->x, pTransform->y, pTransform->z });
 				modelMat *= glm::toMat4(glm::quat{ pTransform->rw, pTransform->rx, pTransform->ry, pTransform->rz });
 				modelMat = glm::scale(modelMat, { pTransform->sx, pTransform->sy, pTransform->sz });

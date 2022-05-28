@@ -12,7 +12,8 @@
 #include "Scripting.hpp"
 #include "Physics.hpp"
 #include "Scene.hpp"
-#include "Messenger.hpp"
+#include "Core/Messenger/Messenger.hpp"
+#include "Map/Map.hpp"
 
 namespace Core::GameEngine
 {
@@ -28,7 +29,11 @@ namespace Core::GameEngine
 			//Enable editor
 			if (key == InputCodes::KEY_F1)
 			{
-				Messenger::queueMessage(MessageType::EDITOR_TOGGLE);
+				Editor::toggle();
+			}
+			else if (key == InputCodes::KEY_F11)
+			{
+				Window::toggleFullScreen();
 			}
 		}
 	}
@@ -40,6 +45,7 @@ namespace Core::GameEngine
 		Window::init(width, height, fullScreenWidth, fullScreenHeight, title);
 		Input::init(Window::getRawWindow());
 		Editor::init(Window::getRawWindow(), width, height);
+		Map::init();
 
 		ECS::init();
 
@@ -90,11 +96,8 @@ namespace Core::GameEngine
 			while (const Message* pMessage = Messenger::queryMessage())
 			{
 				onFunctionKeys(pMessage);
-				Window::onMessage(pMessage);
 				Editor::onMessage(pMessage);
-				Input::onMessage(pMessage);
 				Renderer::onMessage(pMessage);
-				Physics::onMessage(pMessage);
 
 				if (!Editor::isEnabled())
 				{
@@ -123,6 +126,7 @@ namespace Core::GameEngine
 			Scene::checkForSceneSwitch();
 		}
 		clearResources();
+		Map::shutdown();
 		Editor::shutdown();
 		Renderer::shutdown();
 		DebugRenderer::shutdown();
@@ -132,6 +136,7 @@ namespace Core::GameEngine
 	}
 	void clearResources()
 	{
+		Map::clear();
 		Physics::clear();
 		ECS::clear();
 		Scripting::clear();

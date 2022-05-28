@@ -1,7 +1,6 @@
 #include "pch.hpp"
 #include "Input.hpp"
 
-#include "Messenger.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -82,16 +81,10 @@ namespace Core::Input
 			});
 
 	}
-	void onMessage(const Message* pMessage)
+	
+	bool isButtonDown(Int32 button)
 	{
-		switch (pMessage->type)
-		{
-		case MessageType::TOGGLE_CURSOR:
-		{
-			toggleCursor();
-			break;
-		}
-		}
+		return glfwGetMouseButton(sWindow, button) == GLFW_PRESS;
 	}
 
 	const double& getX()

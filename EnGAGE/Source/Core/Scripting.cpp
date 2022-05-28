@@ -3,7 +3,6 @@
 
 #include "ECS.hpp"
 #include "LuaHostFunctions.hpp"
-#include "Messenger.hpp"
 #include "Components/Script.hpp"
 
 extern "C"
@@ -21,11 +20,6 @@ static DynArr<lua_State*> gScripts;
 
 void Core::Scripting::onMessage(const Message* pMessage)
 {
-
-	if (auto message = Messenger::messageCast<MessageType::REMOVE_SCRIPT, RemoveScriptMessage>(pMessage))
-	{
-		removeScript(message->L);
-	}
 
 	System& system = ECS::getSystem(SystemType::SCRIPTING);
 	for (unsigned int entity : system.entities)

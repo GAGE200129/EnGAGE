@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Messenger.hpp"
+#include "Core/Messenger/Messenger.hpp"
 
 struct GLFWwindow;
 namespace Core::Editor
@@ -11,4 +11,6 @@ namespace Core::Editor
 	void update(F32 delta);
 	void render();
 	bool isEnabled();
+
+	void toggle();
 }

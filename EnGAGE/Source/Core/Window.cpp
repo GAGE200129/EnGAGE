@@ -34,7 +34,7 @@ namespace Core::Window
 			message.type = MessageType::WINDOW_RESIZED;
 			memcpy(message.message, data, sizeof(data));
 			Messenger::recieveMessage(&message);
-		});
+			});
 	}
 
 	void init(unsigned int screenWidth, unsigned int screenHeight, unsigned int fullScreenWidth, unsigned int fullScreenHeight, const String& titleName)
@@ -74,40 +74,6 @@ namespace Core::Window
 		glfwTerminate();
 	}
 
-	void onMessage(const Message* pMessage)
-	{
-		if (const KeyPressedMessage* keyPressed = Messenger::messageCast<MessageType::KEY_PRESSED, KeyPressedMessage>(pMessage))
-		{
-			//Toggle fullscreen
-			if (keyPressed->keyCode == InputCodes::KEY_F11)
-			{
-				gFullScreen = !gFullScreen;
-
-				if (gFullScreen)
-				{
-					WindowResizedMessage message;
-					message.width = sFullScreenWidth;
-					message.height = sFullScreenHeight;
-					Messenger::queueMessage(MessageType::WINDOW_RESIZED, &message);
-
-					glfwSetWindowMonitor(sWindow, glfwGetPrimaryMonitor(), 0, 0, sFullScreenWidth, sFullScreenHeight, GLFW_DONT_CARE);
-				}
-				else
-				{
-					glfwSetWindowMonitor(sWindow, NULL, 0, 0, sWindowedScreenWidth, sWindowedScreenHeight, GLFW_DONT_CARE);
-					const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
-					glfwSetWindowPos(sWindow, int(mode->width / 2.0f - sWindowedScreenWidth / 2.0f), int(mode->height / 2.0f - sWindowedScreenHeight / 2.0f));
-				}
-			}
-		}
-		else if (const WindowRenamedMessage* windowRenamed = Messenger::messageCast<MessageType::WINDOW_RENAMED, WindowRenamedMessage>(pMessage))
-		{
-			glfwSetWindowTitle(sWindow, windowRenamed->name);
-		}
-
-
-	}
-
 	bool closeRequested()
 	{
 		return glfwWindowShouldClose(sWindow);
@@ -127,6 +93,27 @@ namespace Core::Window
 	double getCurrentTime()
 	{
 		return glfwGetTime();
+	}
+	void toggleFullScreen()
+	{
+		//Toggle fullscreen
+		gFullScreen = !gFullScreen;
+
+		if (gFullScreen)
+		{
+			WindowResizedMessage message;
+			message.width = sFullScreenWidth;
+			message.height = sFullScreenHeight;
+			Messenger::queueMessage(MessageType::WINDOW_RESIZED, &message);
+
+			glfwSetWindowMonitor(sWindow, glfwGetPrimaryMonitor(), 0, 0, sFullScreenWidth, sFullScreenHeight, GLFW_DONT_CARE);
+		}
+		else
+		{
+			glfwSetWindowMonitor(sWindow, NULL, 0, 0, sWindowedScreenWidth, sWindowedScreenHeight, GLFW_DONT_CARE);
+			const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
+			glfwSetWindowPos(sWindow, int(mode->width / 2.0f - sWindowedScreenWidth / 2.0f), int(mode->height / 2.0f - sWindowedScreenHeight / 2.0f));
+		}
 	}
 	unsigned int getWidth()
 	{

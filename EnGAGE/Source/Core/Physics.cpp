@@ -70,61 +70,6 @@ namespace Core::Physics
 		updateRigidBody(pBody);
 	}
 
-	template<CollisionShapeType type>
-	static void initCollisionShape(btRigidBody* rigidBody, void* data = nullptr)
-	{
-		static_assert(false);
-	}
-
-	template<>
-	static void initCollisionShape<CollisionShapeType::SPHERE>(btRigidBody* rigidBody, void* data)
-	{
-		delete rigidBody->getCollisionShape();
-		float* sphereData = (float*)data;
-
-		float radius = data ? sphereData[0] : 1.0f;
-		btSphereShape* shape = new btSphereShape(radius);
-		rigidBody->setCollisionShape(shape);
-		recalculateIntertia(shape, rigidBody);
-	}
-
-	template<>
-	static void initCollisionShape<CollisionShapeType::PLANE>(btRigidBody* rigidBody, void* data)
-	{
-		delete rigidBody->getCollisionShape();
-		btVector3 normal = { 0, 1, 0 };
-		btScalar distance = 0.0f;
-
-		float* planeData = (float*)data;
-		if (data)
-		{
-			normal = btVector3(planeData[0], planeData[1], planeData[2]);
-			distance = planeData[3];
-		}
-		btStaticPlaneShape* shape = new btStaticPlaneShape(normal, distance);
-		rigidBody->setCollisionShape(shape);
-		recalculateIntertia(shape, rigidBody);
-	}
-
-	template<>
-	static void initCollisionShape<CollisionShapeType::BOX>(btRigidBody* rigidBody, void* data)
-	{
-		delete rigidBody->getCollisionShape();
-		btVector3 halfExtends = { 1.0f, 1.0f, 1.0f };
-
-		float* boxData = (float*)data;
-		if (data)
-		{
-			halfExtends.setX(boxData[0]);
-			halfExtends.setY(boxData[1]);
-			halfExtends.setZ(boxData[2]);
-		}
-
-		btBoxShape* shape = new btBoxShape(halfExtends);
-		rigidBody->setCollisionShape(shape);
-		recalculateIntertia(shape, rigidBody);
-	}
-
 	
 	const char* getCollisionShapeName(CollisionShapeType type)
 	{
@@ -132,8 +77,6 @@ namespace Core::Physics
 		{
 		case CollisionShapeType::EMPTY:
 			return "EMPTY";
-		case CollisionShapeType::PLANE:
-			return "PLANE";
 		case CollisionShapeType::SPHERE:
 			return "SPHERE";
 		case CollisionShapeType::BOX:
@@ -188,47 +131,35 @@ namespace Core::Physics
 		delete gMapObject;
 	}
 
-	void onMessage(const Message* pMessage)
-	{
-		if (auto message = Messenger::messageCast<MessageType::REMOVE_RIGID_BODY, RemoveRigidBodyMessage>(pMessage))
-		{
-			btRigidBody* body = message->body;
-
-			DynArr<btRigidBody*>::iterator removeIt = gRigidBodies.end();
-			for (auto it = gRigidBodies.begin(); it != gRigidBodies.end(); it++)
-			{
-				if (*it == body)
-				{
-					removeIt = it;
-					break;
-				}
-			}
-
-			EN_ASSERT(removeIt != gRigidBodies.end(), "Rigidbody not found !");
-
-			btRigidBody* removedBody = *removeIt;
-			delete removedBody->getCollisionShape();
-			delete removedBody->getMotionState();
-			delete removedBody;
-
-			gRigidBodies.erase(removeIt);
-		}
-		else if (auto message = Messenger::messageCast<MessageType::PHYSICS_UPDATE_RIGID_BODY, PhysicsUpdateRigidBodyMessage>(pMessage))
-		{
-			updateRigidBody(message->body);
-		} 
-		else if (auto message = Messenger::messageCast<MessageType::PHYSICS_INIT_COLLISION_SHAPE, PhysicsInitCollisionShapeMessage>(pMessage))
-		{
-			initCollisionShapeRuntime(message->body, (CollisionShapeType)message->type, (void*)message->arguments);
-		}
-	}
-
 
 	void updateRigidBody(btRigidBody* rigidBody)
 	{
 		gWorld->removeRigidBody(rigidBody);
 		rigidBody->activate();
 		gWorld->addRigidBody(rigidBody);
+	}
+
+	void removeRigidBody(btRigidBody* body)
+	{
+		DynArr<btRigidBody*>::iterator removeIt = gRigidBodies.end();
+		for (auto it = gRigidBodies.begin(); it != gRigidBodies.end(); it++)
+		{
+			if (*it == body)
+			{
+				removeIt = it;
+				break;
+			}
+		}
+
+		EN_ASSERT(removeIt != gRigidBodies.end(), "Rigidbody not found !");
+
+		btRigidBody* removedBody = *removeIt;
+		delete removedBody->getCollisionShape();
+		delete removedBody->getMotionState();
+		delete removedBody;
+		gWorld->removeRigidBody(removedBody);
+
+		gRigidBodies.erase(removeIt);
 	}
 
 	btRigidBody* newRigidBody(unsigned int entityID)
@@ -292,19 +223,41 @@ namespace Core::Physics
 			ob->activate();
 		}
 	}
-	void initCollisionShapeRuntime(btRigidBody* rigidBody, CollisionShapeType type, void* data)
+	void initColShapeSphere(btRigidBody* rigidBody, F32 radius)
+	{
+		delete rigidBody->getCollisionShape();
+		btSphereShape* shape = new btSphereShape(radius);
+		rigidBody->setCollisionShape(shape);
+		recalculateIntertia(shape, rigidBody);
+	}
+	void initColShapePlane(btRigidBody* rigidBody, F32 x, F32 y, F32 z, F32 distance)
+	{
+		delete rigidBody->getCollisionShape();
+		btStaticPlaneShape* shape = new btStaticPlaneShape(btVector3(x, y, z), distance);
+		rigidBody->setCollisionShape(shape);
+		recalculateIntertia(shape, rigidBody);
+	}
+	void initColShapeBox(btRigidBody* rigidBody, F32 x, F32 y, F32 z)
+	{
+		delete rigidBody->getCollisionShape();
+		btBoxShape* shape = new btBoxShape(btVector3(x, y, z));
+		rigidBody->setCollisionShape(shape);
+		recalculateIntertia(shape, rigidBody);
+	}
+	void initCollisionShapeRuntime(btRigidBody* rigidBody, CollisionShapeType type)
 	{
 		switch (type)
 		{
-		case CollisionShapeType::PLANE:
-			initCollisionShape<CollisionShapeType::PLANE>(rigidBody, data);
-			return;
 		case CollisionShapeType::SPHERE:
-			initCollisionShape<CollisionShapeType::SPHERE>(rigidBody, data);
+		{
+			initColShapeSphere(rigidBody, 1);
 			return;
+		}
 		case CollisionShapeType::BOX:
-			initCollisionShape<CollisionShapeType::BOX>(rigidBody, data);
+		{
+			initColShapeBox(rigidBody, 0.5f, 0.5f, 0.5f);
 			return;
+		}
 		}
 
 	}

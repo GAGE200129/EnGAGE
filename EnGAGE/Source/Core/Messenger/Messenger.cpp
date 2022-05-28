@@ -76,15 +76,15 @@ namespace Core::Messenger
 		Message message;
 		message.type = (MessageType)lua_tointeger(L, 1);
 
-		switch (message.type)
-		{
-		case MessageType::TOGGLE_CURSOR:
-		{
-
-			status = true;
-			break;
-		}
-		}
+		//switch (message.type)
+		//{
+		//case MessageType::TOGGLE_CURSOR:
+		//{
+		//
+		//	status = true;
+		//	break;
+		//}
+		//}
 
 		Messenger::queueMessage(&message);
 

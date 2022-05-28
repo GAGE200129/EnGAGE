@@ -41,7 +41,6 @@ Core::GBuffer::GBuffer()
 
 Core::GBuffer::~GBuffer()
 {
-	shader.cleanup();
 	glDeleteFramebuffers(1, &FBO);
 	glDeleteRenderbuffers(1, &RBO);
 	glDeleteTextures(1, &positionTex);

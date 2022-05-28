@@ -2,7 +2,7 @@
 #include "Script.hpp"
 
 #include "Core/Scripting.hpp"
-#include "Core/Messenger.hpp"
+#include "Core/Messenger/Messenger.hpp"
 
 void Core::Script::OnImGui(ComponentHeader* pHeader)
 {
@@ -31,9 +31,7 @@ void Core::Script::Destroy(ComponentHeader* pHeader)
 	Script::Component* component = (Script::Component*)pHeader;
 	if (component)
 	{
-		RemoveScriptMessage	message;
-		message.L = component->L;
-		Messenger::recieveMessage(MessageType::REMOVE_SCRIPT, &message);
+		Scripting::removeScript(component->L);
 	}
 }
 

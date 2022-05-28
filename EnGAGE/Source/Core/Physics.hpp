@@ -1,5 +1,5 @@
 #pragma once
-#include "Messenger.hpp"
+#include "Core/Messenger/Messenger.hpp"
 #include "Vertex.hpp"
 
 class btRigidBody;
@@ -9,7 +9,6 @@ namespace Core::Physics
 	enum class CollisionShapeType : unsigned int
 	{
 		EMPTY,
-		PLANE,
 		SPHERE,
 		BOX,
 		COUNT
@@ -19,12 +18,15 @@ namespace Core::Physics
 	void init();
 	void clear();
 	void shutdown();
-	void onMessage(const Message* pMessage);
 	void updateRigidBody(btRigidBody* rigidBody);
+	void removeRigidBody(btRigidBody* rigidBody);
 	btRigidBody* newRigidBody(unsigned int entityID);
 	void update(float delta);
 	void updateMap(const DynArr<Vertex>& vertices);
- 
-	void initCollisionShapeRuntime(btRigidBody* rigidBody, CollisionShapeType type, void* data = nullptr);
+	
+	void initColShapeSphere(btRigidBody* rigidBody, F32 radius);
+	void initColShapePlane(btRigidBody* rigidBody, F32 x, F32 y, F32 z, F32 distance);
+	void initColShapeBox(btRigidBody* rigidBody, F32 x, F32 y, F32 z);
+	void initCollisionShapeRuntime(btRigidBody* rigidBody, CollisionShapeType type);
 
 }

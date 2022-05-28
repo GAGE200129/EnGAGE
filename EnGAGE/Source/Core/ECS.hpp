@@ -3,7 +3,6 @@
 #include "Components.hpp"
 #include "Systems.hpp"
 #include "ECSConstants.hpp"
-#include "Messenger.hpp"
 
 namespace Core::ECS
 {

@@ -7,6 +7,7 @@
 #include "DirectionalRenderer.hpp"
 #include "PointRenderer.hpp"
 #include "EntityRenderer.hpp"
+#include "MapRenderer.hpp"
 #include "GBuffer.hpp"
 #include <glad/glad.h>
 
@@ -17,6 +18,7 @@ namespace Core::Renderer
 	static DirectionalRenderer* gDirectionalRenderer;
 	static PointRenderer* gPointRenderer;
 	static EntityRenderer* gEntityRenderer;
+	static MapRenderer* gMapRenderer;
 	static GBuffer* gBuffer;
 
 	static bool gRenderCullingSphere = false;
@@ -28,25 +30,16 @@ namespace Core::Renderer
 		gDirectionalRenderer = new DirectionalRenderer();
 		gPointRenderer = new PointRenderer();
 		gEntityRenderer = new EntityRenderer();
+		gMapRenderer = new MapRenderer();
 		gBuffer = new GBuffer();
 		gBuffer->update(currentWidth, currentHeight, gRenderScale);
 	}
 	void onMessage(const Message* pMessage)
 	{
-		if (auto setScale = Messenger::messageCast<MessageType::RENDERER_SET_SCALE, RendererSetScaleMessage>(pMessage))
-		{
-			gRenderScale = setScale->scale;
-			if (gRenderScale < 0.0f) gRenderScale = 0.0f;
-			else if (gRenderScale > 2.0f) gRenderScale = 2.0f;
-			gBuffer->update(Window::getWidth(), Window::getHeight(), gRenderScale);
-		}
-		else if (auto windowResized = Messenger::messageCast<MessageType::WINDOW_RESIZED, WindowResizedMessage>(pMessage))
+
+		if (auto windowResized = Messenger::messageCast<MessageType::WINDOW_RESIZED, WindowResizedMessage>(pMessage))
 		{
 			gBuffer->update(windowResized->width, windowResized->height, gRenderScale);
-		}
-		else if (pMessage->type == MessageType::RENDERER_TOGGLE_CULLING_SPHERE)
-		{
-			gRenderCullingSphere = !gRenderCullingSphere;
 		}
 	}
 
@@ -56,6 +49,7 @@ namespace Core::Renderer
 		delete gDirectionalRenderer;
 		delete gPointRenderer;
 		delete gEntityRenderer;
+		delete gMapRenderer;
 		delete gBuffer;
 	}
 
@@ -63,9 +57,8 @@ namespace Core::Renderer
 	void render(const Camera& camera)
 	{
 		gBuffer->bind(Window::getWidth(), Window::getHeight(), gRenderScale);
-		gBuffer->bindShader();
-		gBuffer->uploadProjView(Math::calculateProjectionView(camera));
 		gEntityRenderer->render(*gBuffer, camera, gRenderCullingSphere);
+		gMapRenderer->render(*gBuffer, camera);
 		gBuffer->unBind(Window::getWidth(), Window::getHeight());
 
 		gBuffer->bindQuad();
@@ -74,6 +67,19 @@ namespace Core::Renderer
 		gPointRenderer->render(*gBuffer, camera);
 		gBuffer->unBindQuad();
 
+	}
+
+	bool& isRenderCullingSphere()
+	{
+		return gRenderCullingSphere;
+	}
+
+	void setRenderScale(F32 scale)
+	{
+		gRenderScale = scale;
+		if (gRenderScale < 0.0f) gRenderScale = 0.0f;
+		else if (gRenderScale > 2.0f) gRenderScale = 2.0f;
+		gBuffer->update(Window::getWidth(), Window::getHeight(), gRenderScale);
 	}
 
 }

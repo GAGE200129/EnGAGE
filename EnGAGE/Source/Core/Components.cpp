@@ -6,7 +6,6 @@
 #include "Physics.hpp"
 #include "Resource.hpp"
 
-#include "Messenger.hpp"
 #include "Components/Name.hpp"
 #include "Components/RigidBody.hpp"
 #include "Components/Transform.hpp"

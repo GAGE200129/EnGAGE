@@ -14,16 +14,7 @@ namespace Core
 		BUTTON_PRESSED,
 		BUTTON_RELEASED,
 		CURSOR_MOVED,
-		TOGGLE_CURSOR,
 		WINDOW_RESIZED,
-		WINDOW_RENAMED,
-		PHYSICS_UPDATE_RIGID_BODY,
-		PHYSICS_INIT_COLLISION_SHAPE,
-		REMOVE_SCRIPT,
-		REMOVE_RIGID_BODY,
-		RENDERER_TOGGLE_CULLING_SPHERE,
-		RENDERER_SET_SCALE,
-		EDITOR_TOGGLE,
 		COUNT
 	};
 
@@ -69,35 +60,6 @@ namespace Core
 		unsigned int width, height;
 	};
 
-	struct PhysicsUpdateRigidBodyMessage
-	{
-		btRigidBody* body;
-	};
 
-	struct PhysicsInitCollisionShapeMessage
-	{
-		btRigidBody* body;
-		unsigned int type;
-		unsigned char arguments[50];
-	};
-
-	struct RemoveScriptMessage
-	{
-		lua_State* L;
-	};
-
-	struct RemoveRigidBodyMessage
-	{
-		btRigidBody* body;
-	};
-	struct WindowRenamedMessage
-	{
-		char name[Messenger::BUFFER_SIZE];
-	};
-
-	struct RendererSetScaleMessage
-	{
-		float scale;
-	};
 	const MessageData& getMessageData(MessageType type);
 }

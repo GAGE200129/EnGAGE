@@ -7,7 +7,7 @@
 #include "Resource.hpp"
 #include "Scripting.hpp"
 #include "Scene.hpp"
-#include "Messenger.hpp"
+#include "Core/Messenger/Messenger.hpp"
 #include "Physics.hpp"
 #include "Input.hpp"
 #include "GameEngine.hpp"
@@ -221,7 +221,7 @@ namespace Core
 	int toggleCursor(lua_State* L)
 	{
 		CHECK_NUM_ARGS(L, 0);
-		Messenger::recieveMessage(MessageType::TOGGLE_CURSOR);
+		Input::toggleCursor();
 		return 0;
 	}
 	int isCursorLocked(lua_State* L)
@@ -309,7 +309,6 @@ namespace Core
 	{
 		CHECK_ARG(L, 1, LUA_TLIGHTUSERDATA);
 		CHECK_ARG(L, 2, LUA_TNUMBER);
-		CHECK_ARG(L, 3, LUA_TNUMBER);
 
 		ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
 		EN_ASSERT(header->type == ComponentType::RIGID_BODY, "Invalid component type");
@@ -317,23 +316,6 @@ namespace Core
 		RigidBody::Component* pComponent = (RigidBody::Component*)header;
 		btRigidBody* pRigidBody = (btRigidBody*)pComponent->pRigidbody;
 		pRigidBody->setMassProps((float)lua_tonumber(L, 2), pRigidBody->getLocalInertia());
-		pComponent->collisionShapeType = (unsigned int)lua_tointeger(L, 3);
-
-		unsigned int numArguments = lua_gettop(L) - 3;
-
-		PhysicsInitCollisionShapeMessage message;
-
-		message.body = pRigidBody;
-		message.type = pComponent->collisionShapeType;
-
-		EN_ASSERT(numArguments * sizeof(float) < 50, "Args overflow !");
-		float* argData = (float*)message.arguments;
-		for (unsigned int i = 0; i < numArguments; i++)
-		{
-			argData[i] = (float)lua_tonumber(L, i + 4);
-		}
-
-		Messenger::recieveMessage(MessageType::PHYSICS_INIT_COLLISION_SHAPE, &message);
 
 		return 0;
 	}
@@ -389,6 +371,41 @@ namespace Core
 
 		return 0;
 	}
+	int setColShapeSphere(lua_State* L)
+	{
+		CHECK_NUM_ARGS(L, 2);
+		CHECK_ARG(L, 1, LUA_TLIGHTUSERDATA);
+		CHECK_ARG(L, 2, LUA_TNUMBER);
+
+		ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
+		EN_ASSERT(header->type == ComponentType::RIGID_BODY, "Invalid component type");
+
+		RigidBody::Component* pComponent = (RigidBody::Component*)header;
+		pComponent->collisionShapeType = (UInt8)Physics::CollisionShapeType::SPHERE;
+		Physics::initColShapeSphere(pComponent->pRigidbody, (F32)lua_tonumber(L, 2));
+
+		return 0;
+	}
+
+	int setColShapeBox(lua_State* L)
+	{
+		CHECK_NUM_ARGS(L, 4);
+		CHECK_ARG(L, 1, LUA_TLIGHTUSERDATA);
+		CHECK_ARG(L, 2, LUA_TNUMBER);
+		CHECK_ARG(L, 3, LUA_TNUMBER);
+		CHECK_ARG(L, 4, LUA_TNUMBER);
+
+		ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
+		EN_ASSERT(header->type == ComponentType::RIGID_BODY, "Invalid component type");
+
+		RigidBody::Component* pComponent = (RigidBody::Component*)header;
+		pComponent->collisionShapeType = (UInt8)Physics::CollisionShapeType::BOX;
+		Physics::initColShapeBox(pComponent->pRigidbody, (F32)lua_tonumber(L, 2), (F32)lua_tonumber(L, 3), (F32)lua_tonumber(L, 4));
+
+		return 0;
+	}
+
+
 
 	namespace LuaHostFunctions
 	{
@@ -405,6 +422,8 @@ namespace Core
 			lua_register(L, "_setDirectionalLight", setDirectionalLight);
 			lua_register(L, "_setPointLight", setPointLight);
 			lua_register(L, "_setRigidBody", setRigidBody);
+			lua_register(L, "_setColShapeSphere", setColShapeSphere);
+			lua_register(L, "_setColShapeBox", setColShapeBox);
 			lua_register(L, "_getComponent", getComponent);
 			lua_register(L, "_toggleCursor", toggleCursor);
 			lua_register(L, "_isCursorLocked", isCursorLocked);

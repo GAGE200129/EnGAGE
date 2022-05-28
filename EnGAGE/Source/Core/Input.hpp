@@ -1,7 +1,7 @@
 #pragma once
 #include "InputCodes.hpp"
 #include "ButtonCodes.hpp"
-#include "Messenger.hpp"
+#include "Core/Messenger/Messenger.hpp"
 
 struct GLFWwindow;
 namespace Core::Input
@@ -11,7 +11,8 @@ namespace Core::Input
 	static constexpr uint8_t REPEAT = 2;
 
 	void init(GLFWwindow* rawWindow);
-	void onMessage(const Message* pMessage);
+
+	bool isButtonDown(Int32 button);
 
 	const double& getX();
 	const double& getY();

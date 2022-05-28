@@ -1,6 +1,6 @@
 #pragma once
 
-#include "MessageTypes.hpp"
+#include "Core/Messenger/Messenger.hpp"
 
 struct lua_State;
 namespace Core::Scripting

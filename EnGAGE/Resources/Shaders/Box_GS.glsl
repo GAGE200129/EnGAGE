@@ -20,52 +20,52 @@ void main()
     vec3 p7 = vec3(uMax.x, uMax.y, uMax.z);
     vec3 p8 = vec3(uMax.x, uMax.y, uMin.z);
 
-    gl_Position = gl_in[0].gl_Position + uMVP * vec4(p1, 0.0); 
+    gl_Position =  uMVP * vec4(p1, 1.0); 
     EmitVertex();
 
-    gl_Position = gl_in[0].gl_Position + uMVP * vec4(p2, 0.0);
+    gl_Position =  uMVP * vec4(p2, 1.0);
     EmitVertex();
 
-    gl_Position = gl_in[0].gl_Position + uMVP * vec4(p3, 0.0);
+    gl_Position =  uMVP * vec4(p3, 1.0);
     EmitVertex();
 
-    gl_Position = gl_in[0].gl_Position + uMVP * vec4(p4, 0.0);
+    gl_Position =  uMVP * vec4(p4, 1.0);
     EmitVertex();
 
-    gl_Position = gl_in[0].gl_Position + uMVP * vec4(p1, 0.0);
+    gl_Position =  uMVP * vec4(p1, 1.0);
     EmitVertex();
 
-    gl_Position = gl_in[0].gl_Position + uMVP * vec4(p5, 0.0); 
+    gl_Position =  uMVP * vec4(p5, 1.0); 
     EmitVertex();
 
-    gl_Position = gl_in[0].gl_Position + uMVP * vec4(p6, 0.0); 
+    gl_Position =  uMVP * vec4(p6, 1.0); 
     EmitVertex();
 
-    gl_Position = gl_in[0].gl_Position + uMVP * vec4(p7, 0.0); 
+    gl_Position =  uMVP * vec4(p7, 1.0); 
     EmitVertex();
 
-    gl_Position = gl_in[0].gl_Position + uMVP * vec4(p8, 0.0); 
+    gl_Position =  uMVP * vec4(p8, 1.0); 
     EmitVertex();
 
-     gl_Position = gl_in[0].gl_Position + uMVP * vec4(p5, 0.0); 
+     gl_Position =  uMVP * vec4(p5, 1.0); 
     EmitVertex();
 
-    gl_Position = gl_in[0].gl_Position + uMVP * vec4(p6, 0.0); 
+    gl_Position =  uMVP * vec4(p6, 1.0); 
     EmitVertex();
 
-     gl_Position = gl_in[0].gl_Position + uMVP * vec4(p2, 0.0);
+     gl_Position =  uMVP * vec4(p2, 1.0);
     EmitVertex();
 
-    gl_Position = gl_in[0].gl_Position + uMVP * vec4(p3, 0.0);
+    gl_Position =  uMVP * vec4(p3, 1.0);
     EmitVertex();
 
-     gl_Position = gl_in[0].gl_Position + uMVP * vec4(p7, 0.0); 
+     gl_Position =  uMVP * vec4(p7, 1.0); 
     EmitVertex();
 
-    gl_Position = gl_in[0].gl_Position + uMVP * vec4(p8, 0.0); 
+    gl_Position =  uMVP * vec4(p8, 1.0); 
     EmitVertex();
 
-    gl_Position = gl_in[0].gl_Position + uMVP * vec4(p4, 0.0);
+    gl_Position =  uMVP * vec4(p4, 1.0);
     EmitVertex();
 
     EndPrimitive();
