@@ -17,6 +17,7 @@
 #include "Components/Script.hpp"
 #include "Components/DirectionalLight.hpp"
 #include "Components/PointLight.hpp"
+#include "Map/Map.hpp"
 
 #include <BulletDynamics/Dynamics/btRigidBody.h>
 
@@ -405,7 +406,67 @@ namespace Core
 		return 0;
 	}
 
+	int addWall(lua_State* L)
+	{
+		CHECK_NUM_ARGS(L, 24);
+		CHECK_ARG(L, 1, LUA_TNUMBER);
+		CHECK_ARG(L, 2, LUA_TNUMBER);
+		CHECK_ARG(L, 3, LUA_TNUMBER);
+		CHECK_ARG(L, 4, LUA_TNUMBER);
+		CHECK_ARG(L, 5, LUA_TNUMBER);
+		CHECK_ARG(L, 6, LUA_TNUMBER);
+		CHECK_ARG(L, 7, LUA_TNUMBER);
+		CHECK_ARG(L, 8, LUA_TNUMBER);
+		CHECK_ARG(L, 9, LUA_TNUMBER);
+		CHECK_ARG(L,10, LUA_TNUMBER);
+		CHECK_ARG(L,11, LUA_TNUMBER);
+		CHECK_ARG(L,12, LUA_TNUMBER);
+		CHECK_ARG(L,13, LUA_TNUMBER);
+		CHECK_ARG(L,14, LUA_TNUMBER);
+		CHECK_ARG(L,15, LUA_TNUMBER);
+		CHECK_ARG(L,16, LUA_TNUMBER);
+		CHECK_ARG(L,17, LUA_TNUMBER);
+		CHECK_ARG(L,18, LUA_TNUMBER);
+		CHECK_ARG(L,19, LUA_TNUMBER);
+		CHECK_ARG(L,20, LUA_TNUMBER);
+		CHECK_ARG(L,21, LUA_TNUMBER);
+		CHECK_ARG(L,22, LUA_TNUMBER);
+		CHECK_ARG(L,23, LUA_TNUMBER);
+		CHECK_ARG(L,24, LUA_TNUMBER);
 
+		Vec3 p1 = { (F32)lua_tonumber(L, 1), (F32)lua_tonumber(L, 2), (F32)lua_tonumber(L, 3) };
+		Vec3 p2 = { (F32)lua_tonumber(L, 4), (F32)lua_tonumber(L, 5), (F32)lua_tonumber(L, 6) };
+		Vec3 p3 = { (F32)lua_tonumber(L, 7), (F32)lua_tonumber(L, 8), (F32)lua_tonumber(L, 9) };
+		Vec3 p4 = { (F32)lua_tonumber(L,10), (F32)lua_tonumber(L,11), (F32)lua_tonumber(L,12) };
+		Vec3 p5 = { (F32)lua_tonumber(L,13), (F32)lua_tonumber(L,14), (F32)lua_tonumber(L,15) };
+		Vec3 p6 = { (F32)lua_tonumber(L,16), (F32)lua_tonumber(L,17), (F32)lua_tonumber(L,18) };
+		Vec3 p7 = { (F32)lua_tonumber(L,19), (F32)lua_tonumber(L,20), (F32)lua_tonumber(L,21) };
+		Vec3 p8 = { (F32)lua_tonumber(L,22), (F32)lua_tonumber(L,23), (F32)lua_tonumber(L,24) };
+
+		Map::addWall({ p1, p2, p3, p4, p5, p6, p7, p8 });
+		return 0;
+	}
+
+	int setTextureSheet(lua_State* L)
+	{
+		CHECK_NUM_ARGS(L, 3);
+		CHECK_ARG(L, 1, LUA_TSTRING);
+		CHECK_ARG(L, 2, LUA_TNUMBER);
+		CHECK_ARG(L, 3, LUA_TNUMBER);
+
+		const char* path = lua_tostring(L, 1);
+		EN_ASSERT(path != nullptr, "Texture sheet path is nullptr !");
+
+		String sheetPath = path;
+		TextureSheet* sheet = Resource::getTextureSheet(sheetPath);
+		if (sheet)
+		{
+			sheet->div = { lua_tointeger(L, 2), lua_tointeger(L, 3) };
+			Map::getWallMesh().textureSheet = sheet;
+		}
+
+		return 0;
+	}
 
 	namespace LuaHostFunctions
 	{
@@ -431,6 +492,8 @@ namespace Core
 			lua_register(L, "_getInt", getInt);
 			lua_register(L, "_getFloat", getFloat);
 			lua_register(L, "_sendMessage", sendMessage);
+			lua_register(L, "_addWall", addWall);
+			lua_register(L, "_setTextureSheet", setTextureSheet);
 		}
 		void pushAllGlobals(lua_State* L)
 		{

@@ -13,13 +13,20 @@ Core::MapRenderer::~MapRenderer()
 
 void Core::MapRenderer::render(GBuffer& gBuffer, const Camera& camera)
 {
-	auto& walls = Map::getWalls();
-	if (walls.size() == 0) return;
+	if (Map::getWalls().size() == 0) return;
 
 	mShader.bind();
 	mShader.uploadProjView(Math::calculateProjectionView(camera));
-	glBindVertexArray(Map::getWallMesh());
-	glDrawElements(GL_TRIANGLES, walls.size() * 6, GL_UNSIGNED_INT, nullptr);
+
+	auto& mesh = Map::getWallMesh();
+
+	if (mesh.textureSheet != nullptr)
+	{
+		glActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D, mesh.textureSheet->id);
+	}
+	glBindVertexArray(mesh.vao);
+	glDrawElements(GL_TRIANGLES, mesh.vertexCount, GL_UNSIGNED_INT, nullptr);
 	glBindVertexArray(0);
 	
 }

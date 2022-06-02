@@ -35,6 +35,8 @@ namespace Core::GameEngine
 			{
 				Window::toggleFullScreen();
 			}
+
+		
 		}
 	}
 
@@ -52,6 +54,8 @@ namespace Core::GameEngine
 		Renderer::init(width, height);
 		DebugRenderer::init();
 		Physics::init();
+
+		
 	}
 
 	void run()
@@ -61,6 +65,9 @@ namespace Core::GameEngine
 		const double secsPerUpdate = 1.0 / (double)TPS;
 		double prevTime = Window::getCurrentTime();
 		double steps = 0.0;
+
+		
+
 		while (!Window::closeRequested())
 		{
 
@@ -136,6 +143,7 @@ namespace Core::GameEngine
 	}
 	void clearResources()
 	{
+		Editor::clear();
 		Map::clear();
 		Physics::clear();
 		ECS::clear();

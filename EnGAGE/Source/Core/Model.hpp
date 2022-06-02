@@ -18,7 +18,8 @@ namespace Core
 
 	struct Texture
 	{
-		unsigned int textureID;
+		String name;
+		UInt32 textureID;
 	};
 
 	struct Material

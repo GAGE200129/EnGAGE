@@ -10,10 +10,13 @@ in vec2 FSTexCoord;
 
 out vec4 out_Color;
 
+uniform sampler2D uTextureSheet;
 
 void main()
 {
+	vec4 color = texture(uTextureSheet, FSTexCoord);
+
 	outPosition = FSPosition;
 	outNormal = normalize(FSNormal);
-	outColor = vec4(1, 1, 1, 1);
+	outColor = color;
 }

@@ -52,7 +52,7 @@ public:
 
 namespace Core::Physics
 {
-	static glm::vec3 gGravity = { 0, 0, 0 };
+	static Vec3 gGravity = { 0, -9.8f, 0 };
 	static btDispatcher* gDispatcher;
 	static btCollisionConfiguration* gConfig;
 	static btBroadphaseInterface* gBroadphase;
@@ -154,10 +154,11 @@ namespace Core::Physics
 		EN_ASSERT(removeIt != gRigidBodies.end(), "Rigidbody not found !");
 
 		btRigidBody* removedBody = *removeIt;
+		gWorld->removeRigidBody(removedBody);
 		delete removedBody->getCollisionShape();
 		delete removedBody->getMotionState();
 		delete removedBody;
-		gWorld->removeRigidBody(removedBody);
+		
 
 		gRigidBodies.erase(removeIt);
 	}
@@ -184,11 +185,9 @@ namespace Core::Physics
 	{
 		gWorld->stepSimulation(delta);		
 	}
-	void updateMap(const DynArr<Vertex>& vertices)
+	void updateMap(const DynArr<Triangle>& triangles)
 	{
-		EN_ASSERT(vertices.size() % 3 == 0, "Missing vertex");
-
-		if (vertices.size() == 0)
+		if (triangles.size() == 0)
 		{
 			gWorld->removeCollisionObject(gMapObject);
 			return;
@@ -201,17 +200,17 @@ namespace Core::Physics
 
 		gMapMesh = new btTriangleMesh(true, false);
 		//Build new mesh
-		btVector3 triangle[3];
-		for (UInt64 i = 0; i < (vertices.size() - 3); i += 3)
+		btVector3 btTriangle[3];
+		for (auto& triangle : triangles)
 		{
-			const auto& vertex1 = vertices[i + 0];
-			const auto& vertex2 = vertices[i + 1];
-			const auto& vertex3 = vertices[i + 2];
-			triangle[0].setValue(vertex1.x, vertex1.y, vertex1.z);
-			triangle[1].setValue(vertex2.x, vertex2.y, vertex2.z);
-			triangle[2].setValue(vertex3.x, vertex3.y, vertex3.z);
+			const auto& vertex1 = triangle.p1;
+			const auto& vertex2 = triangle.p2;
+			const auto& vertex3 = triangle.p3;
+			btTriangle[0].setValue(vertex1.x, vertex1.y, vertex1.z);
+			btTriangle[1].setValue(vertex2.x, vertex2.y, vertex2.z);
+			btTriangle[2].setValue(vertex3.x, vertex3.y, vertex3.z);
 
-			gMapMesh->addTriangle(triangle[0], triangle[1], triangle[2], true);
+			gMapMesh->addTriangle(btTriangle[0], btTriangle[1], btTriangle[2], true);
 		}
 		gMapObject->setCollisionShape(new btBvhTriangleMeshShape(gMapMesh, true));
 

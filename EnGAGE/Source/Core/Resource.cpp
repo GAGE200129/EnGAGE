@@ -19,32 +19,57 @@ static Core::Mesh parseMesh(const tinygltf::Model& model, const tinygltf::Mesh& 
 static void extractAccessor(const tinygltf::Model& model, const tinygltf::Accessor& accessor, DynArr<char>& outBuffer,
 	unsigned int& outComponentType, unsigned int& outType, unsigned int& outCount);
 static void extractAccessorBuffer(const tinygltf::Model& model, const tinygltf::Accessor& accessor, DynArr<char>& outBuffer);
+static Scope<Core::TextureSheet> loadTextureSheet(const String& filePath);
 
 static DynArr<Scope<Core::Model>> gModels;
+static DynArr<Scope<Core::TextureSheet>> gTextureSheets;
 
 namespace Core::Resource
 {
 	const Model* getModel(const String& filePath)
 	{
-		bool found = false;
-		for (const auto& pModel : gModels)
+		for (auto it = gModels.cbegin(); it != gModels.cend(); it++)
 		{
-			if (pModel->name == filePath)
+			if ((*it)->name == filePath)
 			{
-				found = true;
-				return pModel.get();
+				return (*it).get();
 			}
 		}
-
-		if (!found)
+		//Load and add a new model to the pool
+		if (auto model = loadModel(filePath))
 		{
-			//Load and add a new model to the pool
-			auto model = loadModel(filePath);
-			if (model != nullptr)
-				gModels.push_back(std::move(model));
+			const Model* ptr = model.get();
+			gModels.push_back(std::move(model));
+			return ptr;
 		}
-		return gModels.back().get();
+		else
+		{
+			return nullptr;
+		}
 	}
+
+	TextureSheet* getTextureSheet(const String& texturePath)
+	{
+		for (auto it = gTextureSheets.cbegin(); it != gTextureSheets.cend(); it++)
+		{
+			if ((*it)->name == texturePath)
+			{
+				return (*it).get();
+			}
+		}
+		//Load and add a new model to the pool
+		if (auto sheet = loadTextureSheet(texturePath))
+		{
+			TextureSheet* ptr = sheet.get();
+			gTextureSheets.push_back(std::move(sheet));
+			return ptr;
+		}
+		else
+		{
+			return nullptr;
+		}
+	}
+
 
 	void clear()
 	{
@@ -67,7 +92,16 @@ namespace Core::Resource
 				glDeleteTextures(1, &texture.textureID);
 			}
 		}
+
+		for (const auto& texture : gTextureSheets)
+		{
+			EN_INFO("Deleting texture sheet: {}", texture->id);
+			glDeleteTextures(1, &texture->id);
+		}
+
+		gTextureSheets.clear();
 		gModels.clear();
+
 	}
 
 }
@@ -288,4 +322,41 @@ void extractAccessorBuffer(const tinygltf::Model& model, const tinygltf::Accesso
 	const auto& bufferView = model.bufferViews[accessor.bufferView];
 	const auto& buffer = model.buffers[bufferView.buffer].data;
 	outBuffer = DynArr<char>(buffer.begin() + bufferView.byteOffset, buffer.begin() + bufferView.byteOffset + bufferView.byteLength);
+}
+
+static Scope<Core::TextureSheet> loadTextureSheet(const String& filePath)
+{
+	Scope<Core::TextureSheet> result = createScope<Core::TextureSheet>();
+
+	int width, height, bpp;
+	stbi_set_flip_vertically_on_load(1);
+	stbi_uc* image = stbi_load(filePath.c_str(), &width, &height, &bpp, STBI_rgb_alpha);
+
+	if (image == nullptr)
+	{
+		EN_ERROR("Failed to load texture: {}", filePath);
+		return nullptr;
+	}
+
+	glGenTextures(1, &result->id);
+	EN_INFO("Generating texture sheet: {}", result->id);
+
+
+	glBindTexture(GL_TEXTURE_2D, result->id);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
+	glGenerateMipmap(GL_TEXTURE_2D);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+
+	stbi_image_free(image);
+	result->name = filePath;
+	result->width = width;
+	result->height = height;
+	result->div = { 1, 1 };
+	return result;
 }

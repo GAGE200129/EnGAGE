@@ -3,6 +3,7 @@
 #include "Core/Shader.hpp"
 #include "Core/Camera.hpp"
 #include "GBuffer.hpp"
+#include "Core/Map/WallMesh.hpp"
 
 namespace Core
 {
@@ -16,6 +17,9 @@ namespace Core
 			compile();
 
 			mProjViewLoc = registerUniform("uProjView");
+			mTextureSheet = registerUniform("uTextureSheets");
+			bind();
+			uploadInt(mTextureSheet, 0);
 		}
 		~MapShader()
 		{
@@ -28,6 +32,7 @@ namespace Core
 		}
 	private:
 		Int32 mProjViewLoc;
+		Int32 mTextureSheet;
 	};
 
 	class MapRenderer

@@ -8,6 +8,7 @@
 #include "Math.hpp"
 #include "Model.hpp"
 #include "Vertex.hpp"
+#include "Map/Map.hpp"
 #include "Components/RigidBody.hpp"
 #include "Components/Transform.hpp"
 #include "Components/ModelRenderer.hpp"
@@ -66,6 +67,8 @@ namespace Core::Scene
 			}
 			fileOut << "\n";
 		}
+
+		Map::serialize(fileOut);
 
 		fileOut.close();
 	}

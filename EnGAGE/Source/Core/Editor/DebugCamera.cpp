@@ -42,14 +42,14 @@ namespace Core::DebugCamera
 
 	void onMessage(const Message* pMessage)
 	{
-		if (pMessage->type == MessageType::SCROLL_UP)
+		if (pMessage->type == MessageType::SCROLL_UP && GameEngine::getDebugCamera().mode == Camera::Mode::ORTHOGRAPHIC)
 		{
-			gDebugCamState.orthoScale -= 5;
+			gDebugCamState.orthoScale -= 1;
 			if (gDebugCamState.orthoScale < 1) gDebugCamState.orthoScale = 1;
 		}
-		else if (pMessage->type == MessageType::SCROLL_DOWN)
+		else if (pMessage->type == MessageType::SCROLL_DOWN && GameEngine::getDebugCamera().mode == Camera::Mode::ORTHOGRAPHIC)
 		{
-			gDebugCamState.orthoScale += 5;
+			gDebugCamState.orthoScale += 1;
 			if (gDebugCamState.orthoScale < 1) gDebugCamState.orthoScale = 1;
 		}
 		else if (auto buttonClicked = Messenger::messageCast<MessageType::BUTTON_PRESSED, ButtonPressedMessage>(pMessage))
@@ -89,7 +89,7 @@ namespace Core::DebugCamera
 				if (gDebugCamState.orthoMode == OrthoMode::BACK)
 				{
 					camera.x -= dxNormalized * aspectRatio * orthoScale2;
-					camera.y += dyNormalized  * orthoScale2;
+					camera.y += dyNormalized * orthoScale2;
 				}
 				else if (gDebugCamState.orthoMode == OrthoMode::FRONT)
 				{
@@ -221,7 +221,7 @@ namespace Core::DebugCamera
 		{
 			gDebugCamState.direction = glm::normalize(gDebugCamState.direction);
 		}
-		
+
 		if (gDebugCamState.orthoMode != DebugCamera::OrthoMode::NONE)
 		{
 			F32 aspectRatio = (F32)Window::getWidth() / (F32)Window::getHeight();

@@ -63,10 +63,15 @@ namespace Core::Editor
 		ImGui::DestroyContext();
 	}
 
+	void clear()
+	{
+		MapEditor::clear();
+	}
+
 	void onMessage(const Message* pMessage)
 	{
-		auto io = ImGui::GetIO();
-		if (!gEnabled && !io.WantCaptureMouse && !io.WantCaptureKeyboard)
+		auto& io = ImGui::GetIO();
+		if (!gEnabled ||  io.WantCaptureKeyboard)
 			return;
 
 		DebugCamera::onMessage(pMessage);
@@ -139,44 +144,4 @@ namespace Core::Editor
 			else Input::enableCursor();
 		}
 	}
-
-	/*static void getCamFrontRay(Vec3& outPosition, Vec3& outRay)
-	{
-		auto& camera = GameEngine::getDebugCamera();
-
-		outPosition.x = camera.x;
-		outPosition.y = camera.y;
-		outPosition.z = camera.z;
-
-		auto x = ((Input::getX() / Window::getWidth()) - 0.5f) * 2;
-		auto y = -((Input::getY() / Window::getHeight()) - 0.5f) * 2;
-		auto projViewInverse = glm::inverse(Math::calculateProjectionView(camera));
-		Vec4 rayStart = projViewInverse * Vec4(0, 0, 0, 1);
-		rayStart *= 1.0f / rayStart.w;
-
-		Vec4 rayEnd = projViewInverse * Vec4(0, 0, 1, 1);
-		rayEnd *= 1.0f / rayEnd.w;
-
-		outRay = glm::normalize(Vec3(rayEnd) - Vec3(rayStart));
-	}
-
-	static void getCursorRay(Vec3& outPosition, Vec3& outRay)
-	{
-		auto& camera = GameEngine::getDebugCamera();
-
-		outPosition.x = camera.x;
-		outPosition.y = camera.y;
-		outPosition.z = camera.z;
-
-		auto x = ((Input::getX() / Window::getWidth()) - 0.5f) * 2;
-		auto y = -((Input::getY() / Window::getHeight()) - 0.5f) * 2;
-		auto projViewInverse = glm::inverse(Math::calculateProjectionView(camera));
-		Vec4 rayStart = projViewInverse * Vec4(x, y, 0, 1);
-		rayStart *= 1.0f / rayStart.w;
-
-		Vec4 rayEnd = projViewInverse * Vec4(x, y, 1, 1);
-		rayEnd *= 1.0f / rayEnd.w;
-
-		outRay = glm::normalize(Vec3(rayEnd) - Vec3(rayStart));
-	}*/
 }

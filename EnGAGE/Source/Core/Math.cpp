@@ -2,6 +2,7 @@
 #include "Math.hpp"
 
 #include "Window.hpp"
+#include "Input.hpp"
 
 namespace Core::Math
 {
@@ -137,5 +138,48 @@ namespace Core::Math
 		points.nbl = points.nc - (points.up * Hnear / 2.0f) - (points.right * Wnear / 2.0f);
 		points.nbr = points.nc - (points.up * Hnear / 2.0f) + (points.right * Wnear / 2.0f);
 		return points;
+	}
+
+	void getCamFrontRay(const Camera& camera, Vec3& outPosition, Vec3& outRay)
+	{
+		outPosition.x = camera.x;
+		outPosition.y = camera.y;
+		outPosition.z = camera.z;
+
+		auto x = ((Input::getX() / Window::getWidth()) - 0.5f) * 2;
+		auto y = -((Input::getY() / Window::getHeight()) - 0.5f) * 2;
+		auto projViewInverse = glm::inverse(Math::calculateProjectionView(camera));
+		Vec4 rayStart = projViewInverse * Vec4(0, 0, 0, 1);
+		rayStart *= 1.0f / rayStart.w;
+
+		Vec4 rayEnd = projViewInverse * Vec4(0, 0, 1, 1);
+		rayEnd *= 1.0f / rayEnd.w;
+
+		outRay = glm::normalize(Vec3(rayEnd) - Vec3(rayStart));
+	}
+
+	void getCursorRay(const Camera& camera, Vec3& outPosition, Vec3& outRay)
+	{
+		outPosition.x = camera.x;
+		outPosition.y = camera.y;
+		outPosition.z = camera.z;
+
+		auto x = ((Input::getX() / Window::getWidth()) - 0.5f) * 2;
+		auto y = -((Input::getY() / Window::getHeight()) - 0.5f) * 2;
+		auto projViewInverse = glm::inverse(Math::calculateProjectionView(camera));
+		Vec4 rayStart = projViewInverse * Vec4(x, y, 0, 1);
+		rayStart *= 1.0f / rayStart.w;
+
+		Vec4 rayEnd = projViewInverse * Vec4(x, y, 1, 1);
+		rayEnd *= 1.0f / rayEnd.w;
+
+		outRay = glm::normalize(Vec3(rayEnd) - Vec3(rayStart));
+	}
+	bool isRaySphereIntersect(const Vec3& rayPos, const Vec3& rayDir, const Vec3& center, const F32 radius)
+	{
+		F32 L = glm::length(center - rayPos);
+		F32 dot = glm::dot(rayDir, center - rayPos);
+		F32 distance = glm::sqrt(L * L - dot * dot);
+		return distance < radius;
 	}
 }

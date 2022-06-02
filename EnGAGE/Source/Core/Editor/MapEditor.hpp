@@ -3,4 +3,5 @@
 namespace Core::MapEditor
 {
 	void process();
+	void clear();
 }

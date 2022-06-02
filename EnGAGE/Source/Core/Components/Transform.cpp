@@ -70,7 +70,8 @@ void Core::Transform::OnImGui(ComponentHeader* pHeader)
 	if (ImGuizmo::Manipulate(
 		glm::value_ptr(view),
 		glm::value_ptr(proj),
-		(ImGuizmo::OPERATION)currentGizmoOperation, (ImGuizmo::MODE)currentGizmoMode,
+		(ImGuizmo::OPERATION)currentGizmoOperation,
+		(ImGuizmo::MODE)currentGizmoMode,
 		glm::value_ptr(modelMat), NULL, NULL))
 	{
 		float matrixTranslation[3], matrixRotation[3], matrixScale[3];

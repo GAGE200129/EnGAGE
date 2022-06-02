@@ -28,4 +28,7 @@ namespace Core::Math
 	Mat4x4 calDirectionalProjView(const Camera& camera, const Vec3& direction);
 	FrustumPoints createFrustumPoints(const Camera& camera, const F32 near, const F32 far);
 	Frustum createFrustum(const Camera& camera);
+	void getCamFrontRay(const Camera& camera, Vec3& outPosition, Vec3& outRay);
+	void getCursorRay(const Camera& camera, Vec3& outPosition, Vec3& outRay);
+	bool isRaySphereIntersect(const Vec3& rayPos, const Vec3& rayDir, const Vec3& center, const F32 radius);
 }
