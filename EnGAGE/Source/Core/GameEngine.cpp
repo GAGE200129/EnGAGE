@@ -20,23 +20,27 @@ namespace Core::GameEngine
 	Camera gMainCamera;
 	Camera gDebugCamera;
 	Camera* gCurrentCamera = nullptr;
-	
+
 	static void onFunctionKeys(const Message* pMessage)
 	{
 		if (auto keyPressedMessage = Messenger::messageCast<MessageType::KEY_PRESSED, KeyPressedMessage>(pMessage))
 		{
 			auto key = keyPressedMessage->keyCode;
+#ifdef  EN_DEBUG
 			//Enable editor
 			if (key == InputCodes::KEY_F1)
 			{
 				Editor::toggle();
 			}
-			else if (key == InputCodes::KEY_F11)
+#endif //  EN_DEBUG
+
+
+			if (key == InputCodes::KEY_F11)
 			{
 				Window::toggleFullScreen();
 			}
 
-		
+
 		}
 	}
 
@@ -55,7 +59,7 @@ namespace Core::GameEngine
 		DebugRenderer::init();
 		Physics::init();
 
-		
+
 	}
 
 	void run()
@@ -66,7 +70,7 @@ namespace Core::GameEngine
 		double prevTime = Window::getCurrentTime();
 		double steps = 0.0;
 
-		
+
 
 		while (!Window::closeRequested())
 		{
@@ -126,7 +130,7 @@ namespace Core::GameEngine
 			Renderer::render(*gCurrentCamera);
 			Editor::render();
 			DebugRenderer::render(*gCurrentCamera);
-			
+
 			Window::swapBuffers();
 
 			ECS::updateRemovedEntities();

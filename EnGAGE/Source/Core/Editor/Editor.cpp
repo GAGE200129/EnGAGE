@@ -71,7 +71,7 @@ namespace Core::Editor
 	void onMessage(const Message* pMessage)
 	{
 		auto& io = ImGui::GetIO();
-		if (!gEnabled ||  io.WantCaptureKeyboard)
+		if (!gEnabled || io.WantCaptureKeyboard)
 			return;
 
 		DebugCamera::onMessage(pMessage);
@@ -90,13 +90,16 @@ namespace Core::Editor
 
 	void update(F32 delta)
 	{
+		if (!gEnabled)
+			return;
+
 		DebugCamera::update(delta);
 	}
 
 	void render()
 	{
-#ifdef EN_DEBUG
-		if (!gEnabled) return;
+		if (!gEnabled) 
+			return;
 
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
@@ -105,6 +108,10 @@ namespace Core::Editor
 		ImGuizmo::SetRect(0, 0, Window::getWidth(), Window::getHeight());
 		ImGuizmo::SetOrthographic(GameEngine::getDebugCamera().mode == Camera::Mode::ORTHOGRAPHIC);
 		ImGuizmo::BeginFrame();
+
+		//ImGui::Begin("GameView");
+		//ImGui::Image((ImTextureID)Renderer::getGBuffer().getPost().getColorTex(), ImGui::GetContentRegionMax());
+		//ImGui::End();
 
 		GameEngineEditor::process();
 		RendererEditor::process();
@@ -122,7 +129,6 @@ namespace Core::Editor
 		}
 		ImGui::Render();
 		ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-#endif
 	}
 
 	bool isEnabled()

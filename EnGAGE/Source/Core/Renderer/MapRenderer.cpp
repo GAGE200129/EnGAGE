@@ -15,6 +15,7 @@ void Core::MapRenderer::render(GBuffer& gBuffer, const Camera& camera)
 {
 	if (Map::getWalls().size() == 0) return;
 
+
 	mShader.bind();
 	mShader.uploadProjView(Math::calculateProjectionView(camera));
 
@@ -28,5 +29,4 @@ void Core::MapRenderer::render(GBuffer& gBuffer, const Camera& camera)
 	glBindVertexArray(mesh.vao);
 	glDrawElements(GL_TRIANGLES, mesh.vertexCount, GL_UNSIGNED_INT, nullptr);
 	glBindVertexArray(0);
-	
 }

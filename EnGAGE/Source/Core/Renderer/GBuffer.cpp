@@ -86,18 +86,24 @@ void Core::GBuffer::update(UInt32 inWidth, UInt32 inHeight, F32 scale)
 	glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glBindTexture(GL_TEXTURE_2D, 0);
+
+	post.update(inWidth, inHeight, scale);
 }
 
 void Core::GBuffer::bind(UInt32 inWidth, UInt32 inHeight, F32 scale)
 {
 	glBindFramebuffer(GL_FRAMEBUFFER, FBO);
 	glEnable(GL_DEPTH_TEST);
+	glEnable(GL_CULL_FACE);
+	glCullFace(GL_BACK);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glViewport(0, 0, inWidth * scale, inHeight * scale);
 }
 
 void Core::GBuffer::unBind(UInt32 inWidth, UInt32 inHeight)
 {
+	glDisable(GL_DEPTH_TEST);
+	glDisable(GL_CULL_FACE);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glClear(GL_COLOR_BUFFER_BIT);
 	glViewport(0, 0, inWidth, inHeight);
@@ -127,4 +133,51 @@ void Core::GBuffer::unBindQuad()
 	glBindVertexArray(0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 	glDisable(GL_BLEND);
+}
+
+Core::PostProcess::PostProcess()
+{
+	glGenFramebuffers(1, &fbo);
+	glGenTextures(1, &colorTex);
+}
+
+Core::PostProcess::~PostProcess()
+{
+	glDeleteFramebuffers(1, &fbo);
+	glDeleteTextures(1, &colorTex);
+}
+
+void Core::PostProcess::update(UInt32 inWidth, UInt32 inHeight, F32 scale)
+{
+	UInt32 width = inWidth * scale;
+	UInt32 height = inHeight * scale;
+
+	auto minFilter = GL_NEAREST;
+	auto magFilter = GL_NEAREST;
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glBindTexture(GL_TEXTURE_2D, colorTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA16F, width, height, 0, GL_RGBA, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorTex, 0);
+
+	unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0 };
+	glDrawBuffers(1, attachments);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+void Core::PostProcess::bind(UInt32 inWidth, UInt32 inHeight, F32 scale) const
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, fbo);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glViewport(0, 0, inWidth * scale, inHeight * scale);
+}
+
+void Core::PostProcess::unbind(UInt32 inWidth, UInt32 inHeight) const
+{
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	glClear(GL_COLOR_BUFFER_BIT);
+	glViewport(0, 0, inWidth, inHeight);
 }

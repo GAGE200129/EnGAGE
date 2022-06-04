@@ -2,6 +2,7 @@
 
 #include "Core/Messenger/Messenger.hpp"
 #include "Core/Camera.hpp"
+#include "GBuffer.hpp"
 
 namespace Core::Renderer
 {
@@ -12,4 +13,6 @@ namespace Core::Renderer
 
 	bool& isRenderCullingSphere();
 	void setRenderScale(F32 scale);
+
+	GBuffer& getGBuffer();
 }

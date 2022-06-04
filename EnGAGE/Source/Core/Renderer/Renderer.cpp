@@ -8,7 +8,7 @@
 #include "PointRenderer.hpp"
 #include "EntityRenderer.hpp"
 #include "MapRenderer.hpp"
-#include "GBuffer.hpp"
+
 #include <glad/glad.h>
 
 
@@ -56,16 +56,24 @@ namespace Core::Renderer
 
 	void render(const Camera& camera)
 	{
-		gBuffer->bind(Window::getWidth(), Window::getHeight(), gRenderScale);
+		auto width = Window::getWidth();
+		auto height = Window::getHeight();
+		gBuffer->bind(width, height, gRenderScale);
 		gEntityRenderer->render(*gBuffer, camera, gRenderCullingSphere);
 		gMapRenderer->render(*gBuffer, camera);
-		gBuffer->unBind(Window::getWidth(), Window::getHeight());
+		gBuffer->unBind(width, height);
 
+		//gBuffer->getPost().bind(width, height, gRenderScale);
 		gBuffer->bindQuad();
 		gAmbientRenderer->render(*gBuffer);
 		gDirectionalRenderer->render(*gBuffer, camera);
 		gPointRenderer->render(*gBuffer, camera);
 		gBuffer->unBindQuad();
+		//gBuffer->getPost().unbind(width, height);
+
+		//glBindVertexArray(gBuffer->getQuadVAO());
+		//
+		//glBindVertexArray(0);
 
 	}
 
@@ -80,6 +88,11 @@ namespace Core::Renderer
 		if (gRenderScale < 0.0f) gRenderScale = 0.0f;
 		else if (gRenderScale > 2.0f) gRenderScale = 2.0f;
 		gBuffer->update(Window::getWidth(), Window::getHeight(), gRenderScale);
+	}
+
+	GBuffer& getGBuffer()
+	{
+		return *gBuffer;
 	}
 
 }

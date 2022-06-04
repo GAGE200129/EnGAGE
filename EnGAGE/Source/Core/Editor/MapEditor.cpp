@@ -106,7 +106,9 @@ namespace Core::MapEditor
 				cursorPos + Vec3{0, 1, 1},
 				cursorPos + Vec3{1, 1, 1},
 				cursorPos + Vec3{1, 1, 0}
-			});
+				});
+
+			selectedWall = Map::getWalls().size() - 1;
 		}
 		if (ImGui::Button("Select wall"))
 		{
@@ -117,34 +119,71 @@ namespace Core::MapEditor
 			selectMode = false;
 			selectedWall = -1;
 		}
+		if (ImGui::Button("Delete wall") && selectedWall != -1)
+		{
+			Map::removeWall(selectedWall);
+			selectedWall = -1;
+		}
+		if (selectedWall != -1 && ImGui::Button("SplitZY"))
+		{
+			Wall wall = Map::getWalls()[selectedWall];
+			Vec3 half14 = (wall.p1 + wall.p4) / 2.0f;
+			Vec3 half23 = (wall.p2 + wall.p3) / 2.0f;
+			Vec3 half67 = (wall.p6 + wall.p7) / 2.0f;
+			Vec3 half58 = (wall.p5 + wall.p8) / 2.0f;
+
+			Wall newWall = { wall.p1, wall.p2, half23, half14, wall.p5, wall.p6, half67, half58,
+							wall.front, wall.back, wall.left, wall.right, wall.top, wall.bottom };
+			Wall newWall2 = { half14, half23, wall.p3, wall.p4, half58, half67, wall.p7, wall.p8,
+						wall.front, wall.back, wall.left, wall.right, wall.top, wall.bottom };
+			Map::removeWall(selectedWall);
+			Map::addWall(newWall);
+			Map::addWall(newWall2);
+			selectedWall = -1;
+		}
+		if (selectedWall != -1 && ImGui::Button("SplitZX"))
+		{
+			Wall wall = Map::getWalls()[selectedWall];
+			Vec3 half15 = (wall.p1 + wall.p5) / 2.0f;
+			Vec3 half26 = (wall.p2 + wall.p6) / 2.0f;
+			Vec3 half37 = (wall.p3 + wall.p7) / 2.0f;
+			Vec3 half48 = (wall.p4 + wall.p8) / 2.0f;
+
+			Wall newWall = { wall.p1, wall.p2, wall.p3, wall.p4, half15, half26, half37, half48,
+							wall.front, wall.back, wall.left, wall.right, wall.top, wall.bottom };
+			Wall newWall2 = { half15, half26, half37, half48, wall.p5, wall.p6, wall.p7, wall.p8,
+						wall.front, wall.back, wall.left, wall.right, wall.top, wall.bottom };
+			Map::removeWall(selectedWall);
+			Map::addWall(newWall);
+			Map::addWall(newWall2);
+			selectedWall = -1;
+		}
+		if (selectedWall != -1 && ImGui::Button("SplitXY"))
+		{
+			Wall wall = Map::getWalls()[selectedWall];
+			Vec3 half12 = (wall.p1 + wall.p2) / 2.0f;
+			Vec3 half34 = (wall.p3 + wall.p4) / 2.0f;
+			Vec3 half56 = (wall.p5 + wall.p6) / 2.0f;
+			Vec3 half78 = (wall.p7 + wall.p8) / 2.0f;
+
+			Wall newWall = { wall.p1, half12, half34, wall.p4, wall.p5, half56, half78, wall.p8,
+							wall.front, wall.back, wall.left, wall.right, wall.top, wall.bottom };
+			Wall newWall2 = { half12, wall.p2, wall.p3, half34, half56, wall.p6, wall.p7, half78,
+						wall.front, wall.back, wall.left, wall.right, wall.top, wall.bottom };
+			Map::removeWall(selectedWall);
+			Map::addWall(newWall);
+			Map::addWall(newWall2);
+			selectedWall = -1;
+		}
 		if (selectedWall != -1)
 		{
-			if (ImGui::Button("Delete wall"))
+			
+			auto& wall = Map::getWalls()[selectedWall];
+			auto& wallMesh = Map::getWallMesh();
+			for (int n = 0; n < 6; n++)
 			{
-				Map::removeWall(selectedWall);
-				selectedWall = -1;
-			}
-
-			if (ImGui::TreeNode("Faces"))
-			{
-				auto& wall = Map::getWalls()[selectedWall];
-				auto& wallMesh = Map::getWallMesh();
-				for (int n = 0; n < 6; n++)
-				{
-					if (ImGui::RadioButton(FACE_NAMES[n], selectedFace == n))
-						selectedFace = n;
-
-					auto* sheet = wallMesh.textureSheet;
-					if (sheet && selectedFace == n)
-					{
-						bool bit = false;
-						bit |= ImGui::SliderInt("Slot coord X", &wall.slotCoords[n].x, 0, (sheet->div.x-1));
-						bit |= ImGui::SliderInt("Slot coord Y", &wall.slotCoords[n].y, 0, (sheet->div.y-1));
-						if (bit)
-							Map::updateVertexData();
-					}
-				}
-				ImGui::TreePop();
+				if (ImGui::RadioButton(FACE_NAMES[n], selectedFace == n))
+					selectedFace = n;
 			}
 		}
 		ImGui::Separator();
@@ -160,17 +199,41 @@ namespace Core::MapEditor
 			}
 			ImGui::EndDragDropTarget();
 		}
-		
+
 		if (texture)
 		{
 			ImGui::Image((ImTextureID)texture->id, ImVec2(texture->width, texture->height));
-			if (ImGui::SliderInt2("Texture div", &(texture->div.x), 0, 256))
+			if (ImGui::InputInt2("Texture div", &(texture->div.x)))
 			{
 				Map::updateVertexData();
 			}
+
+			F32 deltaX = 1.0f / texture->div.x;
+			F32 deltaY = 1.0f / texture->div.y;
+			Int32 id = 0;
+			for (Int32 y = 0; y < texture->div.y; y++)
+			{
+				for (Int32 x = 0; x < texture->div.x; x++)
+				{
+					ImGui::PushID(id);
+					if (ImGui::ImageButton((ImTextureID)texture->id,
+						ImVec2(texture->width / texture->div.x, texture->height / texture->div.y),
+						ImVec2(x * deltaX, y * deltaY),
+						ImVec2(x * deltaX + deltaX, y * deltaY + deltaY))
+						&& selectedWall != -1)
+					{
+						Map::getWalls()[selectedWall].slotCoords[selectedFace] = { x, y };
+						Map::updateVertexData();
+					}
+					id++;
+					ImGui::PopID();
+					ImGui::SameLine();
+				}
+				ImGui::NewLine();
+			}
 		}
 
-		
+
 
 		ImGui::End();
 	}

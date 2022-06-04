@@ -46,7 +46,13 @@ namespace Core::Map
 				p5.x << ", " << p5.y << ", " << p5.z << ", " <<
 				p6.x << ", " << p6.y << ", " << p6.z << ", " <<
 				p7.x << ", " << p7.y << ", " << p7.z << ", " <<
-				p8.x << ", " << p8.y << ", " << p8.z << ")\n";		
+				p8.x << ", " << p8.y << ", " << p8.z << ", " <<
+				wall.front.x << ", " << wall.front.y << ", " <<
+				wall.back.x << ", " << wall.back.y << ", " <<
+				wall.left.x << ", " << wall.left.y << ", " <<
+				wall.right.x << ", " << wall.right.y << ", " <<
+				wall.top.x << ", " << wall.top.y << ", " <<
+				wall.bottom.x << ", " << wall.bottom.y << ")\n";
 		}
 	}
 	void shutdown()
@@ -119,7 +125,7 @@ namespace Core::Map
 		faces.reserve(gWalls.size() * 6);
 		for (const auto& wall : gWalls)
 		{
-			addWallFace(Face{ wall.p1, wall.p2, wall.p3, wall.p4 }, wall.bottom, faces); // Bottom
+			addWallFace(Face{ wall.p4, wall.p3, wall.p2, wall.p1 }, wall.bottom, faces); // Bottom
 			addWallFace(Face{ wall.p5, wall.p6, wall.p7, wall.p8 }, wall.top, faces); // Top
 			addWallFace(Face{ wall.p2, wall.p3, wall.p7, wall.p6 }, wall.back, faces); // backward
 			addWallFace(Face{ wall.p4, wall.p1, wall.p5, wall.p8 }, wall.front, faces); // forward
