@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Core/Shader.hpp"
-#include "Core/Camera.hpp"
+#include "Core/Data/Camera.hpp"
 #include "GBuffer.hpp"
 #include "Core/Map/WallMesh.hpp"
 
@@ -39,7 +39,8 @@ namespace Core
 	{
 	public:
 		~MapRenderer();
-		void render(GBuffer& gBuffer, const Camera& camera);
+		void render(const Camera& camera);
+		void renderNoShader();
 	private:
 		MapShader mShader;
 	};

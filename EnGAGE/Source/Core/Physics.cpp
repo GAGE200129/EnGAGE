@@ -258,7 +258,6 @@ namespace Core::Physics
 			return;
 		}
 		}
-
 	}
 }
 

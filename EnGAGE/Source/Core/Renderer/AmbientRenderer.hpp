@@ -21,7 +21,7 @@ namespace Core
 		AmbientRenderer();
 		~AmbientRenderer();
 
-		void render(const GBuffer& buffer);
+		void render(GBuffer& buffer);
 	private:
 		AmbientShader mShader;
 		Vec3 mAmbientColor;

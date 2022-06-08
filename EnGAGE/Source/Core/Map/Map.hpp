@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Model.hpp"
+#include "Core/Data/Model.hpp"
 #include "TextureSheet.hpp"
 #include "WallMesh.hpp"
 

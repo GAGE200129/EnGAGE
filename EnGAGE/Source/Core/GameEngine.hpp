@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Camera.hpp"
+#include "Core/Data/Camera.hpp"
 
 namespace Core::GameEngine
 {

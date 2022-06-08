@@ -47,8 +47,9 @@ Core::PointRenderer::~PointRenderer()
 	mShader.cleanup();
 }
 
-void Core::PointRenderer::render(const GBuffer& gBuffer, const Camera& camera)
+void Core::PointRenderer::render(GBuffer& gBuffer, const Camera& camera)
 {
+	gBuffer.bindQuad();
 	mShader.bind();
 	System& pointSystem = ECS::getSystem(SystemType::POINT);
 	for (auto e : pointSystem.entities)

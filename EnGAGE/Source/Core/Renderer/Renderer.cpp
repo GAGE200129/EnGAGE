@@ -23,11 +23,12 @@ namespace Core::Renderer
 
 	static bool gRenderCullingSphere = false;
 	static F32 gRenderScale = 1.0f;
+	static UInt32 gDirectionalShadowMapSize = 512;
 
 	void init(UInt32 currentWidth, UInt32 currentHeight)
 	{
 		gAmbientRenderer = new AmbientRenderer();
-		gDirectionalRenderer = new DirectionalRenderer();
+		gDirectionalRenderer = new DirectionalRenderer(gDirectionalShadowMapSize, gRenderScale);
 		gPointRenderer = new PointRenderer();
 		gEntityRenderer = new EntityRenderer();
 		gMapRenderer = new MapRenderer();
@@ -36,7 +37,6 @@ namespace Core::Renderer
 	}
 	void onMessage(const Message* pMessage)
 	{
-
 		if (auto windowResized = Messenger::messageCast<MessageType::WINDOW_RESIZED, WindowResizedMessage>(pMessage))
 		{
 			gBuffer->update(windowResized->width, windowResized->height, gRenderScale);
@@ -56,24 +56,22 @@ namespace Core::Renderer
 
 	void render(const Camera& camera)
 	{
+
 		auto width = Window::getWidth();
 		auto height = Window::getHeight();
 		gBuffer->bind(width, height, gRenderScale);
 		gEntityRenderer->render(*gBuffer, camera, gRenderCullingSphere);
-		gMapRenderer->render(*gBuffer, camera);
+		gMapRenderer->render(camera);
 		gBuffer->unBind(width, height);
 
-		//gBuffer->getPost().bind(width, height, gRenderScale);
-		gBuffer->bindQuad();
+		
 		gAmbientRenderer->render(*gBuffer);
-		gDirectionalRenderer->render(*gBuffer, camera);
+		gDirectionalRenderer->render(width, height, *gBuffer, camera, *gMapRenderer);
 		gPointRenderer->render(*gBuffer, camera);
-		gBuffer->unBindQuad();
-		//gBuffer->getPost().unbind(width, height);
 
-		//glBindVertexArray(gBuffer->getQuadVAO());
-		//
-		//glBindVertexArray(0);
+		gBuffer->unBindQuad();
+
+	
 
 	}
 
@@ -88,6 +86,13 @@ namespace Core::Renderer
 		if (gRenderScale < 0.0f) gRenderScale = 0.0f;
 		else if (gRenderScale > 2.0f) gRenderScale = 2.0f;
 		gBuffer->update(Window::getWidth(), Window::getHeight(), gRenderScale);
+		gDirectionalRenderer->resize(gDirectionalShadowMapSize, gRenderScale);
+	}
+
+	void setDirectionalShadowMapSize(UInt32 size)
+	{
+		gDirectionalShadowMapSize = size;
+		gDirectionalRenderer->resize(gDirectionalShadowMapSize, gRenderScale);
 	}
 
 	GBuffer& getGBuffer()

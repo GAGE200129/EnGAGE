@@ -1,6 +1,6 @@
 #pragma once
 #include "Core/Messenger/Messenger.hpp"
-#include "Triangle.hpp"
+#include "Core/Data/Triangle.hpp"
 
 class btRigidBody;
 namespace Core::Physics

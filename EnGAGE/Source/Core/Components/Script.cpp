@@ -15,6 +15,7 @@ void Core::Script::OnImGui(ComponentHeader* pHeader)
 		if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("RESOURCE_SCRIPT"))
 		{
 			Core::Scripting::loadFile(pScript->L, String((char*)payload->Data));
+			memcpy(pScript->scriptPath, (char*)payload->Data, payload->DataSize);
 		}
 		ImGui::EndDragDropTarget();
 	}

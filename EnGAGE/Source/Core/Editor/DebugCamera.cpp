@@ -4,7 +4,7 @@
 
 #include "Core/Input.hpp"
 #include "Core/InputCodes.hpp"
-#include "Core/Camera.hpp"
+#include "Core/Data/Camera.hpp"
 #include "Core/GameEngine.hpp"
 #include "Core/Window.hpp"
 

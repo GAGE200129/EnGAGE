@@ -35,7 +35,8 @@ namespace Core::RendererEditor
 	void process()
 	{
 		static bool drawAABB = false;
-		static float renderScale = 1.0f;
+		static F32 renderScale = 1.0f;
+		static Int32 shadowMapSize = 512;
 		static bool drawCameraFrustum = false;
 
 		ImGui::Begin("Renderer");
@@ -54,12 +55,18 @@ namespace Core::RendererEditor
 		{
 			Renderer::setRenderScale(renderScale);
 		}
-		
+		if (ImGui::SliderInt("Shadow map size", &shadowMapSize, 64, 4096))
+		{
+			Renderer::setDirectionalShadowMapSize(shadowMapSize);
+		}
+		//ImGui::Image((ImTextureID)Renderer::gDirectionalRenderer->getDepthMap(), ImVec2(1024, 1024));
 		ImGui::End();
 
 		if (drawCameraFrustum)
 		{
 			renderCameraFrustum();
 		}
+
+
 	}
 }

@@ -4,7 +4,6 @@
 #include <glad/glad.h>
 
 #include "Core/Physics.hpp"
-#include "Core/Triangle.hpp"
 
 namespace Core::Map
 {
@@ -129,7 +128,7 @@ namespace Core::Map
 			addWallFace(Face{ wall.p5, wall.p6, wall.p7, wall.p8 }, wall.top, faces); // Top
 			addWallFace(Face{ wall.p2, wall.p3, wall.p7, wall.p6 }, wall.back, faces); // backward
 			addWallFace(Face{ wall.p4, wall.p1, wall.p5, wall.p8 }, wall.front, faces); // forward
-			addWallFace(Face{ wall.p5, wall.p1, wall.p2, wall.p6 }, wall.left, faces); // Left
+			addWallFace(Face{ wall.p1, wall.p2, wall.p6, wall.p5 }, wall.left, faces); // Left
 			addWallFace(Face{ wall.p3, wall.p4, wall.p8, wall.p7 }, wall.right, faces); // Right
 		}
 

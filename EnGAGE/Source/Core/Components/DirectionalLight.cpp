@@ -4,9 +4,9 @@
 void Core::DirectionalLight::OnImGui(ComponentHeader* pHeader)
 {
 	Component* pLight = (Component*)pHeader;
-	ImGui::DragFloat3("Direction", &pLight->direction.x, 0.1f, -1, 1);
-	ImGui::DragFloat3("Color", &pLight->color.x, 0.1f, 0, 1);
-	ImGui::DragFloat("Intensity", &pLight->intensity, 0.1f, 0.0f, 1.0f);
+	ImGui::DragFloat3("Direction", &pLight->direction.x, 0.01f, -1, 1);
+	ImGui::ColorEdit3("Color", &pLight->color.x);
+	ImGui::DragFloat("Intensity", &pLight->intensity, 0.01f, 0.0f, 1.0f);
 }
 
 void Core::DirectionalLight::OnSeralize(ComponentHeader* pHeader, std::ofstream& out, const String& entity)

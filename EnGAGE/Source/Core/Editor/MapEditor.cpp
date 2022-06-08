@@ -176,8 +176,7 @@ namespace Core::MapEditor
 			selectedWall = -1;
 		}
 		if (selectedWall != -1)
-		{
-			
+		{	
 			auto& wall = Map::getWalls()[selectedWall];
 			auto& wallMesh = Map::getWallMesh();
 			for (int n = 0; n < 6; n++)
@@ -256,7 +255,6 @@ namespace Core::MapEditor
 		Vec3* p2 = wp5;
 		Vec3* p3 = wp8;
 		Vec3* p4 = wp4;
-		ImGuizmo::OPERATION operation = ImGuizmo::OPERATION::TRANSLATE_Z;
 
 		if (selectedFace == 0) //Front
 		{
@@ -264,7 +262,6 @@ namespace Core::MapEditor
 			p2 = wp5;
 			p3 = wp8;
 			p4 = wp4;
-			operation = ImGuizmo::OPERATION::TRANSLATE_Z;
 		}
 		else if (selectedFace == 1) //Back
 		{
@@ -272,7 +269,6 @@ namespace Core::MapEditor
 			p2 = wp3;
 			p3 = wp7;
 			p4 = wp6;
-			operation = ImGuizmo::OPERATION::TRANSLATE_Z;
 		}
 		else if (selectedFace == 2) //Left
 		{
@@ -280,7 +276,6 @@ namespace Core::MapEditor
 			p2 = wp2;
 			p3 = wp6;
 			p4 = wp5;
-			operation = ImGuizmo::OPERATION::TRANSLATE_X;
 		}
 
 		else if (selectedFace == 3) //Right
@@ -289,7 +284,6 @@ namespace Core::MapEditor
 			p2 = wp7;
 			p3 = wp3;
 			p4 = wp4;
-			operation = ImGuizmo::OPERATION::TRANSLATE_X;
 		}
 		else if (selectedFace == 4) //Top
 		{
@@ -297,7 +291,6 @@ namespace Core::MapEditor
 			p2 = wp6;
 			p3 = wp7;
 			p4 = wp8;
-			operation = ImGuizmo::OPERATION::TRANSLATE_Y;
 		}
 		else if (selectedFace == 5) //Bottom
 		{
@@ -305,10 +298,7 @@ namespace Core::MapEditor
 			p2 = wp2;
 			p3 = wp3;
 			p4 = wp4;
-			operation = ImGuizmo::OPERATION::TRANSLATE_Y;
 		}
-
-
 		Vec3 center = (*p1 + *p2 + *p3 + *p4) / 4.0f;
 
 		Mat4x4 proj = Math::calculateProj(camera);
@@ -318,7 +308,8 @@ namespace Core::MapEditor
 		if (ImGuizmo::Manipulate(
 			glm::value_ptr(view),
 			glm::value_ptr(proj),
-			operation, ImGuizmo::MODE::WORLD,
+			ImGuizmo::OPERATION::TRANSLATE,
+			ImGuizmo::MODE::WORLD,
 			glm::value_ptr(mat), glm::value_ptr(delta), &snap.x))
 		{
 			F32 matrixTranslation[3], matrixRotation[3], matrixScale[3];

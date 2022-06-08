@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Camera.hpp"
+#include "Core/Data/Camera.hpp"
 #include "GBuffer.hpp"
 
 namespace Core

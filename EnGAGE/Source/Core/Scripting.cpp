@@ -20,7 +20,6 @@ static DynArr<lua_State*> gScripts;
 
 void Core::Scripting::onMessage(const Message* pMessage)
 {
-
 	System& system = ECS::getSystem(SystemType::SCRIPTING);
 	for (unsigned int entity : system.entities)
 	{

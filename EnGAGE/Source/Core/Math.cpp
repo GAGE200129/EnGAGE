@@ -76,6 +76,53 @@ namespace Core::Math
 
 		return lightProjection * lightView;
 	}
+	Mat4x4 calCSMShadowMapProjView(const Vec3& lightDir, F32 zMult, const Camera& camera, F32, F32)
+	{
+		//Create shadow map view proj
+		auto points = Math::createFrustumPoints(camera, camera.near, camera.far);
+
+		Vec3 center = Vec3(0, 0, 0);
+		for (const auto& v : points.points)
+		{
+			center += v;
+		}
+		center /= 8;
+
+		Mat4x4 view = glm::lookAt(center - lightDir, center, Vec3{ 0.0f, 1.0f, 0.0f });
+		F32 minX = std::numeric_limits<float>::max();
+		F32 maxX = std::numeric_limits<float>::min();
+		F32 minY = std::numeric_limits<float>::max();
+		F32 maxY = std::numeric_limits<float>::min();
+		F32 minZ = std::numeric_limits<float>::max();
+		F32 maxZ = std::numeric_limits<float>::min();
+		for (const auto& v : points.points)
+		{
+			const auto trf = view * Vec4(v, 1);
+			minX = glm::min(minX, trf.x);
+			maxX = glm::max(maxX, trf.x);
+			minY = glm::min(minY, trf.y);
+			maxY = glm::max(maxY, trf.y);
+			minZ = glm::min(minZ, trf.z);
+			maxZ = glm::max(maxZ, trf.z);
+		}
+		if (minZ < 0)
+		{
+			minZ *= zMult;
+		}
+		else
+		{
+			minZ /= zMult;
+		}
+		if (maxZ < 0)
+		{
+			maxZ /= zMult;
+		}
+		else
+		{
+			maxZ *= zMult;
+		}
+		return glm::ortho(minX, maxX, minY, maxY, minZ, maxZ) * view;
+	}
 	Frustum createFrustum(const Camera& camera)
 	{
 		Frustum frustum;

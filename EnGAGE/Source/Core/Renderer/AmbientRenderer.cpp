@@ -23,7 +23,7 @@ void Core::AmbientShader::uploadAmbient(const glm::vec3& v)
 }
 
 Core::AmbientRenderer::AmbientRenderer() :
-	mAmbientColor(0.1f, 0.1f, 0.1f),
+	mAmbientColor(0.3f, 0.3f, 0.3f),
 	mShader()
 {
 }
@@ -34,8 +34,9 @@ Core::AmbientRenderer::~AmbientRenderer()
 }
 
 
-void Core::AmbientRenderer::render(const GBuffer& buffer)
+void Core::AmbientRenderer::render(GBuffer& buffer)
 {
+	buffer.bindQuad();
 	mShader.bind();
 	mShader.uploadAmbient(mAmbientColor);
 	buffer.renderQuad();

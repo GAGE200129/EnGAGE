@@ -66,7 +66,7 @@ namespace Core::Window
 		gladLoadGLLoader((GLADloadproc)glfwGetProcAddress);
 
 		setupCallbacks();
-
+		glfwSwapInterval(0);
 	}
 
 	void destroy()

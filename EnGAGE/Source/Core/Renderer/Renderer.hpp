@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Core/Messenger/Messenger.hpp"
-#include "Core/Camera.hpp"
+#include "Core/Data/Camera.hpp"
 #include "GBuffer.hpp"
 
 namespace Core::Renderer
@@ -13,6 +13,6 @@ namespace Core::Renderer
 
 	bool& isRenderCullingSphere();
 	void setRenderScale(F32 scale);
-
+	void setDirectionalShadowMapSize(UInt32 size);
 	GBuffer& getGBuffer();
 }

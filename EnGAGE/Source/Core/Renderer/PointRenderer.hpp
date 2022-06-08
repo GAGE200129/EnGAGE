@@ -2,7 +2,7 @@
 
 #include "Core/Shader.hpp"
 #include "GBuffer.hpp"
-#include "Core/Camera.hpp"
+#include "Core/Data/Camera.hpp"
 
 namespace Core
 {
@@ -21,7 +21,7 @@ namespace Core
 	public:
 		PointRenderer();
 		~PointRenderer();
-		void render(const GBuffer& gBuffer, const Camera& camera);
+		void render(GBuffer& gBuffer, const Camera& camera);
 	private:
 		PointShader mShader;
 	};

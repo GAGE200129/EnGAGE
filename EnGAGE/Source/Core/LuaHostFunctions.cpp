@@ -487,6 +487,27 @@ namespace Core
 		return 0;
 	}
 
+	int getTransform(lua_State* L)
+	{
+		CHECK_ARG(L, 1, LUA_TLIGHTUSERDATA);
+		ComponentHeader* header = (ComponentHeader*)lua_touserdata(L, 1);
+		EN_ASSERT(header->type == ComponentType::TRANSFORM, "Invalid component type");
+		Transform::Component* pTransform = (Transform::Component*)header;
+
+		lua_pushnumber(L, pTransform->x);
+		lua_pushnumber(L, pTransform->y);
+		lua_pushnumber(L, pTransform->z);
+
+		lua_pushnumber(L, pTransform->rw);
+		lua_pushnumber(L, pTransform->rx);
+		lua_pushnumber(L, pTransform->ry);
+		lua_pushnumber(L, pTransform->rz);
+
+		lua_pushnumber(L, pTransform->sx);
+		lua_pushnumber(L, pTransform->sy);
+		lua_pushnumber(L, pTransform->sz);
+		return 10;
+	}
 	namespace LuaHostFunctions
 	{
 		void registerFunctions(lua_State* L)
@@ -513,6 +534,7 @@ namespace Core
 			lua_register(L, "_sendMessage", sendMessage);
 			lua_register(L, "_addWall", addWall);
 			lua_register(L, "_setTextureSheet", setTextureSheet);
+			lua_register(L, "_getTransform", getTransform);
 		}
 		void pushAllGlobals(lua_State* L)
 		{

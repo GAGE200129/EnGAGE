@@ -1,7 +1,7 @@
 #include "pch.hpp"
 #include "Resource.hpp"
 
-#include "Vertex.hpp"
+#include "Core/Data/Vertex.hpp"
 
 #define TINYGLTF_IMPLEMENTATION
 #define STB_IMAGE_IMPLEMENTATION

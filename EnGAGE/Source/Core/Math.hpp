@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Camera.hpp"
+#include "Core/Data/Camera.hpp"
 
 namespace Core::Math
 {
@@ -26,6 +26,7 @@ namespace Core::Math
 	Mat4x4 calculateView(const Camera& camera);
 	Mat4x4 calculateProjectionView(const Camera& camera);
 	Mat4x4 calDirectionalProjView(const Camera& camera, const Vec3& direction);
+	Mat4x4 calCSMShadowMapProjView(const Vec3& lightDir, F32 zMult, const Camera& camera, F32 near, F32 far);
 	FrustumPoints createFrustumPoints(const Camera& camera, const F32 near, const F32 far);
 	Frustum createFrustum(const Camera& camera);
 	void getCamFrontRay(const Camera& camera, Vec3& outPosition, Vec3& outRay);

@@ -2,7 +2,7 @@
 #include "EntityRenderer.hpp"
 
 #include "Core/Math.hpp"
-#include "Core/Model.hpp"
+#include "Core/Data/Model.hpp"
 #include "Core/ECS.hpp"
 #include "Core/Components/Transform.hpp"
 #include "Core/Components/ModelRenderer.hpp"
@@ -12,6 +12,7 @@
 
 namespace Core
 {
+
 	EntityRenderer::~EntityRenderer()
 	{
 		mShader.cleanup();
@@ -45,12 +46,11 @@ namespace Core
 				const Core::Mesh& mesh = model->meshes[node.meshIndex];
 				for (const auto& primitive : mesh.primitives)
 				{
-					
-
 					Vec3 position;
 					position.x = accumulatedTransform[3][0];
 					position.y = accumulatedTransform[3][1];
 					position.z = accumulatedTransform[3][2];
+#ifdef EN_DEBUG				
 					Vec3 scale;
 					scale.x = glm::length(Vec3(accumulatedTransform[0]));
 					scale.y = glm::length(Vec3(accumulatedTransform[1]));
@@ -61,15 +61,13 @@ namespace Core
 					{
 						DebugRenderer::addSphere({ 1, 1, 0 }, mesh.boundingSphereRadius * scaleFactor, position);
 					}
-
+#endif
 					//Frustum culling
 					if (camera.mode == Camera::Mode::ORTHOGRAPHIC || isOnFrustum(frustum, position, mesh.boundingSphereRadius))
 					{
-
 						mShader.uploadModel(accumulatedTransform);
 						glBindVertexArray(primitive.vao);
 						glDrawElements(GL_TRIANGLES, primitive.vertexCoumt, primitive.eboDataType, nullptr);
-
 					}
 				}
 			}

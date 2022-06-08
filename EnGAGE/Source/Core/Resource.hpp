@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Model.hpp"
+#include "Core/Data/Model.hpp"
 #include "Map/TextureSheet.hpp"
 namespace Core
 {
