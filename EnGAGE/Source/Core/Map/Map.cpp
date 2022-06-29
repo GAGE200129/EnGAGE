@@ -3,7 +3,7 @@
 
 #include <glad/glad.h>
 
-#include "Core/Physics.hpp"
+#include "Core/Physics/Physics.hpp"
 
 namespace Core::Map
 {

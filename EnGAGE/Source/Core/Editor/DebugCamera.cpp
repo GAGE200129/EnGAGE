@@ -42,12 +42,12 @@ namespace Core::DebugCamera
 
 	void onMessage(const Message* pMessage)
 	{
-		if (pMessage->type == MessageType::SCROLL_UP && GameEngine::getDebugCamera().mode == Camera::Mode::ORTHOGRAPHIC)
+		if (pMessage->type == MessageType::SCROLL_UP && GameEngine::getEngineData().debugCamera.mode == Camera::Mode::ORTHOGRAPHIC)
 		{
 			gDebugCamState.orthoScale -= 1;
 			if (gDebugCamState.orthoScale < 1) gDebugCamState.orthoScale = 1;
 		}
-		else if (pMessage->type == MessageType::SCROLL_DOWN && GameEngine::getDebugCamera().mode == Camera::Mode::ORTHOGRAPHIC)
+		else if (pMessage->type == MessageType::SCROLL_DOWN && GameEngine::getEngineData().debugCamera.mode == Camera::Mode::ORTHOGRAPHIC)
 		{
 			gDebugCamState.orthoScale += 1;
 			if (gDebugCamState.orthoScale < 1) gDebugCamState.orthoScale = 1;
@@ -68,7 +68,7 @@ namespace Core::DebugCamera
 		}
 		else if (auto cursorMoved = Messenger::messageCast<MessageType::CURSOR_MOVED, CursorMovedMessage>(pMessage))
 		{
-			auto& camera = GameEngine::getDebugCamera();
+			auto& camera = GameEngine::getEngineData().debugCamera;
 			if (gDebugCamState.leftMouseClicked && camera.mode != Camera::Mode::ORTHOGRAPHIC)
 			{
 				camera.yaw -= cursorMoved->dx * MOUSE_SENSITIVITY;
@@ -172,7 +172,7 @@ namespace Core::DebugCamera
 	}
 	void update(F32 delta)
 	{
-		auto& camera = GameEngine::getDebugCamera();
+		auto& camera = GameEngine::getEngineData().debugCamera;
 		camera.fov = DebugCamera::CAM_FOV;
 		camera.near = DebugCamera::CAM_NEAR;
 		camera.far = DebugCamera::CAM_FAR;

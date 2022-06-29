@@ -1,10 +1,13 @@
 #include "pch.hpp"
 #include "SceneGraphEditor.hpp"
 
-#include "Core/ECS.hpp"
-#include "Core/Components/Transform.hpp"
+#include "Core/ECS/ECS.hpp"
+#include "Core/ECS/Transform.hpp"
+#include "Core/Scene.hpp"
 
 #include <ImGuizmo.h>
+#include <misc/cpp/imgui_stdlib.h>
+
 
 namespace Core::SceneGraphEditor
 {
@@ -45,8 +48,6 @@ namespace Core::SceneGraphEditor
 
 	void processInspector()
 	{
-		
-
 		using namespace ECS;
 		ImGui::Begin("Inspector");
 		//Process component
@@ -56,6 +57,8 @@ namespace Core::SceneGraphEditor
 				ComponentHeader* pHeader = (ComponentHeader*)getComponent(gSelectedEntity->id, (ComponentType)i);
 				if (pHeader)
 				{
+					ComponentHint hint = getComponentHint(pHeader->type);
+					ImGui::Text("%s", hint.name);
 					pHeader->OnImGui(pHeader);
 
 					ImGui::PushID(i);
@@ -70,7 +73,6 @@ namespace Core::SceneGraphEditor
 
 			if (ImGui::Button("New"))
 				ImGui::OpenPopup("NewComponent");
-
 			if (ImGui::BeginPopup("NewComponent"))
 			{
 				for (unsigned int i = 0; i < (unsigned int)ComponentType::COUNT; i++)
@@ -81,6 +83,19 @@ namespace Core::SceneGraphEditor
 						ECS::addComponent(gSelectedEntity->id, (ComponentType)i);
 					}
 				}
+				ImGui::EndPopup();
+			}
+
+			if (ImGui::Button("SavePreset"))
+				ImGui::OpenPopup("SavePresetPopup");
+			if (ImGui::BeginPopup("SavePresetPopup"))
+			{
+				static String filePath = "Resources/Presets/";
+				ImGui::InputText("Location", &filePath);
+
+				if(ImGui::Button("Save"))
+					Scene::savePreset(filePath, gSelectedEntity->id);
+
 				ImGui::EndPopup();
 			}
 		}

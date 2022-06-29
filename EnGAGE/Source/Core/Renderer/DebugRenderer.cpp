@@ -2,7 +2,7 @@
 #include "DebugRenderer.hpp"
 #include "Core/Shader.hpp"
 #include "Core/Math.hpp"
-#include "Core/ECS.hpp"
+#include "Core/ECS/ECS.hpp"
 #include "Core/Renderer/Renderer.hpp"
 
 #include <glad/glad.h>

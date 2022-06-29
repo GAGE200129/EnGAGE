@@ -16,10 +16,11 @@ Core::GBuffer::GBuffer()
 	};
 
 	glGenFramebuffers(1, &FBO);
-	glGenRenderbuffers(1, &RBO);
+	//glGenRenderbuffers(1, &RBO);
 	glGenTextures(1, &positionTex);
 	glGenTextures(1, &normalTex);
 	glGenTextures(1, &colorTex);
+	glGenTextures(1, &depthTex);
 
 	glGenVertexArrays(1, &quadVAO);
 	glGenBuffers(1, &quadVBO);
@@ -42,10 +43,11 @@ Core::GBuffer::GBuffer()
 Core::GBuffer::~GBuffer()
 {
 	glDeleteFramebuffers(1, &FBO);
-	glDeleteRenderbuffers(1, &RBO);
+	//glDeleteRenderbuffers(1, &RBO);
 	glDeleteTextures(1, &positionTex);
 	glDeleteTextures(1, &normalTex);
 	glDeleteTextures(1, &colorTex);
+	glDeleteTextures(1, &depthTex);
 	glDeleteVertexArrays(1, &quadVAO);
 	glDeleteBuffers(1, &quadVBO);
 }
@@ -76,14 +78,20 @@ void Core::GBuffer::update(UInt32 inWidth, UInt32 inHeight, F32 scale)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
 	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT2, GL_TEXTURE_2D, colorTex, 0);
 
-	unsigned int attachments[3] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
+	glBindTexture(GL_TEXTURE_2D, depthTex);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, minFilter);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, magFilter);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, depthTex, 0);
+
+	unsigned int attachments[] = { GL_COLOR_ATTACHMENT0, GL_COLOR_ATTACHMENT1, GL_COLOR_ATTACHMENT2 };
 	glDrawBuffers(3, attachments);
 
-	glBindRenderbuffer(GL_RENDERBUFFER, RBO);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+	//glBindRenderbuffer(GL_RENDERBUFFER, RBO);
+	//glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
 
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
-	glBindRenderbuffer(GL_RENDERBUFFER, 0);
+	//glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RBO);
+	//glBindRenderbuffer(GL_RENDERBUFFER, 0);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
@@ -117,6 +125,8 @@ void Core::GBuffer::bindQuad()
 	glBindTexture(GL_TEXTURE_2D, normalTex);
 	glActiveTexture(GL_TEXTURE2);
 	glBindTexture(GL_TEXTURE_2D, colorTex);
+	glActiveTexture(GL_TEXTURE3);
+	glBindTexture(GL_TEXTURE_2D, depthTex);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE);
 	glDisable(GL_DEPTH_TEST);

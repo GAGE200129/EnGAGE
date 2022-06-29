@@ -1,12 +1,15 @@
 #include "pch.hpp"
 #include "ResourceBrowser.hpp"
 
+#include "Core/Scene.hpp"
+
 namespace Core::ResourceBrowser
 {
 	void process()
 	{
 		static const char* modelPath = "Resources/Models";
 		static const char* scriptPath = "Resources/Scripts";
+		static const char* presetPath = "Resources/Presets";
 		static const char* texturePath = "Resources/TextureSheets";
 		ImGui::Begin("ResourceBrowser");
 
@@ -65,6 +68,28 @@ namespace Core::ResourceBrowser
 					ImGui::SetDragDropPayload("TEXTURE_SHEET", pathName.c_str(), pathName.size() + 1);
 					ImGui::EndDragDropSource();
 				}
+			}
+
+			ImGui::TreePop();
+		}
+		if (ImGui::TreeNode("Presets"))
+		{
+			static String currentPath = "";
+			for (const auto& entry : std::filesystem::recursive_directory_iterator(presetPath))
+			{
+				std::filesystem::path path = entry.path();
+				String pathName = path.make_preferred().string();
+				std::replace(pathName.begin(), pathName.end(), '\\', '/');
+
+				if (ImGui::Selectable(pathName.c_str(), currentPath == pathName))
+				{
+					currentPath = pathName;
+				}
+				
+			}
+			if (ImGui::Button("Load"))
+			{
+				Scene::loadPreset(currentPath);
 			}
 
 			ImGui::TreePop();

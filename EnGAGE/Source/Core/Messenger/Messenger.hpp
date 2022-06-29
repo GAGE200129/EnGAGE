@@ -5,7 +5,6 @@
 
 namespace Core::Messenger
 {
-	
 	void init();
 	void shutdown();
 	void flushQueued();

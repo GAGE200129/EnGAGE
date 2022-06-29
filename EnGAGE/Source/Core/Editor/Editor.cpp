@@ -1,7 +1,7 @@
 #include "pch.hpp"
 #include "Editor.hpp"
 
-#include "Core/ECS.hpp"
+#include "Core/ECS/ECS.hpp"
 #include "Core/Resource.hpp"
 #include "Core/Renderer/Renderer.hpp"
 #include "Core/Renderer/DebugRenderer.hpp"
@@ -9,7 +9,7 @@
 #include "Core/GameEngine.hpp"
 #include "Core/Scene.hpp"
 #include "Core/Input.hpp"
-#include "Core/Physics.hpp"
+#include "Core/Physics/Physics.hpp"
 #include "Core/Messenger/Messenger.hpp"
 #include "Core/Window.hpp"
 #include "Core/Scene.hpp"
@@ -106,7 +106,7 @@ namespace Core::Editor
 		ImGui::NewFrame();
 		ImGui::DockSpaceOverViewport(0, ImGuiDockNodeFlags_PassthruCentralNode);
 		ImGuizmo::SetRect(0, 0, Window::getWidth(), Window::getHeight());
-		ImGuizmo::SetOrthographic(GameEngine::getDebugCamera().mode == Camera::Mode::ORTHOGRAPHIC);
+		ImGuizmo::SetOrthographic(GameEngine::getEngineData().debugCamera.mode == Camera::Mode::ORTHOGRAPHIC);
 		ImGuizmo::BeginFrame();
 
 		//ImGui::Begin("GameView");

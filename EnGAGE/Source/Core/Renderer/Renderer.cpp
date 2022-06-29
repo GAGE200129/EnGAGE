@@ -23,7 +23,9 @@ namespace Core::Renderer
 
 	static bool gRenderCullingSphere = false;
 	static F32 gRenderScale = 1.0f;
-	static UInt32 gDirectionalShadowMapSize = 512;
+	static UInt32 gDirectionalShadowMapSize = 2048;
+	static F32 gDirectionalShadowDistance = 50.0f;
+	static F32 gDirectionalShadowFadeStart = 45.0f;
 
 	void init(UInt32 currentWidth, UInt32 currentHeight)
 	{
@@ -66,12 +68,10 @@ namespace Core::Renderer
 
 		
 		gAmbientRenderer->render(*gBuffer);
-		gDirectionalRenderer->render(width, height, *gBuffer, camera, *gMapRenderer);
+		gDirectionalRenderer->render(width, height, *gBuffer, camera, *gMapRenderer, gDirectionalShadowDistance, gDirectionalShadowFadeStart);
 		gPointRenderer->render(*gBuffer, camera);
 
 		gBuffer->unBindQuad();
-
-	
 
 	}
 
@@ -93,6 +93,16 @@ namespace Core::Renderer
 	{
 		gDirectionalShadowMapSize = size;
 		gDirectionalRenderer->resize(gDirectionalShadowMapSize, gRenderScale);
+	}
+
+	void setDirectionalShadowDistance(F32 value)
+	{
+		gDirectionalShadowDistance = value;
+	}
+
+	void setDirectionalShadowFadeStart(F32 value)
+	{
+		gDirectionalShadowFadeStart = value;
 	}
 
 	GBuffer& getGBuffer()

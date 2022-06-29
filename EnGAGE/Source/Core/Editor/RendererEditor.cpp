@@ -12,7 +12,7 @@ namespace Core::RendererEditor
 	static void renderCameraFrustum()
 	{
 		static constexpr Vec3 frustumColor = { 1, 1, 1 };
-		const auto& camera = GameEngine::getMainCamera();
+		const auto& camera = GameEngine::getEngineData().mainCamera;
 
 		auto frustum = Math::createFrustumPoints(camera, camera.near, camera.far);
 
@@ -36,7 +36,9 @@ namespace Core::RendererEditor
 	{
 		static bool drawAABB = false;
 		static F32 renderScale = 1.0f;
-		static Int32 shadowMapSize = 512;
+		static Int32 shadowMapSize = 2048;
+		static F32 shadowMapDistance = 50.0f;
+		static F32 shadowMapFadeStart = 45.0f;
 		static bool drawCameraFrustum = false;
 
 		ImGui::Begin("Renderer");
@@ -55,11 +57,25 @@ namespace Core::RendererEditor
 		{
 			Renderer::setRenderScale(renderScale);
 		}
-		if (ImGui::SliderInt("Shadow map size", &shadowMapSize, 64, 4096))
+		if (ImGui::SliderInt("Shadow map size", &shadowMapSize, 64, 8192))
 		{
 			Renderer::setDirectionalShadowMapSize(shadowMapSize);
 		}
-		//ImGui::Image((ImTextureID)Renderer::gDirectionalRenderer->getDepthMap(), ImVec2(1024, 1024));
+
+		bool bit = false;
+
+		bit |= ImGui::SliderFloat("Shadow map distance", &shadowMapDistance, 10.0f, 200.0f);
+		bit |= ImGui::SliderFloat("Shadow map fade start", &shadowMapFadeStart, 10.0f, 200.0f);
+		if (bit)
+		{
+			if (shadowMapFadeStart > shadowMapDistance)
+			{
+				shadowMapFadeStart = shadowMapDistance - 1.0f;
+			}
+			Renderer::setDirectionalShadowDistance(shadowMapDistance);
+			Renderer::setDirectionalShadowFadeStart(shadowMapFadeStart);
+		}
+
 		ImGui::End();
 
 		if (drawCameraFrustum)

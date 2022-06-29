@@ -1,9 +1,9 @@
 #include "pch.hpp"
 #include "Scripting.hpp"
 
-#include "ECS.hpp"
+#include "ECS/ECS.hpp"
 #include "LuaHostFunctions.hpp"
-#include "Components/Script.hpp"
+#include "ECS/Script.hpp"
 
 extern "C"
 {
@@ -96,6 +96,8 @@ void Core::Scripting::removeScript(lua_State* L)
 	gScripts.erase(std::remove(gScripts.begin(), gScripts.end(), L), gScripts.end());
 	lua_close(L);
 }
+
+
 
 static bool checkLua(lua_State* L, int r)
 {

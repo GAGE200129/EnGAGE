@@ -5,22 +5,19 @@
 #include "Input.hpp"
 #include "Log.hpp"
 #include "Resource.hpp"
-#include "ECS.hpp"
+#include "Core/ECS/ECS.hpp"
 #include "Editor/Editor.hpp"
 #include "Renderer/Renderer.hpp"
 #include "Renderer/DebugRenderer.hpp"
 #include "Scripting.hpp"
-#include "Physics.hpp"
+#include "Core/Physics/Physics.hpp"
 #include "Scene.hpp"
 #include "Core/Messenger/Messenger.hpp"
 #include "Map/Map.hpp"
+#include "LuaHostFunctions.hpp"
 
 namespace Core::GameEngine
 {
-	Camera gMainCamera;
-	Camera gDebugCamera;
-	Camera* gCurrentCamera = nullptr;
-
 	static void onFunctionKeys(const Message* pMessage)
 	{
 		if (auto keyPressedMessage = Messenger::messageCast<MessageType::KEY_PRESSED, KeyPressedMessage>(pMessage))
@@ -43,6 +40,8 @@ namespace Core::GameEngine
 
 		}
 	}
+
+	static GameEngineData gData;
 
 	void init(unsigned int width, unsigned int height, unsigned int fullScreenWidth, unsigned int fullScreenHeight, const String& title)
 	{
@@ -69,9 +68,6 @@ namespace Core::GameEngine
 		const double secsPerUpdate = 1.0 / (double)TPS;
 		double prevTime = Window::getCurrentTime();
 		double steps = 0.0;
-
-
-
 		while (!Window::closeRequested())
 		{
 
@@ -89,11 +85,8 @@ namespace Core::GameEngine
 
 				if (!Editor::isEnabled())
 				{
-					Thread luaThread(Scripting::update, float(secsPerUpdate));
-					Thread physicsThread(Physics::update, float(secsPerUpdate));
-
-					luaThread.join();
-					physicsThread.join();
+					Physics::update(secsPerUpdate);
+					Scripting::update(secsPerUpdate);
 				}
 				else
 				{
@@ -120,16 +113,16 @@ namespace Core::GameEngine
 
 			if (Editor::isEnabled())
 			{
-				gCurrentCamera = &gDebugCamera;
+				gData.currentCamera = &gData.debugCamera;
 			}
 			else
 			{
-				gCurrentCamera = &gMainCamera;
+				gData.currentCamera = &gData.mainCamera;
 			}
 
-			Renderer::render(*gCurrentCamera);
+			Renderer::render(*gData.currentCamera);
 			Editor::render();
-			DebugRenderer::render(*gCurrentCamera);
+			DebugRenderer::render(*gData.currentCamera);
 
 			Window::swapBuffers();
 
@@ -154,13 +147,26 @@ namespace Core::GameEngine
 		Scripting::clear();
 		Resource::clear();
 	}
-	Camera& getMainCamera()
+	GameEngineData& getEngineData()
 	{
-		return gMainCamera;
+		return gData;
 	}
-	Camera& getDebugCamera()
+	int luaUpdateCameraPerspective(lua_State* L)
 	{
-		return gDebugCamera;
+		CHECK_NUM_ARGS(L, 9);
+		auto& camera = gData.mainCamera;
+		camera.mode = Camera::Mode::PERSPECTIVE;
+		camera.x = (float)lua_tonumber(L, 1);
+		camera.y = (float)lua_tonumber(L, 2);
+		camera.z = (float)lua_tonumber(L, 3);
+		camera.pitch = (float)lua_tonumber(L, 4);
+		camera.yaw = (float)lua_tonumber(L, 5);
+		camera.roll = (float)lua_tonumber(L, 6);
+		camera.fov = (float)lua_tonumber(L, 7);
+		camera.near = (float)lua_tonumber(L, 8);
+		camera.far = (float)lua_tonumber(L, 9);
+
+		return 0;
 	}
 }
 

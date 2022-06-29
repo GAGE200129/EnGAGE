@@ -1,6 +1,7 @@
 #include "pch.hpp"
 #include "Input.hpp"
 
+#include "Core/LuaHostFunctions.hpp"
 
 #include <GLFW/glfw3.h>
 
@@ -131,5 +132,18 @@ namespace Core::Input
 			return false;
 		}
 		return false;
+	}
+	int luaToggleCursor(lua_State* L)
+	{
+		CHECK_NUM_ARGS(L, 0);
+		toggleCursor();
+		return 0;
+	}
+	int luaIsCursorLocked(lua_State* L)
+	{
+		CHECK_NUM_ARGS(L, 0);
+		int result = cursorLocked();
+		lua_pushboolean(L, result);
+		return 1;
 	}
 }

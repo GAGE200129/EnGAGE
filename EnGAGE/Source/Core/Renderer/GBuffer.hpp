@@ -42,6 +42,6 @@ namespace Core
 		UInt32 quadVAO;
 		UInt32 quadVBO;
 		UInt32 FBO, RBO;
-		UInt32 positionTex, normalTex, colorTex;
+		UInt32 positionTex, normalTex, colorTex, depthTex;
 	};
 }

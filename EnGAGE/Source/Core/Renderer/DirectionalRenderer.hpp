@@ -15,8 +15,9 @@ namespace Core
 
 		void uploadParams(const Vec3& dir, const Vec3& color, float intensity, const Vec3& camPos);
 		void uploadShadowProjView(const Mat4x4& projView);
+		void uploadShadowShadowDistanceAndFadeStart(F32 distance, F32 fadeStart);
 	private:
-		int mDirectionLoc, mColorLoc, mIntensityLoc, mCamPosLoc, mLightProjView;
+		int mDirectionLoc, mColorLoc, mIntensityLoc, mCamPosLoc, mLightProjView, mShadowDistance, mShadowFadeStart;
 	};
 
 	class ShadowMapShader : public Shader
@@ -35,7 +36,7 @@ namespace Core
 	public:
 		DirectionalRenderer(UInt32 shadowSize, F32 renderScale);
 		~DirectionalRenderer();
-		void render(UInt32 width, UInt32 height, GBuffer& gBuffer, const Camera& camera, MapRenderer& mapRenderer);
+		void render(UInt32 width, UInt32 height, GBuffer& gBuffer, const Camera& camera, MapRenderer& mapRenderer, F32 shadowDistance, F32 shadowFadeStart);
 		void resize(UInt32 shadowSize, F32 renderScale);
 		inline UInt32 getDepthMap() { return mDepthMap; }
 	private:

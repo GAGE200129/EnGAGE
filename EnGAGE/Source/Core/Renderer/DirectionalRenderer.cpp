@@ -1,10 +1,10 @@
 #include "pch.hpp"
 #include "DirectionalRenderer.hpp"
 
-#include "Core/ECS.hpp"
-#include "Core/Components/DirectionalLight.hpp"
-#include "Core/Components/Transform.hpp"
-#include "Core/Components/ModelRenderer.hpp"
+#include "Core/ECS/ECS.hpp"
+#include "Core/ECS/DirectionalLight.hpp"
+#include "Core/ECS/Transform.hpp"
+#include "Core/ECS/ModelRenderer.hpp"
 #include "Core/Math.hpp"
 #include "Core/Data/Model.hpp"
 
@@ -19,12 +19,15 @@ Core::DirectionalShader::DirectionalShader()
 	this->uploadInt(this->registerUniform("gPositionTex"), 0);
 	this->uploadInt(this->registerUniform("gNormalTex"), 1);
 	this->uploadInt(this->registerUniform("gColorTex"), 2);
-	this->uploadInt(this->registerUniform("uDepthMap"), 3);
+	this->uploadInt(this->registerUniform("gDepthMap"), 3);
+	this->uploadInt(this->registerUniform("uDepthMap"), 4);
 	mDirectionLoc = this->registerUniform("uDirection");
 	mColorLoc = this->registerUniform("uColor");
 	mIntensityLoc = this->registerUniform("uIntensity");
 	mCamPosLoc = this->registerUniform("uCamPos");
 	mLightProjView = this->registerUniform("uLightProjView");
+	mShadowDistance = this->registerUniform("uShadowDistance");
+	mShadowFadeStart = this->registerUniform("uShadowFadeStart");
 	this->unBind();
 
 }
@@ -34,12 +37,19 @@ void Core::DirectionalShader::uploadShadowProjView(const Mat4x4& projView)
 	uploadMat4x4(mLightProjView, projView);
 }
 
+void Core::DirectionalShader::uploadShadowShadowDistanceAndFadeStart(F32 distance, F32 fadeStart)
+{
+	uploadFloat(mShadowDistance, distance);
+	uploadFloat(mShadowFadeStart, fadeStart);
+}
+
 void Core::DirectionalShader::uploadParams(const glm::vec3& dir, const glm::vec3& color, float intensity, const glm::vec3& camPos)
 {
 	this->uploadVec3(mDirectionLoc, dir);
 	this->uploadVec3(mColorLoc, color);
 	this->uploadFloat(mIntensityLoc, intensity);
 	this->uploadVec3(mCamPosLoc, camPos);
+
 }
 
 Core::ShadowMapShader::ShadowMapShader()
@@ -79,7 +89,7 @@ Core::DirectionalRenderer::~DirectionalRenderer()
 	mShadowShader.cleanup();
 }
 
-void Core::DirectionalRenderer::render(UInt32 width, UInt32 height, GBuffer& gBuffer, const Camera& camera, MapRenderer& mapRenderer)
+void Core::DirectionalRenderer::render(UInt32 width, UInt32 height, GBuffer& gBuffer, const Camera& camera, MapRenderer& mapRenderer, F32 shadowDistance, F32 shadowFadeStart)
 {
 	System& directionalSystem = ECS::getSystem(SystemType::DIRECTIONAL);
 
@@ -93,7 +103,7 @@ void Core::DirectionalRenderer::render(UInt32 width, UInt32 height, GBuffer& gBu
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_FRONT);
 
-		auto lightProjView = Math::calCSMShadowMapProjView(pLight->direction, 10.0f, camera, camera.near, camera.far);
+		auto lightProjView = Math::calCSMShadowMapProjView(pLight->direction, 10.0f, camera, camera.near, shadowDistance);
 		mShadowShader.bind();
 		mShadowShader.uploadProjView(lightProjView);
 		mShadowShader.uploadModel(Mat4x4(1.0f));
@@ -151,11 +161,12 @@ void Core::DirectionalRenderer::render(UInt32 width, UInt32 height, GBuffer& gBu
 
 
 		gBuffer.bindQuad();
-		glActiveTexture(GL_TEXTURE3);
+		glActiveTexture(GL_TEXTURE4);
 		glBindTexture(GL_TEXTURE_2D, mDepthMap);
 		mShader.bind();	
 		mShader.uploadParams(pLight->direction, pLight->color, pLight->intensity, { camera.x, camera.y, camera.z });
 		mShader.uploadShadowProjView(lightProjView);
+		mShader.uploadShadowShadowDistanceAndFadeStart(shadowDistance, shadowFadeStart);
 		gBuffer.renderQuad();
 	}
 

@@ -3,7 +3,7 @@
 
 #include "Core/Messenger/Messenger.hpp"
 
-#include "Core/ECS.hpp"
+#include "Core/ECS/ECS.hpp"
 
 namespace Core::GameEngineEditor
 {

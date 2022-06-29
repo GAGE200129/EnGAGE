@@ -2,18 +2,18 @@
 #include "Scene.hpp"
 
 #include "LuaHostFunctions.hpp"
-#include "ECS.hpp"
+#include "Core/ECS/ECS.hpp"
 #include "GameEngine.hpp"
-#include "Physics.hpp"
+#include "Core/Physics/Physics.hpp"
 #include "Math.hpp"
 #include "Core/Data/Model.hpp"
 #include "Core/Data/Vertex.hpp"
 #include "Map/Map.hpp"
-#include "Components/RigidBody.hpp"
-#include "Components/Transform.hpp"
-#include "Components/ModelRenderer.hpp"
-#include "Components/Script.hpp"
-#include "Components/DirectionalLight.hpp"
+#include "ECS/RigidBody.hpp"
+#include "ECS/Transform.hpp"
+#include "ECS/ModelRenderer.hpp"
+#include "ECS/Script.hpp"
+#include "ECS/DirectionalLight.hpp"
 
 #include <glad/glad.h>
 
@@ -38,7 +38,52 @@ namespace Core::Scene
 {
 	static bool gSceneSwitch = false;
 	static String gScenePath = "";
+	static DynArr<String> gPresets;
 
+	void loadPreset(const String& filePath)
+	{
+		lua_State* L = luaL_newstate();
+
+		LuaHostFunctions::pushAllGlobals(L);
+		LuaHostFunctions::registerFunctions(L);
+
+		checkLua(L, luaL_dofile(L, filePath.c_str()));
+
+		lua_getglobal(L, "create");
+		if (lua_isfunction(L, -1))
+		{
+			checkLua(L, lua_pcall(L, 0, 0, 0));
+		}
+
+		lua_close(L);
+
+
+		gPresets.push_back(String(filePath));
+	}
+
+	void savePreset(const String& filePath, UInt32 entityID)
+	{
+		std::ofstream fileOut(filePath);
+
+		fileOut << "function create()\n";
+
+		String entityName = "entity";
+		fileOut << "local " << entityName << " = _createEntity()\n";
+
+		//Unload all components
+		for (unsigned int j = 0; j < (unsigned int)ComponentType::COUNT; j++)
+		{
+			auto& signatures = ECS::getEntitySignatures();
+			ComponentHeader* pHeader = (ComponentHeader*)ECS::getComponent(entityID, (ComponentType)j);
+			if (pHeader)
+			{
+				pHeader->OnSeralize(pHeader, fileOut, entityName);
+			}
+		}
+		fileOut << "end\n";
+
+		fileOut.close();
+	}
 
 	void loadScene(const String& filePath)
 	{
@@ -50,23 +95,13 @@ namespace Core::Scene
 	{
 		std::ofstream fileOut(filePath);
 
-		for (unsigned int i = 0; i < ECS::getEntityCount(); i++)
+		for (const auto& preset : gPresets)
 		{
-			String entityName = "entity";
-			fileOut << entityName << " = _createEntity()\n";
-
-			//Unload all components
-			for (unsigned int j = 0; j < (unsigned int)ComponentType::COUNT; j++)
-			{
-				auto& signatures = ECS::getEntitySignatures();
-				ComponentHeader* pHeader = (ComponentHeader*)ECS::getComponent(signatures[i].id, (ComponentType)j);
-				if (pHeader)
-				{
-					pHeader->OnSeralize(pHeader, fileOut, entityName);
-				}
-			}
-			fileOut << "\n";
+			fileOut << "_sceneDoPreset(\"" << preset << "\")\n";
 		}
+
+
+
 		//Serialize the map
 		Map::serialize(fileOut);
 
@@ -97,5 +132,14 @@ namespace Core::Scene
 	String& getLoadedSceneName()
 	{
 		return gScenePath;
+	}
+	int luaDoPreset(lua_State* L)
+	{
+		CHECK_NUM_ARGS(L, 1);
+		CHECK_ARG(L, 1, LUA_TSTRING);
+		const char* filePath = lua_tostring(L, 1);
+		loadPreset(filePath);
+
+		return 0;
 	}
 }

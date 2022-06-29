@@ -3,9 +3,9 @@
 
 #include "Core/Math.hpp"
 #include "Core/Data/Model.hpp"
-#include "Core/ECS.hpp"
-#include "Core/Components/Transform.hpp"
-#include "Core/Components/ModelRenderer.hpp"
+#include "Core/ECS/ECS.hpp"
+#include "Core/ECS/Transform.hpp"
+#include "Core/ECS/ModelRenderer.hpp"
 #include "DebugRenderer.hpp"
 
 #include <glad/glad.h>
@@ -50,18 +50,18 @@ namespace Core
 					position.x = accumulatedTransform[3][0];
 					position.y = accumulatedTransform[3][1];
 					position.z = accumulatedTransform[3][2];
-#ifdef EN_DEBUG				
-					Vec3 scale;
-					scale.x = glm::length(Vec3(accumulatedTransform[0]));
-					scale.y = glm::length(Vec3(accumulatedTransform[1]));
-					scale.z = glm::length(Vec3(accumulatedTransform[2]));
-					float scaleFactor = glm::max(scale.z, glm::max(scale.x, scale.y));
-
+		
+				
 					if (renderCullingSphere)
 					{
+						Vec3 scale;
+						scale.x = glm::length(Vec3(accumulatedTransform[0]));
+						scale.y = glm::length(Vec3(accumulatedTransform[1]));
+						scale.z = glm::length(Vec3(accumulatedTransform[2]));
+						float scaleFactor = glm::max(scale.z, glm::max(scale.x, scale.y));
 						DebugRenderer::addSphere({ 1, 1, 0 }, mesh.boundingSphereRadius * scaleFactor, position);
 					}
-#endif
+
 					//Frustum culling
 					if (camera.mode == Camera::Mode::ORTHOGRAPHIC || isOnFrustum(frustum, position, mesh.boundingSphereRadius))
 					{

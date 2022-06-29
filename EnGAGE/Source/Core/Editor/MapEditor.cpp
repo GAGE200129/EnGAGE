@@ -64,7 +64,7 @@ namespace Core::MapEditor
 
 	static void render3DCursor()
 	{
-		auto& camera = GameEngine::getDebugCamera();
+		auto& camera = GameEngine::getEngineData().debugCamera;
 		Mat4x4 proj = Math::calculateProj(camera);
 		Mat4x4 view = Math::calculateView(camera);
 		if (!selectMode && selectedWall == -1)
@@ -83,7 +83,7 @@ namespace Core::MapEditor
 
 	static void processImGui()
 	{
-		auto& camera = GameEngine::getDebugCamera();
+		auto& camera = GameEngine::getEngineData().debugCamera;
 		ImGui::Begin("Map editor");
 		if (ImGui::Button("Reset cursor"))
 		{
@@ -240,7 +240,7 @@ namespace Core::MapEditor
 	static void processSelectFace()
 	{
 		auto& walls = Map::getWalls();
-		auto& camera = GameEngine::getDebugCamera();
+		auto& camera = GameEngine::getEngineData().debugCamera;
 		auto& currentWall = walls[selectedWall];
 		auto* wp1 = &currentWall.p1;
 		auto* wp2 = &currentWall.p2;
@@ -331,7 +331,7 @@ namespace Core::MapEditor
 
 		//Render wall boxes
 		auto& walls = Map::getWalls();
-		auto& camera = GameEngine::getDebugCamera();
+		auto& camera = GameEngine::getEngineData().debugCamera;
 		if (selectMode && Input::isButtonDown(0))
 		{
 			//Get cursor ray

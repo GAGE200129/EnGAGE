@@ -14,5 +14,7 @@ namespace Core::Renderer
 	bool& isRenderCullingSphere();
 	void setRenderScale(F32 scale);
 	void setDirectionalShadowMapSize(UInt32 size);
+	void setDirectionalShadowDistance(F32 value);
+	void setDirectionalShadowFadeStart(F32 value);
 	GBuffer& getGBuffer();
 }

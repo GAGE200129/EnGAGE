@@ -2,9 +2,9 @@
 #include "PointRenderer.hpp"
 
 
-#include "Core/ECS.hpp"
-#include "Core/Components/PointLight.hpp"
-#include "Core/Components/Transform.hpp"
+#include "Core/ECS/ECS.hpp"
+#include "Core/ECS/PointLight.hpp"
+#include "Core/ECS/Transform.hpp"
 
 
 Core::PointShader::PointShader()

@@ -76,10 +76,10 @@ namespace Core::Math
 
 		return lightProjection * lightView;
 	}
-	Mat4x4 calCSMShadowMapProjView(const Vec3& lightDir, F32 zMult, const Camera& camera, F32, F32)
+	Mat4x4 calCSMShadowMapProjView(const Vec3& lightDir, F32 zMult, const Camera& camera, F32 near, F32 far)
 	{
 		//Create shadow map view proj
-		auto points = Math::createFrustumPoints(camera, camera.near, camera.far);
+		auto points = Math::createFrustumPoints(camera, near, far);
 
 		Vec3 center = Vec3(0, 0, 0);
 		for (const auto& v : points.points)
@@ -157,8 +157,8 @@ namespace Core::Math
 		const float Hfar = far * glm::tan(halfFov) * 2.0f;
 		const float Wfar = Hfar * aspect;;
 
-		const float farDist = camera.far;
-		const float nearDist = camera.near;
+		const float farDist = far;
+		const float nearDist = near;
 
 		//Get forwad, up and right camera vector
 
@@ -174,7 +174,7 @@ namespace Core::Math
 		points.p = { camera.x, camera.y, camera.z };
 
 		//Compute all frustum points
-		points.fc = points.p + points.d * camera.far;
+		points.fc = points.p + points.d * far;
 		points.nc = points.p + points.d * nearDist;
 		points.ftl = points.fc + (points.up * Hfar / 2.0f) - (points.right * Wfar / 2.0f);
 		points.ftr = points.fc + (points.up * Hfar / 2.0f) + (points.right * Wfar / 2.0f);

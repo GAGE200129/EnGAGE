@@ -20,4 +20,7 @@ namespace Core::Input
 	void enableCursor();
 	void toggleCursor();
 	bool cursorLocked();
+
+	int luaToggleCursor(lua_State* L);
+	int luaIsCursorLocked(lua_State* L);
 }
