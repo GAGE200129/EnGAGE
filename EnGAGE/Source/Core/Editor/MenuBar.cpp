@@ -11,6 +11,7 @@ namespace Core::MenuBar
 	void process()
 	{
 		static const char* scenePath = "Resources/Scenes";
+		static std::string loadedscenePath = scenePath;
 		bool openLoadPopup = false;
 		bool openSavePopup = false;
 		ImGui::BeginMainMenuBar();
@@ -36,10 +37,10 @@ namespace Core::MenuBar
 			ImGui::OpenPopup("SaveScenePopup");
 		if (ImGui::BeginPopup("SaveScenePopup"))
 		{
-			ImGui::InputText("Path", &Core::Scene::getLoadedSceneName());
+			ImGui::InputText("Path", &loadedscenePath);
 			if (ImGui::Button("Save"))
 			{
-				Core::Scene::saveScene(Core::Scene::getLoadedSceneName());
+				Scene::saveScene(loadedscenePath);
 			}
 			ImGui::EndPopup();
 		}
@@ -55,7 +56,7 @@ namespace Core::MenuBar
 				std::replace(pathName.begin(), pathName.end(), '\\', '/');
 				if (ImGui::Selectable(pathName.c_str()))
 				{
-					Core::Scene::loadScene(pathName);
+					Scene::loadScene(pathName);
 				}
 			}
 			ImGui::EndPopup();

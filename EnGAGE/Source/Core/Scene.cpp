@@ -36,72 +36,37 @@ static bool checkLua(lua_State* L, int r)
 
 namespace Core::Scene
 {
-	static bool gSceneSwitch = false;
-	static String gScenePath = "";
-	static DynArr<String> gPresets;
-
-	void loadPreset(const String& filePath)
-	{
-		lua_State* L = luaL_newstate();
-
-		LuaHostFunctions::pushAllGlobals(L);
-		LuaHostFunctions::registerFunctions(L);
-
-		checkLua(L, luaL_dofile(L, filePath.c_str()));
-
-		lua_getglobal(L, "create");
-		if (lua_isfunction(L, -1))
-		{
-			checkLua(L, lua_pcall(L, 0, 0, 0));
-		}
-
-		lua_close(L);
-
-
-		gPresets.push_back(String(filePath));
-	}
-
-	void savePreset(const String& filePath, UInt32 entityID)
-	{
-		std::ofstream fileOut(filePath);
-
-		fileOut << "function create()\n";
-
-		String entityName = "entity";
-		fileOut << "local " << entityName << " = _createEntity()\n";
-
-		//Unload all components
-		for (unsigned int j = 0; j < (unsigned int)ComponentType::COUNT; j++)
-		{
-			auto& signatures = ECS::getEntitySignatures();
-			ComponentHeader* pHeader = (ComponentHeader*)ECS::getComponent(entityID, (ComponentType)j);
-			if (pHeader)
-			{
-				pHeader->OnSeralize(pHeader, fileOut, entityName);
-			}
-		}
-		fileOut << "end\n";
-
-		fileOut.close();
-	}
+	static SceneData gData;
 
 	void loadScene(const String& filePath)
 	{
-		gSceneSwitch = true;
-		gScenePath = filePath;
+		gData.sceneSwitch = true;
+		gData.scenePath = filePath;
 	}
 
 	void saveScene(const String& filePath)
 	{
+		gData.scenePath = filePath;
 		std::ofstream fileOut(filePath);
 
-		for (const auto& preset : gPresets)
+		
+		for (UInt64 i = 0; i < ECS::getEntityCount(); i++)
 		{
-			fileOut << "_sceneDoPreset(\"" << preset << "\")\n";
+			const ECS::EntitySignature& signature = ECS::getEntitySignatures()[i];
+			String entityName = "entity";
+			fileOut << "local " << entityName << " = _createEntity()\n";
+			//Unload all components
+			for (unsigned int j = 0; j < (unsigned int)ComponentType::COUNT; j++)
+			{
+				auto& signatures = ECS::getEntitySignatures();
+				ComponentHeader* pHeader = (ComponentHeader*)ECS::getComponent(signature.id, (ComponentType)j);
+				if (pHeader)
+				{
+					pHeader->OnSeralize(pHeader, fileOut, entityName);
+				}
+			}
+
 		}
-
-
-
 		//Serialize the map
 		Map::serialize(fileOut);
 
@@ -110,9 +75,9 @@ namespace Core::Scene
 
 	void checkForSceneSwitch()
 	{
-		if (gSceneSwitch)
+		if (gData.sceneSwitch)
 		{
-			EN_INFO("Switching scene: {}", gScenePath);
+			EN_INFO("Switching scene: {}", gData.scenePath);
 			GameEngine::clearResources();
 
 			lua_State* L = luaL_newstate();
@@ -121,25 +86,16 @@ namespace Core::Scene
 			LuaHostFunctions::pushAllGlobals(L);
 			LuaHostFunctions::registerFunctions(L);
 
-			checkLua(L, luaL_dofile(L, gScenePath.c_str()));
+			checkLua(L, luaL_dofile(L, gData.scenePath.c_str()));
 
 			lua_close(L);
 
-			gSceneSwitch = false;
+			gData.sceneSwitch = false;
 		}
 	}
-
-	String& getLoadedSceneName()
+	
+	const SceneData& getData()
 	{
-		return gScenePath;
-	}
-	int luaDoPreset(lua_State* L)
-	{
-		CHECK_NUM_ARGS(L, 1);
-		CHECK_ARG(L, 1, LUA_TSTRING);
-		const char* filePath = lua_tostring(L, 1);
-		loadPreset(filePath);
-
-		return 0;
+		return gData;
 	}
 }

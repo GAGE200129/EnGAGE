@@ -73,12 +73,26 @@ void Core::ShadowMapShader::uploadModel(const Mat4x4& modelMat)
 }
 
 
-Core::DirectionalRenderer::DirectionalRenderer(UInt32 shadowSize, F32 renderScale) :
-	mShader(), mShadowShader()
+Core::DirectionalRenderer::DirectionalRenderer(UInt32 shadowSize) :
+	mShader(), mShadowShader(), mShadowSize(shadowSize)
 {
 	glGenFramebuffers(1, &mFBO);
 	glGenTextures(1, &mDepthMap);
-	resize(shadowSize, renderScale);
+
+	glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
+	glBindTexture(GL_TEXTURE_2D, mDepthMap);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16,
+		mShadowSize, mShadowSize, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+	float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mDepthMap, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
 
 Core::DirectionalRenderer::~DirectionalRenderer()
@@ -173,9 +187,9 @@ void Core::DirectionalRenderer::render(UInt32 width, UInt32 height, GBuffer& gBu
 	
 }
 
-void Core::DirectionalRenderer::resize(UInt32 shadowSize, F32 renderScale)
+void Core::DirectionalRenderer::resize(UInt32 shadowSize)
 {
-	mShadowSize = shadowSize * renderScale;
+	mShadowSize = shadowSize;
 	glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
 	glBindTexture(GL_TEXTURE_2D, mDepthMap);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16,
@@ -191,5 +205,24 @@ void Core::DirectionalRenderer::resize(UInt32 shadowSize, F32 renderScale)
 	glReadBuffer(GL_NONE);
 	glBindFramebuffer(GL_FRAMEBUFFER, 0);
 }
+
+//void Core::DirectionalRenderer::resize(UInt32 shadowSize, F32 renderScale)
+//{
+//	mShadowSize = shadowSize * renderScale;
+//	glBindFramebuffer(GL_FRAMEBUFFER, mFBO);
+//	glBindTexture(GL_TEXTURE_2D, mDepthMap);
+//	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16,
+//		mShadowSize, mShadowSize, 0, GL_DEPTH_COMPONENT, GL_FLOAT, NULL);
+//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+//	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+//	float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+//	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+//	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, mDepthMap, 0);
+//	glDrawBuffer(GL_NONE);
+//	glReadBuffer(GL_NONE);
+//	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+//}
 
 

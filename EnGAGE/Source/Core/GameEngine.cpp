@@ -48,8 +48,8 @@ namespace Core::GameEngine
 		Log::init();
 		Messenger::init();
 		Window::init(width, height, fullScreenWidth, fullScreenHeight, title);
-		Input::init(Window::getRawWindow());
-		Editor::init(Window::getRawWindow(), width, height);
+		Input::init();
+		Editor::init(Window::getData().window, width, height);
 		Map::init();
 
 		ECS::init();
@@ -68,6 +68,7 @@ namespace Core::GameEngine
 		const double secsPerUpdate = 1.0 / (double)TPS;
 		double prevTime = Window::getCurrentTime();
 		double steps = 0.0;
+		
 		while (!Window::closeRequested())
 		{
 
@@ -170,3 +171,12 @@ namespace Core::GameEngine
 	}
 }
 
+int main()
+{
+	using namespace Core;
+	GameEngine::init(1600, 900, 1280, 720, "Hello world");
+	Scene::loadScene("Resources/Scenes/Fox.lua");
+	
+	GameEngine::run();
+
+}

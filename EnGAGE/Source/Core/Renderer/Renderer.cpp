@@ -30,7 +30,7 @@ namespace Core::Renderer
 	void init(UInt32 currentWidth, UInt32 currentHeight)
 	{
 		gAmbientRenderer = new AmbientRenderer();
-		gDirectionalRenderer = new DirectionalRenderer(gDirectionalShadowMapSize, gRenderScale);
+		gDirectionalRenderer = new DirectionalRenderer(gDirectionalShadowMapSize);
 		gPointRenderer = new PointRenderer();
 		gEntityRenderer = new EntityRenderer();
 		gMapRenderer = new MapRenderer();
@@ -58,17 +58,15 @@ namespace Core::Renderer
 
 	void render(const Camera& camera)
 	{
-
-		auto width = Window::getWidth();
-		auto height = Window::getHeight();
-		gBuffer->bind(width, height, gRenderScale);
+		const WindowData& windowData = Window::getData();
+		gBuffer->bind(windowData.screenWidth, windowData.screenHeight, gRenderScale);
 		gEntityRenderer->render(*gBuffer, camera, gRenderCullingSphere);
 		gMapRenderer->render(camera);
-		gBuffer->unBind(width, height);
+		gBuffer->unBind(windowData.screenWidth, windowData.screenHeight);
 
 		
 		gAmbientRenderer->render(*gBuffer);
-		gDirectionalRenderer->render(width, height, *gBuffer, camera, *gMapRenderer, gDirectionalShadowDistance, gDirectionalShadowFadeStart);
+		gDirectionalRenderer->render(windowData.screenWidth, windowData.screenHeight, *gBuffer, camera, *gMapRenderer, gDirectionalShadowDistance, gDirectionalShadowFadeStart);
 		gPointRenderer->render(*gBuffer, camera);
 
 		gBuffer->unBindQuad();
@@ -82,17 +80,17 @@ namespace Core::Renderer
 
 	void setRenderScale(F32 scale)
 	{
+		const WindowData& windowData = Window::getData();
 		gRenderScale = scale;
 		if (gRenderScale < 0.0f) gRenderScale = 0.0f;
 		else if (gRenderScale > 2.0f) gRenderScale = 2.0f;
-		gBuffer->update(Window::getWidth(), Window::getHeight(), gRenderScale);
-		gDirectionalRenderer->resize(gDirectionalShadowMapSize, gRenderScale);
+		gBuffer->update(windowData.screenWidth, windowData.screenHeight, gRenderScale);
 	}
 
 	void setDirectionalShadowMapSize(UInt32 size)
 	{
 		gDirectionalShadowMapSize = size;
-		gDirectionalRenderer->resize(gDirectionalShadowMapSize, gRenderScale);
+		gDirectionalRenderer->resize(gDirectionalShadowMapSize);
 	}
 
 	void setDirectionalShadowDistance(F32 value)

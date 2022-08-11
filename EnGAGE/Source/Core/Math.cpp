@@ -8,7 +8,8 @@ namespace Core::Math
 {
 	Mat4x4 calculateProj(const Camera& camera)
 	{
-		const F32 aspect = (F32)Window::getWidth() / (F32)Window::getHeight();
+		const WindowData& windowData = Window::getData();
+		const F32 aspect = (F32)windowData.screenWidth / (F32)windowData.screenHeight;
 		Mat4x4 proj;
 		if (camera.mode == Camera::Mode::PERSPECTIVE)
 			proj = glm::perspective(glm::radians(camera.fov), aspect, camera.near, camera.far);
@@ -149,7 +150,8 @@ namespace Core::Math
 	FrustumPoints createFrustumPoints(const Camera& camera, const F32 near, const F32 far)
 	{
 		//Get width and height of near and far plane
-		const F32 aspect = (F32)Window::getWidth() / (F32)Window::getHeight();
+		const WindowData& windowData = Window::getData();
+		const F32 aspect = (F32)windowData.screenWidth / (F32)windowData.screenHeight;
 		const float halfFov = glm::radians(camera.fov * 0.5f);
 		const float Hnear = near * glm::tan(halfFov) * 2.0f;
 		const float Wnear = Hnear * aspect;
@@ -192,9 +194,10 @@ namespace Core::Math
 		outPosition.x = camera.x;
 		outPosition.y = camera.y;
 		outPosition.z = camera.z;
-
-		auto x = ((Input::getX() / Window::getWidth()) - 0.5f) * 2;
-		auto y = -((Input::getY() / Window::getHeight()) - 0.5f) * 2;
+		const WindowData& windowData = Window::getData();
+		const InputData& inputData = Input::getData();
+		auto x = ((inputData.cursorX / windowData.screenWidth) - 0.5f) * 2;
+		auto y = -((inputData.cursorY / windowData.screenHeight) - 0.5f) * 2;
 		auto projViewInverse = glm::inverse(Math::calculateProjectionView(camera));
 		Vec4 rayStart = projViewInverse * Vec4(0, 0, 0, 1);
 		rayStart *= 1.0f / rayStart.w;
@@ -210,9 +213,10 @@ namespace Core::Math
 		outPosition.x = camera.x;
 		outPosition.y = camera.y;
 		outPosition.z = camera.z;
-
-		auto x = ((Input::getX() / Window::getWidth()) - 0.5f) * 2;
-		auto y = -((Input::getY() / Window::getHeight()) - 0.5f) * 2;
+		const WindowData& windowData = Window::getData();
+		const InputData& inputData = Input::getData();
+		auto x = ((inputData.cursorX / windowData.screenWidth) - 0.5f) * 2;
+		auto y = -((inputData.cursorY / windowData.screenHeight) - 0.5f) * 2;
 		auto projViewInverse = glm::inverse(Math::calculateProjectionView(camera));
 		Vec4 rayStart = projViewInverse * Vec4(x, y, 0, 1);
 		rayStart *= 1.0f / rayStart.w;
@@ -228,5 +232,36 @@ namespace Core::Math
 		F32 dot = glm::dot(rayDir, center - rayPos);
 		F32 distance = glm::sqrt(L * L - dot * dot);
 		return distance < radius;
+	}
+	bool isRayTriangleIntersect(const Vec3& rayPos, const Vec3& rayDir, const Vec3& p1, const Vec3& p2, const Vec3& p3)
+	{
+		//https://stackoverflow.com/questions/28165548/ray-triangle-intersection-c
+		glm::vec3 e1, e2, pvec, qvec, tvec;
+
+		e1 = p2 - p1;
+		e2 = p3 - p1;
+		pvec = glm::cross(rayDir, e2);
+		float det = glm::dot(pvec, e1);
+		if (det != 0)
+		{
+			float invDet = 1.0f / det;
+			tvec = rayPos - p1;
+			float u = invDet * glm::dot(tvec, pvec);
+			if (u < 0.0f || u > 1.0f)
+			{
+
+				return false;
+			}
+			qvec = glm::cross(tvec, e1);
+			float v = invDet * glm::dot(qvec, rayDir);
+			if (v < 0.0f || u + v > 1.0f)
+			{
+
+				return false;
+			}
+		}
+		else 
+			return false;
+		return true;
 	}
 }

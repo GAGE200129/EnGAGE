@@ -1,14 +1,20 @@
 #pragma once
 
 
-namespace Core::Scene
+namespace Core
 {
-	void loadPreset(const String& filePath);
-	void savePreset(const String& filePath, UInt32 entityID);
-	void loadScene(const String& filePath);
-	void saveScene(const String& filePath);
-	void checkForSceneSwitch();
-	String& getLoadedSceneName();
 
-	int luaDoPreset(lua_State* L);
+	struct SceneData
+	{
+		bool sceneSwitch = false;
+		std::string scenePath = "";
+	};
+
+	namespace Scene
+	{
+		void loadScene(const String& filePath);
+		void saveScene(const String& filePath);
+		void checkForSceneSwitch();
+		const SceneData& getData();
+	}
 }

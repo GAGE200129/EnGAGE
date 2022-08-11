@@ -26,7 +26,7 @@ static DynArr<Scope<Core::TextureSheet>> gTextureSheets;
 
 namespace Core::Resource
 {
-	const Model* getModel(const String& filePath)
+	Model* getModel(const String& filePath)
 	{
 		for (auto it = gModels.cbegin(); it != gModels.cend(); it++)
 		{
@@ -38,7 +38,7 @@ namespace Core::Resource
 		//Load and add a new model to the pool
 		if (auto model = loadModel(filePath))
 		{
-			const Model* ptr = model.get();
+			Model* ptr = model.get();
 			gModels.push_back(std::move(model));
 			return ptr;
 		}
@@ -329,7 +329,7 @@ static Scope<Core::TextureSheet> loadTextureSheet(const String& filePath)
 	Scope<Core::TextureSheet> result = createScope<Core::TextureSheet>();
 
 	int width, height, bpp;
-	stbi_set_flip_vertically_on_load(1);
+	stbi_set_flip_vertically_on_load(0);
 	stbi_uc* image = stbi_load(filePath.c_str(), &width, &height, &bpp, STBI_rgb_alpha);
 
 	if (image == nullptr)

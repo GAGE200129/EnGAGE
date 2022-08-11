@@ -32,4 +32,5 @@ namespace Core::Math
 	void getCamFrontRay(const Camera& camera, Vec3& outPosition, Vec3& outRay);
 	void getCursorRay(const Camera& camera, Vec3& outPosition, Vec3& outRay);
 	bool isRaySphereIntersect(const Vec3& rayPos, const Vec3& rayDir, const Vec3& center, const F32 radius);
+	bool isRayTriangleIntersect(const Vec3& rayPos, const Vec3& rayDir, const Vec3& p1, const Vec3& p2, const Vec3& p3);
 }

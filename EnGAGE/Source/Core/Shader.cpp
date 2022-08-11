@@ -43,8 +43,22 @@ namespace Core
 			glAttachShader(mProgramID, mShaders[i]);
 		}
 		glLinkProgram(mProgramID);
-		glValidateProgram(mProgramID);
+		
 
+		int status = 0;
+		glGetProgramiv(mProgramID, GL_LINK_STATUS, &status);
+		if (status == GL_FALSE)
+		{
+			std::unique_ptr<char[]> message;
+			int logLength = 0;
+			glGetProgramiv(mProgramID, GL_INFO_LOG_LENGTH, &logLength);
+			message = std::make_unique<char[]>(logLength);
+			glGetProgramInfoLog(mProgramID, logLength, &logLength, message.get());
+			EN_ERROR("Failed to link shader, reason: {}", message.get());
+			glDeleteProgram(mProgramID);
+			mProgramID = 0;
+		}
+		glValidateProgram(mProgramID);
 		for (unsigned int i = 0; i < (unsigned int)ShaderType::COUNT; i++)
 		{
 			glDeleteShader(mShaders[i]);

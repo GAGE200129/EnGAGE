@@ -13,29 +13,25 @@ Core::MapRenderer::~MapRenderer()
 
 void Core::MapRenderer::render(const Camera& camera)
 {
-	if (Map::getWalls().size() == 0) return;
-
-
 	mShader.bind();
 	mShader.uploadProjView(Math::calculateProjectionView(camera));
-
-	auto& mesh = Map::getWallMesh();
-
+	
+	auto& mesh = Map::getData().wallMesh;
+	
 	if (mesh.textureSheet != nullptr)
 	{
 		glActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D, mesh.textureSheet->id);
 	}
 	glBindVertexArray(mesh.vao);
-	glDrawElements(GL_TRIANGLES, mesh.vertexCount, GL_UNSIGNED_INT, nullptr);
+	glDrawArrays(GL_TRIANGLES, 0, mesh.vertexCount);
 	glBindVertexArray(0);
 }
 
 void Core::MapRenderer::renderNoShader()
 {
-	if (Map::getWalls().size() == 0) return;
-	auto& mesh = Map::getWallMesh();
+	auto& mesh = Map::getData().wallMesh;
 	glBindVertexArray(mesh.vao);
-	glDrawElements(GL_TRIANGLES, mesh.vertexCount, GL_UNSIGNED_INT, nullptr);
+	glDrawArrays(GL_TRIANGLES, 0, mesh.vertexCount);
 	glBindVertexArray(0);
 }

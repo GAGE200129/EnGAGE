@@ -2,92 +2,134 @@
 #include "Map.hpp"
 
 #include <glad/glad.h>
+#include <glm/vec3.hpp>
 
+#include "Core/LuaHostFunctions.hpp"
 #include "Core/Physics/Physics.hpp"
+#include "Core/Resource.hpp"
 
 namespace Core::Map
 {
-	static DynArr<Wall> gWalls;
-	static WallMesh gWallMesh;
-
-	void updateVertexData();
+	static MapData gData;
 
 	void init()
 	{
 		EN_INFO("Initializing map");
-		glGenVertexArrays(1, &gWallMesh.vao);
-		glGenBuffers(1, &gWallMesh.vbo);
-		glGenBuffers(1, &gWallMesh.ebo);
+		glGenVertexArrays(1, &gData.wallMesh.vao);
+		glGenBuffers(1, &gData.wallMesh.vbo);
+		//glGenBuffers(1, &gData.wallMesh.ebo);
 
-		gWallMesh.vertexCount = 0;
+		gData.wallMesh.vertexCount = 0;
 	}
 	void serialize(std::ofstream& out)
 	{
-		if (auto* sheet = gWallMesh.textureSheet)
+		if (auto* sheet = gData.wallMesh.textureSheet)
 		{
 			out << "_setTextureSheet(\"" << sheet->name << "\", " << sheet->div.x << ", " << sheet->div.y << ")\n";
 		}
-		for (const auto& wall : gWalls)
+		for (const auto& face : Map::getData().faces)
 		{
-			const Vec3& p1 = wall.p1;
-			const Vec3& p2 = wall.p2;
-			const Vec3& p3 = wall.p3;
-			const Vec3& p4 = wall.p4;
-			const Vec3& p5 = wall.p5;
-			const Vec3& p6 = wall.p6;
-			const Vec3& p7 = wall.p7;
-			const Vec3& p8 = wall.p8;
-			out << "_addWall(" <<
+			const Vec3& p1 = face.p1;
+			const Vec3& p2 = face.p2;
+			const Vec3& p3 = face.p3;
+			const Vec3& p4 = face.p4;
+
+			out << "_addFace(" <<
 				p1.x << ", " << p1.y << ", " << p1.z << ", " <<
 				p2.x << ", " << p2.y << ", " << p2.z << ", " <<
 				p3.x << ", " << p3.y << ", " << p3.z << ", " <<
 				p4.x << ", " << p4.y << ", " << p4.z << ", " <<
-				p5.x << ", " << p5.y << ", " << p5.z << ", " <<
-				p6.x << ", " << p6.y << ", " << p6.z << ", " <<
-				p7.x << ", " << p7.y << ", " << p7.z << ", " <<
-				p8.x << ", " << p8.y << ", " << p8.z << ", " <<
-				wall.front.x << ", " << wall.front.y << ", " <<
-				wall.back.x << ", " << wall.back.y << ", " <<
-				wall.left.x << ", " << wall.left.y << ", " <<
-				wall.right.x << ", " << wall.right.y << ", " <<
-				wall.top.x << ", " << wall.top.y << ", " <<
-				wall.bottom.x << ", " << wall.bottom.y << ")\n";
+				face.texSlot.x << ", " << face.texSlot.y << ")\n";
 		}
 	}
 	void shutdown()
 	{
 		EN_INFO("Shutting down map");
-		glDeleteVertexArrays(1, &gWallMesh.vao);
-		glDeleteBuffers(1, &gWallMesh.vbo);
-		glDeleteBuffers(1, &gWallMesh.ebo);
+		glDeleteVertexArrays(1, &gData.wallMesh.vao);
+		glDeleteBuffers(1, &gData.wallMesh.vbo);
+		//glDeleteBuffers(1, &gData.wallMesh.ebo);
 	}
 
-	void addWall(Wall wall)
-	{
-		gWalls.push_back(wall);
-		updateVertexData();
-	}
-	void removeWall(UInt64 index)
-	{
-		gWalls.erase(gWalls.begin() + index);
-		updateVertexData();
-	}
+
 	void clear()
 	{
-		gWalls.clear();
-		gWallMesh.textureSheet = nullptr;
+		gData.wallMesh.textureSheet = nullptr;
 	}
 
-	WallMesh& getWallMesh()
+	int luaAddFace(lua_State* L)
 	{
-		return gWallMesh;
+		CHECK_NUM_ARGS(L, 14);
+		CHECK_ARG(L, 1, LUA_TNUMBER);
+		CHECK_ARG(L, 2, LUA_TNUMBER);
+		CHECK_ARG(L, 3, LUA_TNUMBER);
+		CHECK_ARG(L, 4, LUA_TNUMBER);
+		CHECK_ARG(L, 5, LUA_TNUMBER);
+		CHECK_ARG(L, 6, LUA_TNUMBER);
+		CHECK_ARG(L, 7, LUA_TNUMBER);
+		CHECK_ARG(L, 8, LUA_TNUMBER);
+		CHECK_ARG(L, 9, LUA_TNUMBER);
+		CHECK_ARG(L, 10, LUA_TNUMBER);
+		CHECK_ARG(L, 11, LUA_TNUMBER);
+		CHECK_ARG(L, 12, LUA_TNUMBER);
+		CHECK_ARG(L, 13, LUA_TNUMBER);
+		CHECK_ARG(L, 14, LUA_TNUMBER);
+
+		Vec3 p1 = { (F32)lua_tonumber(L, 1), (F32)lua_tonumber(L, 2), (F32)lua_tonumber(L, 3) };
+		Vec3 p2 = { (F32)lua_tonumber(L, 4), (F32)lua_tonumber(L, 5), (F32)lua_tonumber(L, 6) };
+		Vec3 p3 = { (F32)lua_tonumber(L, 7), (F32)lua_tonumber(L, 8), (F32)lua_tonumber(L, 9) };
+		Vec3 p4 = { (F32)lua_tonumber(L,10), (F32)lua_tonumber(L,11), (F32)lua_tonumber(L,12) };
+		Vec2I textureSlot = { lua_tointeger(L, 13), lua_tointeger(L, 14) };
+
+		addFace(p1, p2, p3, p4, textureSlot);
+		return 0;
 	}
 
-	DynArr<Wall>& getWalls()
+	int luaSetTextureSheet(lua_State* L)
 	{
-		return gWalls;
+		CHECK_NUM_ARGS(L, 3);
+		CHECK_ARG(L, 1, LUA_TSTRING);
+		CHECK_ARG(L, 2, LUA_TNUMBER);
+		CHECK_ARG(L, 3, LUA_TNUMBER);
+
+		const char* path = lua_tostring(L, 1);
+		EN_ASSERT(path != nullptr, "Texture sheet path is nullptr !");
+
+		String sheetPath = path;
+		TextureSheet* sheet = Resource::getTextureSheet(sheetPath);
+		if (sheet)
+		{
+			sheet->div = { lua_tointeger(L, 2), lua_tointeger(L, 3) };
+			gData.wallMesh.textureSheet = sheet;
+		}
+
+		return 0;
 	}
 
+
+	MapData& getData()
+	{
+		return gData;
+	}
+
+	void addFace(const glm::vec3& p1, const glm::vec3& p2, const glm::vec3& p3, const glm::vec3& p4, const glm::ivec2& textureSlot)
+	{
+		Face face;
+		face.p1 = p1;
+		face.p2 = p2;
+		face.p3 = p3;
+		face.p4 = p4;
+		face.texSlot = textureSlot;
+
+		face.order = Face::TriangleOrder::TOP;
+		gData.faces.push_back(face);
+		updateVertexData();
+	}
+	void removeFace(size_t index)
+	{
+		EN_ASSERT(index < gData.faces.size(), "Face index out of bound !");
+		gData.faces.erase(gData.faces.begin() + index);
+		updateVertexData();
+	}
 	void updateVertexData()
 	{
 		struct Vertex
@@ -96,71 +138,69 @@ namespace Core::Map
 			Vec2 uv;
 			Vec3 normal;
 		};
-		auto addWallFace = [](Face face, const Vec2I& texSlot, DynArr<Face>& outFace)
-		{
-			Vec3 normal1 = glm::normalize(glm::cross(face.p2 - face.p1, face.p4 - face.p1));
-			Vec3 normal2 = glm::normalize(glm::cross(face.p4 - face.p3, face.p2 - face.p3));
-			face.normal = glm::mix(normal1, normal2, 0.5f);
-
-			auto* sheet = gWallMesh.textureSheet;
-
-			Vec2I div = { 1, 1 };
-			if (sheet)
-				div = sheet->div;
-
-			F32 deltaX = 1.0f / div.x;
-			F32 deltaY = 1.0f / div.y;
-
-			face.t1 = { texSlot.x * deltaX, texSlot.y * deltaY}; //Bottom left
-			face.t2 = { texSlot.x * deltaX + deltaX, texSlot.y * deltaY}; //Top left
-			face.t3 = { texSlot.x * deltaX + deltaX, texSlot.y * deltaY + deltaY }; //Top Right
-			face.t4 = { texSlot.x * deltaX, texSlot.y * deltaY + deltaY }; //Bottom right
-
-			outFace.push_back(face);
-		};
-
-		//Build faces
-		DynArr<Face> faces;
-		faces.reserve(gWalls.size() * 6);
-		for (const auto& wall : gWalls)
-		{
-			addWallFace(Face{ wall.p4, wall.p3, wall.p2, wall.p1 }, wall.bottom, faces); // Bottom
-			addWallFace(Face{ wall.p5, wall.p6, wall.p7, wall.p8 }, wall.top, faces); // Top
-			addWallFace(Face{ wall.p2, wall.p3, wall.p7, wall.p6 }, wall.back, faces); // backward
-			addWallFace(Face{ wall.p4, wall.p1, wall.p5, wall.p8 }, wall.front, faces); // forward
-			addWallFace(Face{ wall.p1, wall.p2, wall.p6, wall.p5 }, wall.left, faces); // Left
-			addWallFace(Face{ wall.p3, wall.p4, wall.p8, wall.p7 }, wall.right, faces); // Right
-		}
-
 
 		//Build vertices
 
-		DynArr<Vertex> vertices;
-		DynArr<Triangle> triangles;
-		DynArr<UInt32> indices;
-		UInt32 index = 0;
-		for (const auto& face : faces)
+		DynArr<Triangle> triangles; //For the physics engine
+		DynArr<Vertex> vertices;//To be uploaded to GPU
+		//DynArr<UInt32> indices;
+		//UInt32 index = 0;
+		for (auto& face : gData.faces)
 		{
-			vertices.push_back({ face.p1,  face.t1, face.normal });
-			vertices.push_back({ face.p2,  face.t2, face.normal });
-			vertices.push_back({ face.p3,  face.t3, face.normal });
-			vertices.push_back({ face.p4,  face.t4, face.normal });
-			indices.push_back(index + 0);
-			indices.push_back(index + 1);
-			indices.push_back(index + 2);
-			indices.push_back(index + 0);
-			indices.push_back(index + 2);
-			indices.push_back(index + 3);
-			index += 4;
+			//Update face triangle
+			face.tri[0] = { face.p1, face.p2, face.p3 };
+			face.tri[1] = { face.p1, face.p3, face.p4 };
+			
+
+			glm::vec3 normal1 = glm::normalize(glm::cross(face.p2 - face.p1, face.p3 - face.p1));
+			glm::vec3 normal2 = glm::normalize(glm::cross(face.p3 - face.p1, face.p4 - face.p1));
+			glm::vec3 normal = glm::mix(normal1, normal2, 0.5f);
 
 
-			triangles.push_back({ face.p1, face.p2, face.p3 });
-			triangles.push_back({ face.p1, face.p3, face.p4 });
+			Vec2I div = { 1, 1 };
+			if (auto* sheet = gData.wallMesh.textureSheet)
+				div = sheet->div;
+			float deltaX = 1.0f / div.x;
+			float deltaY = 1.0f / div.y;
+
+			face.t1 = { face.texSlot.x * deltaX, face.texSlot.y * deltaY }; //Bottom left
+			face.t2 = { face.texSlot.x * deltaX + deltaX, face.texSlot.y * deltaY }; //Top left
+			face.t3 = { face.texSlot.x * deltaX + deltaX, face.texSlot.y * deltaY + deltaY }; //Top Right
+			face.t4 = { face.texSlot.x * deltaX, face.texSlot.y * deltaY + deltaY }; //Bottom right
+
+			//Need extra face
+			constexpr float FACE_THICNESS = 0.05f;
+			Triangle tri1, tri2, tri3, tri4;
+			tri1 = { face.tri[0].p1 + normal * FACE_THICNESS, face.tri[0].p2 + normal * FACE_THICNESS, face.tri[0].p3 + normal * FACE_THICNESS };
+			tri2 = { face.tri[1].p1 + normal * FACE_THICNESS, face.tri[1].p2 + normal * FACE_THICNESS, face.tri[1].p3 + normal * FACE_THICNESS };
+			tri3 = { face.tri[0].p3 - normal * FACE_THICNESS, face.tri[0].p2 - normal * FACE_THICNESS, face.tri[0].p1 - normal * FACE_THICNESS };
+			tri4 = { face.tri[1].p3 - normal * FACE_THICNESS, face.tri[1].p2 - normal * FACE_THICNESS, face.tri[1].p1 - normal * FACE_THICNESS };
+
+			vertices.push_back({ tri1.p1,  face.t1, normal });
+			vertices.push_back({ tri1.p2,  face.t2, normal });
+			vertices.push_back({ tri1.p3,  face.t3, normal });
+
+			vertices.push_back({ tri2.p1,  face.t1, normal });
+			vertices.push_back({ tri2.p2,  face.t3, normal });
+			vertices.push_back({ tri2.p3,  face.t4, normal });
+
+			vertices.push_back({ tri3.p1,  face.t3, normal });
+			vertices.push_back({ tri3.p2,  face.t2, normal });
+			vertices.push_back({ tri3.p3,  face.t1, normal });
+
+			vertices.push_back({ tri4.p1,  face.t4, normal });
+			vertices.push_back({ tri4.p2,  face.t3, normal });
+			vertices.push_back({ tri4.p3,  face.t1, normal });
+
+			triangles.push_back({ tri1 });
+			triangles.push_back({ tri2 });
+			triangles.push_back({ tri3 });
+			triangles.push_back({ tri4 });
 		}
 
 		//Update gpu buffer
-		glBindVertexArray(gWallMesh.vao);
-		glBindBuffer(GL_ARRAY_BUFFER, gWallMesh.vbo);
+		glBindVertexArray(gData.wallMesh.vao);
+		glBindBuffer(GL_ARRAY_BUFFER, gData.wallMesh.vbo);
 		glBufferData(GL_ARRAY_BUFFER, vertices.size() * sizeof(Vertex), vertices.data(), GL_STATIC_DRAW);
 
 		glEnableVertexAttribArray(0);
@@ -170,10 +210,10 @@ namespace Core::Map
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)12);
 		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)20);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gWallMesh.ebo);
-		glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(UInt32), indices.data(), GL_STATIC_DRAW);
+		//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gData.wallMesh.ebo);
+		//glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(UInt32), indices.data(), GL_STATIC_DRAW);
 		glBindVertexArray(0);
-		gWallMesh.vertexCount = gWalls.size() * 36;
+		gData.wallMesh.vertexCount = gData.faces.size() * 12;
 
 		//Update physics engine map
 		Physics::updateMap(triangles);

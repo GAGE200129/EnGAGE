@@ -18,5 +18,5 @@ void main()
 
 	outPosition = FSPosition;
 	outNormal = normalize(FSNormal);
-	outColor = color;
+	outColor = color; //vec4(1, 1, 1, 1);
 }

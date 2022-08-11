@@ -3,24 +3,34 @@
 #include "ButtonCodes.hpp"
 #include "Core/Messenger/Messenger.hpp"
 
-struct GLFWwindow;
-namespace Core::Input
+namespace Core
 {
-	static constexpr uint8_t RELEASE = 0;
-	static constexpr uint8_t PRESS = 1;
-	static constexpr uint8_t REPEAT = 2;
+	struct InputData
+	{
+		double cursorX = 0.0f;
+		double cursorY = 0.0f;
+		double prevCursorX = 0.0f;
+		double prevCursorY = 0.0f;
+	};
 
-	void init(GLFWwindow* rawWindow);
+	namespace Input
+	{
+		static constexpr uint8_t RELEASE = 0;
+		static constexpr uint8_t PRESS = 1;
+		static constexpr uint8_t REPEAT = 2;
 
-	bool isButtonDown(Int32 button);
+		void init();
 
-	const double& getX();
-	const double& getY();
-	void disableCursor();
-	void enableCursor();
-	void toggleCursor();
-	bool cursorLocked();
+		bool isButtonDown(Int32 button);
 
-	int luaToggleCursor(lua_State* L);
-	int luaIsCursorLocked(lua_State* L);
+		void disableCursor();
+		void enableCursor();
+		void toggleCursor();
+		bool cursorLocked();
+
+		const InputData& getData();
+
+		int luaToggleCursor(lua_State* L);
+		int luaIsCursorLocked(lua_State* L);
+	}
 }

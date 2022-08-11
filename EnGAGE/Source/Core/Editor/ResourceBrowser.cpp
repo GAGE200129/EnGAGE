@@ -72,28 +72,28 @@ namespace Core::ResourceBrowser
 
 			ImGui::TreePop();
 		}
-		if (ImGui::TreeNode("Presets"))
-		{
-			static String currentPath = "";
-			for (const auto& entry : std::filesystem::recursive_directory_iterator(presetPath))
-			{
-				std::filesystem::path path = entry.path();
-				String pathName = path.make_preferred().string();
-				std::replace(pathName.begin(), pathName.end(), '\\', '/');
-
-				if (ImGui::Selectable(pathName.c_str(), currentPath == pathName))
-				{
-					currentPath = pathName;
-				}
-				
-			}
-			if (ImGui::Button("Load"))
-			{
-				Scene::loadPreset(currentPath);
-			}
-
-			ImGui::TreePop();
-		}
+		//if (ImGui::TreeNode("Presets"))
+		//{
+		//	static String currentPath = "";
+		//	for (const auto& entry : std::filesystem::recursive_directory_iterator(presetPath))
+		//	{
+		//		std::filesystem::path path = entry.path();
+		//		String pathName = path.make_preferred().string();
+		//		std::replace(pathName.begin(), pathName.end(), '\\', '/');
+		//
+		//		if (ImGui::Selectable(pathName.c_str(), currentPath == pathName))
+		//		{
+		//			currentPath = pathName;
+		//		}
+		//		
+		//	}
+		//	if (ImGui::Button("Load"))
+		//	{
+		//		Scene::loadPreset(currentPath);
+		//	}
+		//
+		//	ImGui::TreePop();
+		//}
 
 		ImGui::End();
 	}

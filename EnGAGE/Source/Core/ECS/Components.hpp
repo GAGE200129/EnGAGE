@@ -14,7 +14,7 @@ namespace Core
 		UInt64 count;
 		UInt64 size;
 		Scope<Byte[]> data;
-		Map<UInt64, UInt64> entityToIndex;
+		OrderedMap<UInt64, UInt64> entityToIndex;
 	};
 
 	

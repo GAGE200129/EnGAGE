@@ -105,7 +105,8 @@ namespace Core::Editor
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
 		ImGui::DockSpaceOverViewport(0, ImGuiDockNodeFlags_PassthruCentralNode);
-		ImGuizmo::SetRect(0, 0, Window::getWidth(), Window::getHeight());
+		const WindowData& windowData = Window::getData();
+		ImGuizmo::SetRect(0, 0, windowData.screenWidth, windowData.screenHeight);
 		ImGuizmo::SetOrthographic(GameEngine::getEngineData().debugCamera.mode == Camera::Mode::ORTHOGRAPHIC);
 		ImGuizmo::BeginFrame();
 

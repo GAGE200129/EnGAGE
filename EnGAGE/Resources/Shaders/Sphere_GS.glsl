@@ -3,13 +3,13 @@
 #define PI 3.1415926535897932384626433832795
 
 layout (points) in;
-layout (line_strip, max_vertices = 312) out;
+layout (line_strip, max_vertices = 72) out;
 
 uniform mat4 uMVP;
 uniform float uRadius;
 
-const int latDiv = 12;
-const int longDiv = 24;
+const int latDiv = 6;
+const int longDiv = 12;
 
 
 mat4 rotationMatrix(vec3 axis, float angle)
@@ -31,7 +31,7 @@ void main()
     const float latDeltaAngle = PI / latDiv;
 	const float longDeltaAngle = 2.0f * PI / longDiv;
 
-    const int halfLatDiv = 6;
+    const int halfLatDiv = 3;
 
     for( int iLat = -halfLatDiv; iLat < halfLatDiv; iLat++ )
 	{

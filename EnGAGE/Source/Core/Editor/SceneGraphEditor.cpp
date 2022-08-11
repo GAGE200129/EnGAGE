@@ -33,6 +33,7 @@ namespace Core::SceneGraphEditor
 			ImGui::EndListBox();
 		}
 
+
 		if (ImGui::Button("New"))
 		{
 			ECS::createEntity();
@@ -43,6 +44,8 @@ namespace Core::SceneGraphEditor
 			ECS::removeEntity(gSelectedEntity->id);
 			gSelectedEntity = nullptr;
 		}
+
+
 		ImGui::End();
 	}
 
@@ -86,18 +89,18 @@ namespace Core::SceneGraphEditor
 				ImGui::EndPopup();
 			}
 
-			if (ImGui::Button("SavePreset"))
-				ImGui::OpenPopup("SavePresetPopup");
-			if (ImGui::BeginPopup("SavePresetPopup"))
-			{
-				static String filePath = "Resources/Presets/";
-				ImGui::InputText("Location", &filePath);
-
-				if(ImGui::Button("Save"))
-					Scene::savePreset(filePath, gSelectedEntity->id);
-
-				ImGui::EndPopup();
-			}
+			//if (ImGui::Button("SavePreset"))
+			//	ImGui::OpenPopup("SavePresetPopup");
+			//if (ImGui::BeginPopup("SavePresetPopup"))
+			//{
+			//	static String filePath = "Resources/Presets/";
+			//	ImGui::InputText("Location", &filePath);
+			//
+			//	if(ImGui::Button("Save"))
+			//		Scene::savePreset(filePath, gSelectedEntity->id);
+			//
+			//	ImGui::EndPopup();
+			//}
 		}
 		ImGui::End();
 	}

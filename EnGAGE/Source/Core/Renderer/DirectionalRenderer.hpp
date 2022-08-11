@@ -34,10 +34,10 @@ namespace Core
 	class DirectionalRenderer
 	{
 	public:
-		DirectionalRenderer(UInt32 shadowSize, F32 renderScale);
+		DirectionalRenderer(UInt32 shadowSize);
 		~DirectionalRenderer();
 		void render(UInt32 width, UInt32 height, GBuffer& gBuffer, const Camera& camera, MapRenderer& mapRenderer, F32 shadowDistance, F32 shadowFadeStart);
-		void resize(UInt32 shadowSize, F32 renderScale);
+		void resize(UInt32 shadowSize);
 		inline UInt32 getDepthMap() { return mDepthMap; }
 	private:
 		DirectionalShader mShader;

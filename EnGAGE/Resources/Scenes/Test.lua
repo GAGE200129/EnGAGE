@@ -1,0 +1,8 @@
+local entity = _createEntity()
+entity_transform = _addComponent(entity, TRANSFORM)
+_setPosition(entity_transform, 0, 0.632939, 0)
+_setRotation(entity_transform, 1, 0, 0, 0)
+_setScale(entity_transform, 1, 1, 1)
+_setPointLight(_addComponent(entity, POINT_LIGHT), 1, 1, 1, 1, 1, 0.1, 0.01)
+_setTextureSheet("Resources/TextureSheets/PEEPEE.png", 4, 4)
+_addFace(0, 0, 0, 1, 0, 0, 1, 0, -1, 0, 0, -1, 1, 0)

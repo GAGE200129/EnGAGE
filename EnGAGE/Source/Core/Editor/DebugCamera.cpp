@@ -35,9 +35,9 @@ namespace Core::DebugCamera
 	} gDebugCamState;
 
 	static constexpr F32 MOUSE_SENSITIVITY = 0.3f;
-	static constexpr F32 CAM_NEAR = 1.0f;
+	static constexpr F32 CAM_NEAR = 0.05f;
 	static constexpr F32 CAM_FAR = 1000.0f;
-	static constexpr F32 CAM_FOV = 70.0f;
+	static constexpr F32 CAM_FOV = 90.0f;
 	static constexpr F32 CAM_SPEED = 7;
 
 	void onMessage(const Message* pMessage)
@@ -82,10 +82,12 @@ namespace Core::DebugCamera
 			}
 			else if (camera.mode == Camera::Mode::ORTHOGRAPHIC && gDebugCamState.leftMouseClicked)
 			{
-				F32 aspectRatio = (F32)Window::getWidth() / (F32)Window::getHeight();
+				const WindowData& windowData = Window::getData();
+
+				F32 aspectRatio = (F32)windowData.screenWidth / (F32)windowData.screenHeight;
 				F32 orthoScale2 = gDebugCamState.orthoScale * 2.0f;
-				F32 dxNormalized = (cursorMoved->dx / Window::getWidth());
-				F32 dyNormalized = (cursorMoved->dy / Window::getHeight());
+				F32 dxNormalized = (cursorMoved->dx / windowData.screenWidth);
+				F32 dyNormalized = (cursorMoved->dy / windowData.screenHeight);
 				if (gDebugCamState.orthoMode == OrthoMode::BACK)
 				{
 					camera.x -= dxNormalized * aspectRatio * orthoScale2;
@@ -224,7 +226,8 @@ namespace Core::DebugCamera
 
 		if (gDebugCamState.orthoMode != DebugCamera::OrthoMode::NONE)
 		{
-			F32 aspectRatio = (F32)Window::getWidth() / (F32)Window::getHeight();
+			const WindowData& windowData = Window::getData();
+			F32 aspectRatio = (F32)windowData.screenWidth / (F32)windowData.screenHeight;
 			camera.mode = Camera::Mode::ORTHOGRAPHIC;
 			camera.minX = -gDebugCamState.orthoScale * aspectRatio;
 			camera.maxX = gDebugCamState.orthoScale * aspectRatio;

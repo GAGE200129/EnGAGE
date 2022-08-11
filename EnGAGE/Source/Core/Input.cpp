@@ -6,20 +6,16 @@
 #include <GLFW/glfw3.h>
 
 #include <imgui.h>
+#include <Core/Window.hpp>
 
 namespace Core::Input
 {
-	GLFWwindow* sWindow = nullptr;
-	double sCursorX = 0.0f;
-	double sCursorY = 0.0f;
-	double sPrevCursorX = 0.0f;
-	double sPrevCursorY = 0.0f;
+	static InputData gData;
 
-	void init(GLFWwindow* rawWindow)
+	void init()
 	{
-		sWindow = rawWindow;
-
-		glfwSetScrollCallback(rawWindow, [](GLFWwindow* window, double xoffset, double yoffset)
+		const WindowData& data = Window::getData();
+		glfwSetScrollCallback(data.window, [](GLFWwindow* window, double xoffset, double yoffset)
 			{
 				if (yoffset > 0)
 				{
@@ -30,26 +26,26 @@ namespace Core::Input
 					Messenger::recieveMessage(MessageType::SCROLL_DOWN);
 				}
 			});
-		glfwSetCursorPosCallback(rawWindow, [](GLFWwindow* window, double xpos, double ypos)
+		glfwSetCursorPosCallback(data.window, [](GLFWwindow* window, double xpos, double ypos)
 			{
 				CursorMovedMessage cursorMessage;
 
-				sCursorX = xpos;
-				sCursorY = ypos;
+				gData.cursorX = xpos;
+				gData.cursorY = ypos;
 
 				cursorMessage.x = (float)xpos;
 				cursorMessage.y = (float)ypos;
-				cursorMessage.dx = (float)(sCursorX - sPrevCursorX);
-				cursorMessage.dy = (float)(sCursorY - sPrevCursorY);
+				cursorMessage.dx = (float)(gData.cursorX - gData.prevCursorX);
+				cursorMessage.dy = (float)(gData.cursorY - gData.prevCursorY);
 
-				sPrevCursorX = sCursorX;
-				sPrevCursorY = sCursorY;
+				gData.prevCursorX = gData.cursorX;
+				gData.prevCursorY = gData.cursorY;
 
 				
 				Messenger::recieveMessage(MessageType::CURSOR_MOVED , &cursorMessage);
 			});
 
-		glfwSetKeyCallback(rawWindow, [](GLFWwindow* window, int key, int scancode, int action, int mods)
+		glfwSetKeyCallback(data.window, [](GLFWwindow* window, int key, int scancode, int action, int mods)
 			{
 				if (action == PRESS)
 				{
@@ -65,7 +61,7 @@ namespace Core::Input
 				}
 			});
 
-		glfwSetMouseButtonCallback(rawWindow, [](GLFWwindow* window, int button, int action, int mods)
+		glfwSetMouseButtonCallback(data.window, [](GLFWwindow* window, int button, int action, int mods)
 			{
 				if (action == PRESS)
 				{
@@ -85,36 +81,28 @@ namespace Core::Input
 	
 	bool isButtonDown(Int32 button)
 	{
-		return glfwGetMouseButton(sWindow, button) == GLFW_PRESS;
+		const WindowData& data = Window::getData();
+		return glfwGetMouseButton(data.window, button) == GLFW_PRESS;
 	}
-
-	const double& getX()
-	{
-		return sCursorX;
-	}
-
-
-	const double& getY()
-	{
-		return sCursorY;
-	}
-
 
 	void  disableCursor()
 	{
-		glfwSetInputMode(sWindow, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
+		const WindowData& data = Window::getData();
+		glfwSetInputMode(data.window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 		if (glfwRawMouseMotionSupported())
-			glfwSetInputMode(sWindow, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
+			glfwSetInputMode(data.window, GLFW_RAW_MOUSE_MOTION, GLFW_TRUE);
 	}
 	void enableCursor()
 	{
-		glfwSetInputMode(sWindow, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
+		const WindowData& data = Window::getData();
+		glfwSetInputMode(data.window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 		if (glfwRawMouseMotionSupported())
-			glfwSetInputMode(sWindow, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
+			glfwSetInputMode(data.window, GLFW_RAW_MOUSE_MOTION, GLFW_FALSE);
 	}
 	void  toggleCursor()
 	{
-		int status = glfwGetInputMode(sWindow, GLFW_CURSOR);
+		const WindowData& data = Window::getData();
+		int status = glfwGetInputMode(data.window, GLFW_CURSOR);
 		if (status == GLFW_CURSOR_DISABLED) {
 			enableCursor();
 		}
@@ -124,7 +112,8 @@ namespace Core::Input
 	}
 	bool  cursorLocked()
 	{
-		int status = glfwGetInputMode(sWindow, GLFW_CURSOR);
+		const WindowData& data = Window::getData();
+		int status = glfwGetInputMode(data.window, GLFW_CURSOR);
 		if (status == GLFW_CURSOR_DISABLED) {
 			return true;
 		}
@@ -145,5 +134,9 @@ namespace Core::Input
 		int result = cursorLocked();
 		lua_pushboolean(L, result);
 		return 1;
+	}
+	const InputData& getData()
+	{
+		return gData;
 	}
 }

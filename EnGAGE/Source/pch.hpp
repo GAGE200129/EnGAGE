@@ -77,7 +77,7 @@ template<typename K, typename V>
 using UnorderedMap = std::unordered_map<K, V>;
 
 template<typename K, typename V>
-using Map = std::map<K, V>;
+using OrderedMap = std::map<K, V>;
 
 template<typename T>
 using DynArr = std::vector<T>;

@@ -133,8 +133,10 @@ namespace Core::Physics
 		delete gBroadphase;
 	
 		if (gMapMesh)
+		{
 			delete gMapMesh;
-		delete gMapObject->getCollisionShape();
+			delete gMapObject->getCollisionShape();
+		}
 		delete gMapObject;
 	}
 
@@ -213,18 +215,25 @@ namespace Core::Physics
 	}
 	void updateMap(const DynArr<Triangle>& triangles)
 	{
+		//List triangle empty, delete all
 		if (triangles.size() == 0)
 		{
-			if (gMapMesh) delete gMapMesh;
-			delete gMapObject->getCollisionShape();
 			gWorld->removeCollisionObject(gMapObject);
+			if (gMapMesh) 
+				delete gMapMesh;
+			if(gMapObject->getCollisionShape())
+				delete gMapObject->getCollisionShape();
+			gMapObject->setCollisionShape(nullptr);
+			gMapMesh = nullptr;
 			return;
 		}
 
 		//Delete old stuffs
-		if (gMapMesh) delete gMapMesh;
-		delete gMapObject->getCollisionShape();
 		gWorld->removeCollisionObject(gMapObject);
+		if (gMapMesh)
+			delete gMapMesh;
+		if (gMapObject->getCollisionShape())
+			delete gMapObject->getCollisionShape();
 
 		gMapMesh = new btTriangleMesh(true, false);
 		//Build new mesh

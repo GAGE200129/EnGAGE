@@ -16,10 +16,10 @@ namespace Core::ECS
 	static Set<UInt64> gEntitiesMarkedForRemoval;
 
 	//Component
-	static Map<ComponentType, ComponentArray> gComponentArrays;
+	static OrderedMap<ComponentType, ComponentArray> gComponentArrays;
 
 	//System
-	static Map<SystemType, System>  gSystems;
+	static OrderedMap<SystemType, System>  gSystems;
 
 	static EntitySignature* searchEntity(UInt64 id);
 	static void removeComponentInternal(ComponentArray& componentArray, EntitySignature* entity);

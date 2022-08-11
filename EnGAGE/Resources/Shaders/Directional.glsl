@@ -44,7 +44,7 @@ float calShadowMap(vec3 fragPos, vec3 normal)
         for(int y = -1; y <= 1; ++y)
         {
             float pcfDepth = texture(uDepthMap, projCoords.xy + vec2(x, y) * texelSize).r; 
-            shadow += currentDepth > pcfDepth ? 1.0 : 0.0;        
+            shadow += currentDepth > pcfDepth  ? 1.0 : 0.0;        
         }    
     }
     shadow /= 9.0;
