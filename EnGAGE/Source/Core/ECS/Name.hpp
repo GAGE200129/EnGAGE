@@ -20,5 +20,7 @@ namespace Core
 		{
 			return ComponentHint{ "NAME", sizeof(Component) };
 		}
+
+		int luaSetName(lua_State* L);
 	}
 }

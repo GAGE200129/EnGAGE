@@ -12,11 +12,13 @@
 #include "Input.hpp"
 #include "GameEngine.hpp"
 #include "Core/ECS/RigidBody.hpp"
+#include "Core/ECS/KinematicBody.hpp"
 #include "Core/ECS/Transform.hpp"
 #include "Core/ECS/ModelRenderer.hpp"
 #include "Core/ECS/Script.hpp"
 #include "Core/ECS/DirectionalLight.hpp"
 #include "Core/ECS/PointLight.hpp"
+#include "Core/ECS/Name.hpp"
 #include "Map/Map.hpp"
 
 #include <BulletDynamics/Dynamics/btRigidBody.h>
@@ -150,6 +152,8 @@ namespace Core
 			lua_register(L, "_rigidBodyColShapeSphere", Core::RigidBody::luaColShapeSphere);
 			lua_register(L, "_rigidBodyColShapeBox", Core::RigidBody::luaColShapeBox);
 			lua_register(L, "_rigidBodyColShapeCapsule", Core::RigidBody::luaColShapeCapsule);
+			lua_register(L, "_kinematicBodySetVelocity", Core::KinematicBody::luaSetVelocity);
+			lua_register(L, "_kinematicBodyJump", Core::KinematicBody::luaJump);
 			lua_register(L, "_toggleCursor", Core::Input::luaToggleCursor);
 			lua_register(L, "_isCursorLocked", Core::Input::luaIsCursorLocked);
 			lua_register(L, "_updateCameraPerspective", Core::GameEngine::luaUpdateCameraPerspective);
@@ -158,6 +162,7 @@ namespace Core
 			lua_register(L, "_sendMessage", sendMessage);
 			lua_register(L, "_addFace", Core::Map::luaAddFace);
 			lua_register(L, "_setTextureSheet", Core::Map::luaSetTextureSheet);
+			lua_register(L, "_setName", Core::Name::luaSetName);
 		}
 		void pushAllGlobals(lua_State* L)
 		{

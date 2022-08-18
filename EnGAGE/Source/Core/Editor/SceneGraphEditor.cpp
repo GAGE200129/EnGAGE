@@ -3,6 +3,7 @@
 
 #include "Core/ECS/ECS.hpp"
 #include "Core/ECS/Transform.hpp"
+#include "Core/ECS/Name.hpp"
 #include "Core/Scene.hpp"
 
 #include <ImGuizmo.h>
@@ -21,9 +22,18 @@ namespace Core::SceneGraphEditor
 		{
 			for (unsigned int i = 0; i < ECS::getEntityCount(); i++)
 			{
-				char buf[50];
+				char buf[ECS::MAX_NAME_SIZE];
 				const auto& e = ECS::getEntitySignatures()[i];
-				sprintf(buf, "Entity %llu", e.id);
+
+				auto nameComponent = (Name::Component*)ECS::getComponent(e.id, ComponentType::NAME);
+				if (nameComponent != nullptr && strlen((const char*)nameComponent->name) != 0)
+				{
+					sprintf(buf, "%s", nameComponent->name);
+				}
+				else
+				{
+					sprintf(buf, "Entity %llu", e.id);
+				}
 				if (ImGui::Selectable(buf, gSelectedEntity == &e))
 				{
 					gSelectedEntity = &e;

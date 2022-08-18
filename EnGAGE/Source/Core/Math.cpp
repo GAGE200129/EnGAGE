@@ -264,4 +264,8 @@ namespace Core::Math
 			return false;
 		return true;
 	}
+	btVector3 toBulletVec3(const glm::vec3& v)
+	{
+		return btVector3(v.x, v.y, v.z);
+	}
 }

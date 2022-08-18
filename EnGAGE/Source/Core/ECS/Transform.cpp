@@ -2,6 +2,7 @@
 #include "Transform.hpp"
 
 #include "RigidBody.hpp"
+#include "KinematicBody.hpp"
 #include "Core/ECS/ECS.hpp"
 #include "Core/Math.hpp"
 #include "Core/GameEngine.hpp"
@@ -18,19 +19,31 @@ void Core::Transform::OnImGui(ComponentHeader* pHeader)
 	static Int32 currentGizmoMode = ImGuizmo::WORLD;
 
 	Component* pTransform = (Component*)pHeader;
-	RigidBody::Component* pRigidBody = (RigidBody::Component*)ECS::getComponent(pHeader->entity, ComponentType::RIGID_BODY);
+	KinematicBody::Component* kinematicBody = (KinematicBody::Component*)ECS::getComponent(pHeader->entity, ComponentType::KINEMATIC_BODY);
+	RigidBody::Component* rigidBody = (RigidBody::Component*)ECS::getComponent(pHeader->entity, ComponentType::RIGID_BODY);
+	
+	btRigidBody* pRigidbody = nullptr;
+	if (kinematicBody)
+	{
+		pRigidbody = kinematicBody->pKinematicBody;
+	}
+	else if (rigidBody)
+	{
+		pRigidbody = rigidBody->pRigidbody;
+	}
+
 
 	ImGui::RadioButton("Translate", &currentGizmoOperation, ImGuizmo::TRANSLATE); ImGui::SameLine();
 	ImGui::RadioButton("Rotate", &currentGizmoOperation, ImGuizmo::ROTATE); ImGui::SameLine();
 	ImGui::RadioButton("Scale", &currentGizmoOperation, ImGuizmo::SCALE);
 
 	//Translate
-	if (ImGui::DragFloat3("Translation", &pTransform->x, 0.1f) && pRigidBody)
+	if (ImGui::DragFloat3("Translation", &pTransform->x, 0.1f) && pRigidbody)
 	{
-		if (pRigidBody)
+		if (pRigidbody)
 		{
-			pRigidBody->pRigidbody->getWorldTransform().setOrigin(btVector3(pTransform->x, pTransform->y, pTransform->z));
-			Physics::updateRigidBody(pRigidBody->pRigidbody);
+			pRigidbody->getWorldTransform().setOrigin(btVector3(pTransform->x, pTransform->y, pTransform->z));
+			Physics::updateRigidBody(pRigidbody);
 		}
 	}
 
@@ -50,10 +63,10 @@ void Core::Transform::OnImGui(ComponentHeader* pHeader)
 			pTransform->rz /= length;
 		}
 
-		if (pRigidBody)
+		if (pRigidbody)
 		{
-			pRigidBody->pRigidbody->getWorldTransform().setRotation(btQuaternion(pTransform->rx, pTransform->ry, pTransform->rz, pTransform->rw));
-			Physics::updateRigidBody(pRigidBody->pRigidbody);
+			pRigidbody->getWorldTransform().setRotation(btQuaternion(pTransform->rx, pTransform->ry, pTransform->rz, pTransform->rw));
+			Physics::updateRigidBody(pRigidbody);
 		}
 	}
 	//Scale
@@ -89,11 +102,11 @@ void Core::Transform::OnImGui(ComponentHeader* pHeader)
 		pTransform->sy = matrixScale[1];
 		pTransform->sz = matrixScale[2];
 
-		if (pRigidBody)
+		if (pRigidbody)
 		{
-			pRigidBody->pRigidbody->getWorldTransform().setRotation(btQuaternion(pTransform->rx, pTransform->ry, pTransform->rz, pTransform->rw));
-			pRigidBody->pRigidbody->getWorldTransform().setOrigin(btVector3(pTransform->x, pTransform->y, pTransform->z));
-			Physics::updateRigidBody(pRigidBody->pRigidbody);
+			pRigidbody->getWorldTransform().setRotation(btQuaternion(pTransform->rx, pTransform->ry, pTransform->rz, pTransform->rw));
+			pRigidbody->getWorldTransform().setOrigin(btVector3(pTransform->x, pTransform->y, pTransform->z));
+			Physics::updateRigidBody(pRigidbody);
 		}
 	}
 }

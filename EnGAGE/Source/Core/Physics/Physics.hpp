@@ -23,6 +23,7 @@ namespace Core::Physics
 	void updateRigidBody(btRigidBody* rigidBody);
 	void removeRigidBody(btRigidBody* rigidBody);
 	btRigidBody* newRigidBody(unsigned int entityID);
+	btRigidBody* newKinematicBody(unsigned int entityID, F32 radius, F32 height);
 	void update(float delta);
 	void updateMap(const DynArr<Triangle>& vertices);
 

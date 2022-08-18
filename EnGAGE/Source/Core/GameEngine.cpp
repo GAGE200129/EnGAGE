@@ -63,15 +63,14 @@ namespace Core::GameEngine
 
 	void run()
 	{
-		constexpr unsigned int TPS = 120; //Tick per seconds
+		constexpr unsigned int TPS = 128; //Tick per seconds
 
 		const double secsPerUpdate = 1.0 / (double)TPS;
 		double prevTime = Window::getCurrentTime();
 		double steps = 0.0;
-		
+
 		while (!Window::closeRequested())
 		{
-
 			double currentTime = Window::getCurrentTime();
 			double delta = currentTime - prevTime;
 			prevTime = currentTime;
@@ -129,6 +128,7 @@ namespace Core::GameEngine
 
 			ECS::updateRemovedEntities();
 			Scene::checkForSceneSwitch();
+
 		}
 		clearResources();
 		Map::shutdown();
@@ -174,9 +174,7 @@ namespace Core::GameEngine
 int main()
 {
 	using namespace Core;
-	GameEngine::init(1600, 900, 1280, 720, "Hello world");
-	Scene::loadScene("Resources/Scenes/Fox.lua");
-	
+	GameEngine::init(1600, 900, 1600, 900, "YO");
+	Scene::loadScene("Resources/Scenes/Test.lua");
 	GameEngine::run();
-
 }

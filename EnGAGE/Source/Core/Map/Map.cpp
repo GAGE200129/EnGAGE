@@ -54,6 +54,8 @@ namespace Core::Map
 	void clear()
 	{
 		gData.wallMesh.textureSheet = nullptr;
+		gData.faces.clear();
+		updateVertexData();
 	}
 
 	int luaAddFace(lua_State* L)
@@ -169,7 +171,7 @@ namespace Core::Map
 			face.t4 = { face.texSlot.x * deltaX, face.texSlot.y * deltaY + deltaY }; //Bottom right
 
 			//Need extra face
-			constexpr float FACE_THICNESS = 0.05f;
+			constexpr float FACE_THICNESS = 0.03f;
 			Triangle tri1, tri2, tri3, tri4;
 			tri1 = { face.tri[0].p1 + normal * FACE_THICNESS, face.tri[0].p2 + normal * FACE_THICNESS, face.tri[0].p3 + normal * FACE_THICNESS };
 			tri2 = { face.tri[1].p1 + normal * FACE_THICNESS, face.tri[1].p2 + normal * FACE_THICNESS, face.tri[1].p3 + normal * FACE_THICNESS };
@@ -184,13 +186,13 @@ namespace Core::Map
 			vertices.push_back({ tri2.p2,  face.t3, normal });
 			vertices.push_back({ tri2.p3,  face.t4, normal });
 
-			vertices.push_back({ tri3.p1,  face.t3, normal });
-			vertices.push_back({ tri3.p2,  face.t2, normal });
-			vertices.push_back({ tri3.p3,  face.t1, normal });
+			vertices.push_back({ tri3.p1,  face.t3, -normal });
+			vertices.push_back({ tri3.p2,  face.t2, -normal });
+			vertices.push_back({ tri3.p3,  face.t1, -normal });
 
-			vertices.push_back({ tri4.p1,  face.t4, normal });
-			vertices.push_back({ tri4.p2,  face.t3, normal });
-			vertices.push_back({ tri4.p3,  face.t1, normal });
+			vertices.push_back({ tri4.p1,  face.t4, -normal });
+			vertices.push_back({ tri4.p2,  face.t3, -normal });
+			vertices.push_back({ tri4.p3,  face.t1, -normal });
 
 			triangles.push_back({ tri1 });
 			triangles.push_back({ tri2 });
@@ -210,8 +212,6 @@ namespace Core::Map
 		glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)12);
 		glVertexAttribPointer(2, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), (const void*)20);
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
-		//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, gData.wallMesh.ebo);
-		//glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(UInt32), indices.data(), GL_STATIC_DRAW);
 		glBindVertexArray(0);
 		gData.wallMesh.vertexCount = gData.faces.size() * 12;
 

@@ -61,6 +61,10 @@ function onMessage(entity, type, message)
 			moveRight = true
 		end
 
+		if key == KEY_SPACE then
+			_kinematicBodyJump(_getComponent(entity, KINEMATIC_BODY), 0, 0, 0)
+		end
+
 	elseif type == KEY_RELEASED then
 		local key = _getInt(message, 1)
 		
@@ -120,10 +124,8 @@ function update(delta, entity)
 		force.z = force.z - math.sin(math.rad(yaw))
 	end
 	normalize(force)
-	local lengthSquared = force.x ^ 2 + force.y ^ 2 + force.z ^ 2
-	if lengthSquared ~= 0.0 then
-		_rigidBodyApplyForce(_getComponent(entity, RIGID_BODY), force.x * moveSpeed * delta, force.y * moveSpeed * delta, force.z * moveSpeed * delta)
-	end
+	_kinematicBodySetVelocity(_getComponent(entity, KINEMATIC_BODY), force.x * moveSpeed * delta, force.y * moveSpeed * delta, force.z * moveSpeed * delta)
+
 
 
 	
@@ -137,10 +139,10 @@ function update(delta, entity)
 	local offsetZ = math.sin(yawRadians) * distance * math.cos(pitchRadians)
 
 
-	camPos.x = lerp(camPos.x, x - offsetX + offset.x, delta * 30)
-	camPos.y = lerp(camPos.y, y + pitchY + offset.y, delta * 30)
-	camPos.z = lerp(camPos.z, z - offsetZ + offset.z, delta * 30)
-	camPitch = lerp(camPitch, pitch, delta * 10)
-	camYaw = lerp(camYaw, yaw, delta * 10)
+	camPos.x = lerp(camPos.x, x - offsetX + offset.x, delta * 10)
+	camPos.y = lerp(camPos.y, y + pitchY + offset.y, delta * 10)
+	camPos.z = lerp(camPos.z, z - offsetZ + offset.z, delta * 10)
+	camPitch = lerp(camPitch, pitch, delta * 50)
+	camYaw = lerp(camYaw, yaw, delta * 50)
 	_updateCameraPerspective(camPos.x, camPos.y, camPos.z, camPitch, camYaw, 0, 60, 1.1, 100.0)
 end

@@ -7,6 +7,7 @@
 
 #include "Name.hpp"
 #include "RigidBody.hpp"
+#include "KinematicBody.hpp"
 #include "Transform.hpp"
 #include "ModelRenderer.hpp"
 #include "Script.hpp"
@@ -35,6 +36,7 @@ namespace Core
 			TO_DATA(MODEL_RENDERER, ModelRenderer);
 			TO_DATA(SCRIPT, Script);
 			TO_DATA(RIGID_BODY, RigidBody);
+			TO_DATA(KINEMATIC_BODY, KinematicBody);
 			TO_DATA(DIRECTIONAL_LIGHT, DirectionalLight);
 			TO_DATA(POINT_LIGHT, PointLight);
 		}
@@ -51,6 +53,7 @@ namespace Core
 			TO_INIT(MODEL_RENDERER, ModelRenderer);
 			TO_INIT(SCRIPT, Script);
 			TO_INIT(RIGID_BODY, RigidBody);
+			TO_INIT(KINEMATIC_BODY, KinematicBody);
 			TO_INIT(DIRECTIONAL_LIGHT, DirectionalLight);
 			TO_INIT(POINT_LIGHT, PointLight);
 		default:

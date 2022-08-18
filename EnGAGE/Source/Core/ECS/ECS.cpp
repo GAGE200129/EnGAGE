@@ -59,6 +59,11 @@ namespace Core::ECS
 		gSystems[SystemType::PHYSICS].signature = signature;
 
 		signature = 0;
+		SET_BIT(signature, (UInt32)ComponentType::KINEMATIC_BODY);
+		SET_BIT(signature, (UInt32)ComponentType::TRANSFORM);
+		gSystems[SystemType::KINEMATIC].signature = signature;
+
+		signature = 0;
 		SET_BIT(signature, (UInt32)ComponentType::DIRECTIONAL_LIGHT);
 		gSystems[SystemType::DIRECTIONAL].signature = signature;
 

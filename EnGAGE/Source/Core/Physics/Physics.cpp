@@ -2,13 +2,15 @@
 #include "Physics.hpp"
 #include "Core/ECS/ECS.hpp"
 #include "Core/ECS/Transform.hpp"
+#include "Core/ECS/KinematicBody.hpp"
+#include "Core/Math.hpp"
 
 
 class CustomMotionState : public btMotionState
 {
 	Core::Transform::Component* mGraphicsTransform;
 public:
-	CustomMotionState(Core::Transform::Component* graphicsTransform):
+	CustomMotionState(Core::Transform::Component* graphicsTransform) :
 		mGraphicsTransform(graphicsTransform)
 	{
 	}
@@ -70,7 +72,7 @@ namespace Core::Physics
 		updateRigidBody(pBody);
 	}
 
-	
+
 	const char* getCollisionShapeName(CollisionShapeType type)
 	{
 		switch (type)
@@ -121,17 +123,17 @@ namespace Core::Physics
 		gRigidBodies.clear();
 	}
 
-	
+
 
 	void shutdown()
-	{	
+	{
 		clear();
 		delete gWorld;
 		delete gConfig;
 		delete gDispatcher;
 		delete gSolver;
 		delete gBroadphase;
-	
+
 		if (gMapMesh)
 		{
 			delete gMapMesh;
@@ -163,11 +165,11 @@ namespace Core::Physics
 		EN_ASSERT(removeIt != gRigidBodies.end(), "Rigidbody not found !");
 
 		btRigidBody* removedBody = *removeIt;
-		gRigidBodies.erase(removeIt);	
+		gRigidBodies.erase(removeIt);
 		gWorld->removeRigidBody(removedBody);
 		delete removedBody->getCollisionShape();
 		delete removedBody->getMotionState();
-		delete removedBody;		
+		delete removedBody;
 	}
 
 	btRigidBody* newRigidBody(unsigned int entityID)
@@ -181,36 +183,96 @@ namespace Core::Physics
 		btRigidBody* pRigidBody = new btRigidBody(info);
 		gRigidBodies.push_back(pRigidBody);
 		gWorld->addRigidBody(pRigidBody);
-		pRigidBody->setRestitution(0.9f);
-		pRigidBody->setDamping(0.2f, 0.2f);
-		
+
 		return pRigidBody;
 	}
 
-	btRigidBody* newCharacterControllerRigidBody(unsigned int entityID, F32 radius, F32 halfHeight)
+	btRigidBody* newKinematicBody(unsigned int entityID, F32 radius, F32 height)
 	{
 		Transform::Component* component = (Transform::Component*)ECS::getComponent(entityID, ComponentType::TRANSFORM);
 
 		btMotionState* pMotionState = new CustomMotionState(component);
-		btCapsuleShape* pShape = new btCapsuleShape(radius, halfHeight * 2);
+		btCapsuleShape* pShape = new btCapsuleShape(radius, height);
 
-		btRigidBody::btRigidBodyConstructionInfo info(0, pMotionState, pShape);
+		btRigidBody::btRigidBodyConstructionInfo info(1, pMotionState, pShape);
 		btRigidBody* pRigidBody = new btRigidBody(info);
-
 		gRigidBodies.push_back(pRigidBody);
-		pRigidBody->setRestitution(0.0f);
-		pRigidBody->setDamping(0.0f, 0.0f);
-		pRigidBody->setFriction(0.0f);
+		gWorld->addRigidBody(pRigidBody);
 		pRigidBody->setSleepingThresholds(0.0, 0.0);
 		pRigidBody->setAngularFactor(0.0);
-		pRigidBody->setMassProps(1.0f, btVector3(0, 0, 0));
-		pRigidBody->setActivationState(DISABLE_DEACTIVATION);
-		gWorld->addRigidBody(pRigidBody);
+
+
 		return pRigidBody;
 	}
 
 	void update(float delta)
 	{
+
+		//For each kinematic body
+		for (const auto& entity : ECS::getSystem(SystemType::KINEMATIC).entities)
+		{
+
+			//Get the components
+			Transform::Component* pTransform = (Transform::Component*)ECS::getComponent(entity, ComponentType::TRANSFORM);
+			KinematicBody::Component* pKinematicBody = (KinematicBody::Component*)ECS::getComponent(entity, ComponentType::KINEMATIC_BODY);
+			btRigidBody* pBody = pKinematicBody->pKinematicBody;
+
+			// Perform raycast
+			btVector3 rayOrigin = pBody->getWorldTransform().getOrigin();
+			btVector3 rayEnd = pBody->getWorldTransform().getOrigin() - btVector3(0, pKinematicBody->capsuleHeight + 0.2, 0);
+
+			btCollisionWorld::ClosestRayResultCallback rayCallback(rayOrigin, rayEnd);
+			gWorld->rayTest(rayOrigin, rayEnd, rayCallback);
+			pKinematicBody->onGround = rayCallback.hasHit();
+			
+
+
+			//Move rigidBody
+			btTransform transform;
+			pBody->getMotionState()->getWorldTransform(transform);
+			btMatrix3x3& basis = transform.getBasis();
+			btMatrix3x3 inv = basis.inverse();
+			btVector3 linearVelocity = inv * pBody->getLinearVelocity();
+
+			
+			
+
+			if (pKinematicBody->moveDir.fuzzyZero() && pKinematicBody->onGround) {
+				linearVelocity *= pKinematicBody->speedDamping;
+			}
+			else if (pKinematicBody->onGround) {
+				linearVelocity += pKinematicBody->moveDir * (pKinematicBody->accelration * delta);
+
+				btScalar speed2 = glm::pow(linearVelocity.x(), 2)
+					+ glm::pow(linearVelocity.z(), 2);
+				btScalar kSpeed2 = glm::pow(pKinematicBody->maxSpeed, 2);
+				if (speed2 > kSpeed2) {
+					btScalar correction = glm::sqrt(kSpeed2 / speed2);
+					linearVelocity[0] *= correction;
+					linearVelocity[2] *= correction;
+				}
+
+				//Jump
+				if (pKinematicBody->jump) {
+					linearVelocity += 5.0 * pKinematicBody->jumpDir;
+					pKinematicBody->jump = false;
+				}
+			}
+
+			
+
+			//Ramp
+			if (pKinematicBody->onGround) {
+				pBody->setGravity({ 0, 0, 0 });
+			}
+			else {
+				pBody->setGravity(Math::toBulletVec3(gGravity));
+			}
+
+
+			pBody->setLinearVelocity(basis * linearVelocity);
+		}
+
 		gWorld->stepSimulation(delta);
 	}
 	void updateMap(const DynArr<Triangle>& triangles)
@@ -219,9 +281,9 @@ namespace Core::Physics
 		if (triangles.size() == 0)
 		{
 			gWorld->removeCollisionObject(gMapObject);
-			if (gMapMesh) 
+			if (gMapMesh)
 				delete gMapMesh;
-			if(gMapObject->getCollisionShape())
+			if (gMapObject->getCollisionShape())
 				delete gMapObject->getCollisionShape();
 			gMapObject->setCollisionShape(nullptr);
 			gMapMesh = nullptr;

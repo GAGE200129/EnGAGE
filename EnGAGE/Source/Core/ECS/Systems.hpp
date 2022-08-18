@@ -11,7 +11,7 @@ namespace Core
 		POINT,
 		SCRIPTING,
 		PHYSICS,
-		CHARACTER,
+		KINEMATIC,
 		COUNT
 	};
 	struct System
