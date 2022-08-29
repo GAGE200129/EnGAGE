@@ -34,16 +34,31 @@ namespace Core
 				isOnOrForwardPlan(frustum.bottomFace));
 		};
 
-		std::function<void(const Math::Frustum& frustum, const Model* model, const Node& node, glm::mat4x4 accumulatedTransform)> processNode;
-		processNode = [&](const Math::Frustum& frustum, const Model* model, const Node& node, glm::mat4x4 accumulatedTransform)
+		std::function<void(const Math::Frustum& frustum, const ModelRenderer::Component* pModelComp, size_t nodeIndex, glm::mat4x4 accumulatedTransform)> processNode;
+		processNode = [&](const Math::Frustum& frustum, const ModelRenderer::Component* pModelComp, size_t nodeIndex, glm::mat4x4 accumulatedTransform)
 		{
-			accumulatedTransform = glm::translate(accumulatedTransform, node.position);
-			accumulatedTransform *= glm::toMat4(node.rotation);
+			const Model* model = pModelComp->pModel;
+			const Node& node = model->nodes[nodeIndex];
 			accumulatedTransform = glm::scale(accumulatedTransform, node.scale);
-
+			accumulatedTransform *= glm::toMat4(node.rotation);
+			accumulatedTransform = glm::translate(accumulatedTransform, node.position);
+			
 			if (node.meshIndex != -1)
 			{
 				const Core::Mesh& mesh = model->meshes[node.meshIndex];
+				if (mesh.skinned)
+				{
+					mShader.uploadBoneMatrices(pModelComp->boneMatrices);
+					accumulatedTransform *= pModelComp->boneMatrices[nodeIndex];
+				}
+
+				auto nodePosition = glm::vec3(
+					accumulatedTransform[3][0],
+					accumulatedTransform[3][1],
+					accumulatedTransform[3][2]);
+				DebugRenderer::addSphere({ 1, 0, 0 }, 0.1f, nodePosition);
+
+				mShader.uploadIsSkinned(mesh.skinned);
 				for (const auto& primitive : mesh.primitives)
 				{
 					Vec3 position;
@@ -73,7 +88,7 @@ namespace Core
 			}
 			for (const auto& child : node.children)
 			{
-				processNode(frustum, model, model->nodes[child], accumulatedTransform);
+				processNode(frustum, pModelComp, child, accumulatedTransform);
 			}
 		};
 
@@ -94,7 +109,8 @@ namespace Core
 				modelMat *= glm::toMat4(glm::quat{ pTransform->rw, pTransform->rx, pTransform->ry, pTransform->rz });
 				modelMat = glm::scale(modelMat, { pTransform->sx, pTransform->sy, pTransform->sz });
 
-				processNode(frustum, pModel, pModel->nodes[pModel->rootNodeIndex], modelMat);
+				
+				processNode(frustum, pModelComp, pModel->rootNodeIndex, modelMat);
 			}
 		}
 	}

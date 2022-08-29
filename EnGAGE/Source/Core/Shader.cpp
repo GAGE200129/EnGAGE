@@ -76,7 +76,7 @@ namespace Core
 		glUniformMatrix4fv(loc, 1, GL_FALSE, &mat[0][0]);
 	}
 
-	void Shader::uploadInt(int loc, int v)
+	void Shader::uploadInt(int loc, int v) const
 	{
 		glUniform1i(loc, v);
 	}

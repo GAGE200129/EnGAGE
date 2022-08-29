@@ -25,7 +25,7 @@ namespace Core
 		void compile();
 		int registerUniform(const String& name);
 		void uploadMat4x4(int loc, const glm::mat4x4& mat) const;
-		void uploadInt(int loc, int v);
+		void uploadInt(int loc, int v) const;
 		void uploadFloat(int loc, float v);
 		void uploadVec3(int loc, const glm::vec3& v);
 		void bind() const;

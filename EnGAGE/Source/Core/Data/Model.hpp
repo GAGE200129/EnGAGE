@@ -14,6 +14,7 @@ namespace Core
 		String name;
 		DynArr<Primitive> primitives;
 		float boundingSphereRadius;
+		bool skinned;
 	};
 
 	struct Texture
@@ -35,6 +36,39 @@ namespace Core
 		glm::vec3 scale;
 		glm::quat rotation;
 		DynArr<int> children;
+		glm::mat4 inverseBindTransform;//For animation
+	};
+
+
+	struct Sampler
+	{
+		//enum class OutputType
+		//{
+		//	Vec3,
+		//	Quaternion
+		//};
+		//OutputType outputType;
+		std::vector<float> input;
+		std::vector<float> output;
+	};
+
+	struct Channel
+	{
+		enum class Path
+		{
+			TRANSLATION,
+			ROTATION,
+			SCALE
+		};
+		size_t samplerIndex;
+		size_t node;
+		Path path;
+	};
+	struct AnimationData
+	{
+		std::string name;
+		std::vector<Sampler> samplers;
+		std::vector<Channel> channels;
 	};
 
 	struct Model
@@ -44,6 +78,7 @@ namespace Core
 		DynArr<Node> nodes;
 		DynArr<Texture> textures;
 		DynArr<Material> materials;
+		std::vector<AnimationData> animations;
 		unsigned int rootNodeIndex;
 	};
 }

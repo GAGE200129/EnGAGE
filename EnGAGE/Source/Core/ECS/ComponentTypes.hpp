@@ -13,6 +13,7 @@ namespace Core
 		KINEMATIC_BODY,
 		DIRECTIONAL_LIGHT,
 		POINT_LIGHT,
+		ANIMATOR,
 		COUNT
 	};
 }

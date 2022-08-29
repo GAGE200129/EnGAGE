@@ -71,6 +71,11 @@ namespace Core::ECS
 		SET_BIT(signature, (UInt32)ComponentType::POINT_LIGHT);
 		SET_BIT(signature, (UInt32)ComponentType::TRANSFORM);
 		gSystems[SystemType::POINT].signature = signature;
+
+		signature = 0;
+		SET_BIT(signature, (UInt32)ComponentType::MODEL_RENDERER);
+		SET_BIT(signature, (UInt32)ComponentType::ANIMATOR);
+		gSystems[SystemType::ANIMATION].signature = signature;
 	}
 
 	void clear()
@@ -312,8 +317,10 @@ namespace Core::ECS
 
 					UInt64 entityOfRemovedIndex = ((ComponentHeader*)end)->entity;
 					componentArray.entityToIndex[entityOfRemovedIndex] = i;
+					componentArray.entityToIndex.erase(entity->id);
 					break;
 				}
+				
 			}
 		}
 	}

@@ -12,6 +12,7 @@ namespace Core
 			ComponentHeader header;
 			Byte modelPath[ECS::MAX_NAME_SIZE];
 			const Model* pModel;
+			glm::mat4 boneMatrices[ECS::MAX_BONE_MATRICES];
 		};
 
 

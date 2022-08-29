@@ -12,6 +12,7 @@ namespace Core
 		SCRIPTING,
 		PHYSICS,
 		KINEMATIC,
+		ANIMATION,
 		COUNT
 	};
 	struct System

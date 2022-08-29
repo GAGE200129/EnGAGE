@@ -15,6 +15,7 @@
 #include "Core/Messenger/Messenger.hpp"
 #include "Map/Map.hpp"
 #include "LuaHostFunctions.hpp"
+#include "Core/Animation/Animation.hpp"
 
 namespace Core::GameEngine
 {
@@ -87,6 +88,7 @@ namespace Core::GameEngine
 				{
 					Physics::update(secsPerUpdate);
 					Scripting::update(secsPerUpdate);
+					Animation::update(secsPerUpdate);
 				}
 				else
 				{

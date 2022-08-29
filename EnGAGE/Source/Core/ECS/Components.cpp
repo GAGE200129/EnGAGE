@@ -13,6 +13,7 @@
 #include "Script.hpp"
 #include "DirectionalLight.hpp"
 #include "PointLight.hpp"
+#include "Animator.hpp"
 
 #define TO_DATA(type, fnName) case ComponentType::type: return fnName::getHint()
 
@@ -39,6 +40,7 @@ namespace Core
 			TO_DATA(KINEMATIC_BODY, KinematicBody);
 			TO_DATA(DIRECTIONAL_LIGHT, DirectionalLight);
 			TO_DATA(POINT_LIGHT, PointLight);
+			TO_DATA(ANIMATOR, Animator);
 		}
 		EN_ASSERT(false, "Unknown component: {}", (unsigned int)type);
 		return  {"INVALID", 0};
@@ -56,6 +58,7 @@ namespace Core
 			TO_INIT(KINEMATIC_BODY, KinematicBody);
 			TO_INIT(DIRECTIONAL_LIGHT, DirectionalLight);
 			TO_INIT(POINT_LIGHT, PointLight);
+			TO_INIT(ANIMATOR, Animator);
 		default:
 			EN_ASSERT(false, "Unknown component: {}", (unsigned int)type);
 			break;

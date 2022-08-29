@@ -2,6 +2,7 @@
 
 #include "Core/Data/Camera.hpp"
 #include "GBuffer.hpp"
+#include "Core/ECS/ECSConstants.hpp"
 
 namespace Core
 {
@@ -16,6 +17,12 @@ namespace Core
 
 			mProjViewLoc = registerUniform("uProjView");
 			mModelLoc = registerUniform("uModel");
+			mSkinnedLoc = registerUniform("uSkinned");
+
+			for (int i = 0; i < ECS::MAX_BONE_MATRICES; i++)
+			{
+				mBoneMatrices[i] = registerUniform("uBones[" + std::to_string(i) + "]");
+			}
 		}
 		~EntityShader()
 		{
@@ -30,8 +37,22 @@ namespace Core
 		{
 			uploadMat4x4(mModelLoc, mat);
 		}
+
+		void uploadIsSkinned(const bool skinned) const
+		{
+			uploadInt(mSkinnedLoc, skinned);
+		}
+
+		void uploadBoneMatrices(const glm::mat4x4* matrices) const
+		{
+			for (int i = 0; i < ECS::MAX_BONE_MATRICES; i++)
+			{
+				uploadMat4x4(mBoneMatrices[i], matrices[i]);
+			}
+		}
 	private:
-		Int32 mProjViewLoc, mModelLoc;
+		Int32 mProjViewLoc, mModelLoc, mSkinnedLoc;
+		Int32 mBoneMatrices[ECS::MAX_BONE_MATRICES];
 	};
 
 	class EntityRenderer

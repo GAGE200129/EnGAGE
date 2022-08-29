@@ -156,6 +156,92 @@ static Scope<Core::Model> loadModel(const String& filePath)
 		result->materials.push_back(material);
 	}
 
+	for (const auto& gltfAnimation : model.animations)
+	{
+		Core::AnimationData animation;
+		animation.name = gltfAnimation.name;
+		for (const auto& gltfSampler : gltfAnimation.samplers)
+		{
+			Core::Sampler sampler;
+			std::vector<char> buffer;
+			unsigned int componentType, type, count;
+
+
+			//Extract sampler input
+			extractAccessor(model, model.accessors[gltfSampler.input], buffer, componentType, type, count);
+			sampler.input.resize(count);
+			memcpy(sampler.input.data(), buffer.data(), count * sizeof(float));
+			
+			//Extract sampler output
+			extractAccessor(model, model.accessors[gltfSampler.output], buffer, componentType, type, count);
+			int componentTypeCount = -1;
+			switch (type)
+			{
+			case TINYGLTF_TYPE_VEC3:
+			{
+				componentTypeCount = 3;
+				//sampler.outputType = Core::Sampler::OutputType::Vec3;
+				break;
+			}
+			case TINYGLTF_TYPE_VEC4:
+			{
+				componentTypeCount = 4;
+				//sampler.outputType = Core::Sampler::OutputType::Quaternion;
+				break;
+			}
+			}
+			EN_ASSERT(componentTypeCount != -1, "Unknown component type count !");
+			sampler.output.resize(componentTypeCount * count);
+			memcpy(sampler.output.data(), buffer.data(), count * sizeof(float) * componentTypeCount);
+
+			animation.samplers.push_back(sampler);
+		}
+		for (const auto& gltfChannel : gltfAnimation.channels)
+		{
+			Core::Channel channel;
+
+			channel.node = gltfChannel.target_node;
+
+			if (gltfChannel.target_path == "translation")
+			{
+				channel.path = Core::Channel::Path::TRANSLATION;
+			}
+			else if (gltfChannel.target_path == "rotation")
+			{
+				channel.path = Core::Channel::Path::ROTATION;
+			}
+			else if (gltfChannel.target_path == "scale")
+			{
+				channel.path = Core::Channel::Path::SCALE;
+			}
+			else
+			{
+				EN_ASSERT(false, "Unknown target path");
+			}
+			channel.samplerIndex = gltfChannel.sampler;
+			
+
+			animation.channels.push_back(channel);
+		}
+		
+		result->animations.push_back(animation);
+		
+	}
+
+	for (const auto& gltfSkin : model.skins)
+	{
+		std::vector<char> buffer;
+		unsigned int componentType, type, count;
+		extractAccessor(model, model.accessors[gltfSkin.inverseBindMatrices], buffer, componentType, type, count);
+
+		for (int i = 0; i < count; ++i)
+		{
+			memcpy(&result->nodes[gltfSkin.joints[i]].inverseBindTransform[0][0], buffer.data() + sizeof(float) * 16 * i, sizeof(float) * 16);
+		}
+		
+
+	}
+
 	result->rootNodeIndex = model.scenes[0].nodes[0];
 
 	return result;
@@ -219,10 +305,10 @@ static Core::Node parseNode(const tinygltf::Node& node)
 
 	if (node.rotation.size() != 0)
 	{
-		result.rotation.w = (float)node.rotation[0];
-		result.rotation.x = (float)node.rotation[1];
-		result.rotation.y = (float)node.rotation[2];
-		result.rotation.z = (float)node.rotation[3];
+		result.rotation.x = (float)node.rotation[0];
+		result.rotation.y = (float)node.rotation[1];
+		result.rotation.z = (float)node.rotation[2];
+		result.rotation.w = (float)node.rotation[3];
 	}
 
 	if (node.matrix.size() != 0)
@@ -239,6 +325,7 @@ static Core::Mesh parseMesh(const tinygltf::Model& model, const tinygltf::Mesh& 
 {
 	Core::Mesh result;
 	result.name = gltfMesh.name;
+	result.skinned = false;
 	float maxDistance = 0.0f;
 
 	for (const auto& gltfPrimitive : gltfMesh.primitives)
@@ -246,11 +333,21 @@ static Core::Mesh parseMesh(const tinygltf::Model& model, const tinygltf::Mesh& 
 		Core::Primitive primitive;
 
 		DynArr<Core::Vertex> vertices;
-		DynArr<char> positionBuffer, normalBuffer, textureBuffer, indicesBuffer;
+		DynArr<char> positionBuffer, normalBuffer, textureBuffer, indicesBuffer, boneIDBuffer, boneWeightBuffer;
 		unsigned int componentType, type, count;
+		unsigned int skinnedComponentType, skinnedType, skinnedCount;
 		extractAccessor(model, model.accessors[gltfPrimitive.attributes.at("POSITION")], positionBuffer, componentType, type, count);
 		extractAccessorBuffer(model, model.accessors[gltfPrimitive.attributes.at("NORMAL")], normalBuffer);
 		extractAccessorBuffer(model, model.accessors[gltfPrimitive.attributes.at("TEXCOORD_0")], textureBuffer);
+
+		if (gltfPrimitive.attributes.find("JOINTS_0") != gltfPrimitive.attributes.end() ||
+			gltfPrimitive.attributes.find("WEIGHTS_0") != gltfPrimitive.attributes.end())
+		{
+			result.skinned = true;
+			extractAccessor(model, model.accessors[gltfPrimitive.attributes.at("JOINTS_0")], boneIDBuffer, skinnedComponentType, skinnedType, skinnedCount);
+			extractAccessorBuffer(model, model.accessors[gltfPrimitive.attributes.at("WEIGHTS_0")], boneWeightBuffer);
+		}
+
 		EN_ASSERT(
 			componentType == TINYGLTF_COMPONENT_TYPE_FLOAT &&
 			type == TINYGLTF_TYPE_VEC3,
@@ -263,9 +360,56 @@ static Core::Mesh parseMesh(const tinygltf::Model& model, const tinygltf::Mesh& 
 			unsigned int positonSize = sizeof(float) * 3;
 			unsigned int normalSize = sizeof(float) * 3;
 			unsigned int texCoordSize = sizeof(float) * 2;
+			
 			memcpy(&v.x, positionBuffer.data() + positonSize * i, positonSize);
 			memcpy(&v.nX, normalBuffer.data() + normalSize * i, normalSize);
 			memcpy(&v.tU, textureBuffer.data() + texCoordSize * i, texCoordSize);
+			//Skin data
+			v.boneIDs[0] = -1; v.boneIDs[1] = -1; v.boneIDs[2] = -1; v.boneIDs[3] = -1;
+			v.boneWeights[0] = 0; v.boneWeights[1] = 0; v.boneWeights[2] = 0; v.boneWeights[3] = 0;
+
+			if (result.skinned)
+			{
+				switch (skinnedComponentType)
+				{
+				case TINYGLTF_COMPONENT_TYPE_UNSIGNED_BYTE:
+				case TINYGLTF_COMPONENT_TYPE_BYTE:
+				{
+					unsigned int boneIDSize = 1 * 4; // one byte
+					unsigned char ids[4];
+					memcpy(&ids, boneIDBuffer.data() + boneIDSize * i, boneIDSize);
+					v.boneIDs[0] = ids[0]; v.boneIDs[1] = ids[1]; v.boneIDs[2] = ids[2]; v.boneIDs[3] = ids[3];
+					break;
+				}
+
+				case TINYGLTF_COMPONENT_TYPE_UNSIGNED_SHORT:
+				case TINYGLTF_COMPONENT_TYPE_SHORT:
+				{
+					unsigned int boneIDSize = 2 * 4; // two bytes
+					unsigned short ids[4];
+					memcpy(&ids, boneIDBuffer.data() + boneIDSize * i, boneIDSize);
+					v.boneIDs[0] = ids[0]; v.boneIDs[1] = ids[1]; v.boneIDs[2] = ids[2]; v.boneIDs[3] = ids[3];
+					break;
+				}
+
+				case TINYGLTF_COMPONENT_TYPE_UNSIGNED_INT:
+				case TINYGLTF_COMPONENT_TYPE_INT:
+				{
+					unsigned int boneIDSize = 4 * 4; // four bytes
+					unsigned int ids[4];
+					memcpy(&ids, boneIDBuffer.data() + boneIDSize * i, boneIDSize);
+					v.boneIDs[0] = ids[0]; v.boneIDs[1] = ids[1]; v.boneIDs[2] = ids[2]; v.boneIDs[3] = ids[3];
+					break;
+				}
+
+				default:
+					EN_ASSERT(false, "Unknown bone id component type");
+					break;
+				}
+
+				unsigned int boneWeightSize = sizeof(float) * 4;
+				memcpy(&v.boneWeights, boneWeightBuffer.data() + boneWeightSize * i, boneWeightSize);
+			}
 
 			maxDistance = glm::max(maxDistance, glm::length(Vec3{ v.x, v.y, v.z }));
 			vertices.push_back(v);
@@ -288,9 +432,14 @@ static Core::Mesh parseMesh(const tinygltf::Model& model, const tinygltf::Mesh& 
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
 		glEnableVertexAttribArray(2);
+		glEnableVertexAttribArray(3);
+		glEnableVertexAttribArray(4);
 		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Core::Vertex), 0);
 		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(Core::Vertex), (const void*)(sizeof(float) * 3));
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(Core::Vertex), (const void*)(sizeof(float) * 6));
+
+		glVertexAttribIPointer(3, 4, GL_UNSIGNED_INT, sizeof(Core::Vertex), (const void*)(sizeof(unsigned int) * 8));
+		glVertexAttribPointer(4, 4, GL_FLOAT, GL_FALSE, sizeof(Core::Vertex), (const void*)(sizeof(float) * 8 + sizeof(unsigned int) * 8));
 
 		glBindBuffer(GL_ARRAY_BUFFER, 0);
 		glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, primitive.ebo);
